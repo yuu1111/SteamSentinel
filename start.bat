@@ -1,51 +1,52 @@
 @echo off
-REM "SteamSentinel 起動スクリプト実行補助 (Batch)"
-REM "このファイルはstart.ps1をPowerShell 7+で実行します"
+REM SteamSentinel Start Script Helper (Batch)
+REM This file executes start.ps1 with PowerShell 7+
 
 setlocal
 
-REM "PowerShell 7+ (pwsh) の存在確認"
+REM Check for PowerShell 7+ (pwsh) existence
 where pwsh >nul 2>&1
 if %errorlevel% equ 0 (
-    echo "[INFO] PowerShell 7+ が見つかりました"
+    echo [INFO] PowerShell 7+ found
+    for /f "tokens=*" %%i in ('pwsh -NoProfile -Command "$PSVersionTable.PSVersion.ToString()"') do echo [INFO] Version: %%i
     goto :run_script
 )
 
-REM "PowerShell 7+ が見つからない場合"
+REM PowerShell 7+ not found
 echo.
-echo "[ERROR] PowerShell 7+ (pwsh) が見つかりません"
+echo [ERROR] PowerShell 7+ (pwsh) not found
 echo.
-echo "SteamSentinelを実行するには PowerShell 7+ が必要です。"
-echo "以下のURLからダウンロード・インストールしてください："
+echo SteamSentinel requires PowerShell 7+.
+echo Please download and install from:
 echo.
-echo "  > https://aka.ms/PSWindows"
+echo   ^> https://aka.ms/PSWindows
 echo.
-echo "インストール後、このファイルを再実行してください。"
+echo After installation, run this file again.
 echo.
-echo "代替方法:"
-echo "  1. Windows PowerShell (powershell.exe) で直接実行:"
-echo "     powershell.exe -ExecutionPolicy Bypass -File start.ps1"
-echo "  2. PowerShell ISE で start.ps1 を開いて実行"
+echo Alternative methods:
+echo   1. Run directly with Windows PowerShell (powershell.exe):
+echo      powershell.exe -ExecutionPolicy Bypass -File start.ps1
+echo   2. Open start.ps1 in PowerShell ISE and run
 echo.
 pause
 exit /b 1
 
 :run_script
-echo "[INFO] SteamSentinel を起動します..."
+echo [INFO] Starting SteamSentinel...
 echo.
 
-REM "PowerShell実行ポリシーを一時的に変更してスクリプト実行"
+REM Execute script with temporary execution policy change
 pwsh.exe -ExecutionPolicy Bypass -File "%~dp0start.ps1" %*
 
-REM "実行結果の確認"
+REM Check execution result
 if %errorlevel% equ 0 (
     echo.
-    echo "[INFO] SteamSentinel が終了しました"
+    echo [INFO] SteamSentinel has exited
     echo.
 ) else (
     echo.
-    echo "[ERROR] 起動中にエラーが発生しました"
-    echo "詳細はPowerShellの出力を確認してください"
+    echo [ERROR] Error occurred during startup
+    echo Check PowerShell output for details
     echo.
 )
 
