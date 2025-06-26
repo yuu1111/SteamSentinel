@@ -4,7 +4,7 @@ import path from 'path';
 import { config } from './config';
 import { securityHeaders, localhostOnly, generalLimiter, errorHandler, jsonSizeLimit } from './middleware/security';
 import apiRoutes from './routes/api';
-import logger from './utils/logger';
+// import logger from './utils/logger'; // May be used for future logging needs
 
 const app = express();
 

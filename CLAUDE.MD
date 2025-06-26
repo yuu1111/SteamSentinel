@@ -92,7 +92,7 @@
 
 ## 📋 プロジェクト概要
 **プロジェクト名**: SteamSentinel  
-**リポジトリ名**: `steam-sentinel`  
+**リポジトリ名**: `SteamSentinel`  
 **説明**: セール時の過去最安値更新を検知し、WebサイトとDiscord通知で情報提供するシステム
 
 **プロジェクト名の由来**: Steam（Steam）+ Sentinel（見張り番）= ゲーム価格の忠実な見張り役

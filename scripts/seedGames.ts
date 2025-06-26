@@ -1,6 +1,6 @@
 import database from '../src/db/database';
 import { GameModel } from '../src/models/Game';
-import logger from '../src/utils/logger';
+// import logger from '../src/utils/logger'; // May be used for future logging needs
 import * as fs from 'fs';
 import * as path from 'path';
 

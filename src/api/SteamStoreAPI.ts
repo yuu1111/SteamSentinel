@@ -3,7 +3,7 @@ import { SteamPriceInfo } from '../types';
 import logger from '../utils/logger';
 
 export class SteamStoreAPI extends BaseAPI {
-  private readonly currency = 'JPY';
+  // private readonly currency = 'JPY'; // Currently unused but may be needed for future API calls
   private readonly countryCode = 'JP';
 
   constructor() {

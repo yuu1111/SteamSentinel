@@ -190,7 +190,6 @@ export class SchedulerService {
       const existingTask = this.scheduledTasks.get('priceMonitoring');
       if (existingTask) {
         existingTask.stop();
-        existingTask.destroy();
       }
 
       // 新しい間隔でタスクを再作成
@@ -224,9 +223,7 @@ export class SchedulerService {
     activeTasks: string[];
     monitoringStats: any;
   } {
-    const activeTasks = Array.from(this.scheduledTasks.entries())
-      .filter(([_, task]) => task.running)
-      .map(([name, _]) => name);
+    const activeTasks = Array.from(this.scheduledTasks.keys());
 
     return {
       isStarted: this.isStarted,
@@ -244,7 +241,6 @@ export class SchedulerService {
     for (const [name, task] of this.scheduledTasks) {
       try {
         task.stop();
-        task.destroy();
         logger.info(`Stopped scheduled task: ${name}`);
       } catch (error) {
         logger.error(`Failed to stop task ${name}:`, error);

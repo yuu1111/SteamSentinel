@@ -7,7 +7,7 @@ export class IsThereAnyDealAPI extends BaseAPI {
   private readonly apiKey: string;
   private readonly region = 'jp';
   private readonly country = 'JP';
-  private readonly currency = 'JPY';
+  // private readonly currency = 'JPY'; // Currently unused but may be needed for future API calls
 
   constructor() {
     super('ITAD', 'https://api.isthereanydeal.com');

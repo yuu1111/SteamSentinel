@@ -26,7 +26,7 @@ export class GameController {
   }
 
   // ゲーム詳細取得
-  static async getGameById(req: Request, res: Response) {
+  static async getGameById(req: Request, res: Response): Promise<Response> {
     try {
       const gameId = parseInt(req.params.id, 10);
       const game = GameModel.getById(gameId);
@@ -47,7 +47,7 @@ export class GameController {
       // アラート履歴を取得
       const alerts = AlertModel.getByGameId(game.steam_app_id, 10);
 
-      res.json({
+      return res.json({
         success: true,
         data: {
           game,
@@ -58,7 +58,7 @@ export class GameController {
       });
     } catch (error) {
       logger.error('Failed to get game details:', error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error: 'Failed to retrieve game details'
       });
@@ -66,7 +66,7 @@ export class GameController {
   }
 
   // ゲーム追加
-  static async addGame(req: Request, res: Response) {
+  static async addGame(req: Request, res: Response): Promise<Response> {
     try {
       const { steam_app_id, name, enabled = true, price_threshold, alert_enabled = true } = req.body;
 
@@ -96,13 +96,13 @@ export class GameController {
       });
 
       logger.info(`Game added: ${name} (${steam_app_id})`);
-      res.status(201).json({
+      return res.status(201).json({
         success: true,
         data: game
       });
     } catch (error) {
       logger.error('Failed to add game:', error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error: 'Failed to add game'
       });
@@ -110,7 +110,7 @@ export class GameController {
   }
 
   // ゲーム更新
-  static async updateGame(req: Request, res: Response) {
+  static async updateGame(req: Request, res: Response): Promise<Response> {
     try {
       const gameId = parseInt(req.params.id, 10);
       const updates = req.body;
@@ -125,13 +125,13 @@ export class GameController {
       }
 
       logger.info(`Game updated: ${updatedGame.name} (${updatedGame.steam_app_id})`);
-      res.json({
+      return res.json({
         success: true,
         data: updatedGame
       });
     } catch (error) {
       logger.error('Failed to update game:', error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error: 'Failed to update game'
       });
@@ -139,7 +139,7 @@ export class GameController {
   }
 
   // ゲーム削除
-  static async deleteGame(req: Request, res: Response) {
+  static async deleteGame(req: Request, res: Response): Promise<Response> {
     try {
       const gameId = parseInt(req.params.id, 10);
       const success = GameModel.delete(gameId);
@@ -152,13 +152,13 @@ export class GameController {
       }
 
       logger.info(`Game deleted: ID ${gameId}`);
-      res.json({
+      return res.json({
         success: true,
         message: 'Game deleted successfully'
       });
     } catch (error) {
       logger.error('Failed to delete game:', error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error: 'Failed to delete game'
       });
@@ -166,7 +166,7 @@ export class GameController {
   }
 
   // ゲーム価格履歴取得
-  static async getGamePriceHistory(req: Request, res: Response) {
+  static async getGamePriceHistory(req: Request, res: Response): Promise<Response> {
     try {
       const steamAppId = parseInt(req.params.appId, 10);
       const days = parseInt(req.query.days as string) || 30;
@@ -182,7 +182,7 @@ export class GameController {
       const chartData = PriceHistoryModel.getChartData(steamAppId, days);
       const priceHistory = PriceHistoryModel.getByGameId(steamAppId, 100);
 
-      res.json({
+      return res.json({
         success: true,
         data: {
           game,
@@ -192,7 +192,7 @@ export class GameController {
       });
     } catch (error) {
       logger.error('Failed to get price history:', error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error: 'Failed to retrieve price history'
       });
@@ -200,7 +200,7 @@ export class GameController {
   }
 
   // ダッシュボード用データ取得
-  static async getDashboardData(req: Request, res: Response) {
+  static async getDashboardData(_req: Request, res: Response): Promise<Response> {
     try {
       const games = GameModel.getAll(true);
       
@@ -219,7 +219,7 @@ export class GameController {
       const recentAlerts = AlertModel.getRecent(5);
       const recentPriceChanges = PriceHistoryModel.getRecentPriceChanges(5);
 
-      res.json({
+      return res.json({
         success: true,
         data: {
           games: gamesWithPrices,
@@ -233,7 +233,7 @@ export class GameController {
       });
     } catch (error) {
       logger.error('Failed to get dashboard data:', error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error: 'Failed to retrieve dashboard data'
       });

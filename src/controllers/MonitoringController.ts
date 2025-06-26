@@ -13,7 +13,7 @@ export class MonitoringController {
   }
 
   // 監視状況取得
-  static async getStatus(req: Request, res: Response) {
+  static async getStatus(_req: Request, res: Response): Promise<Response> {
     try {
       if (!this.schedulerService) {
         return res.status(500).json({
@@ -27,7 +27,7 @@ export class MonitoringController {
       const healthStatus = await monitoringService.getHealthStatus();
       const featureStatus = getFeatureStatus();
 
-      res.json({
+      return res.json({
         success: true,
         data: {
           scheduler: status,
@@ -42,7 +42,7 @@ export class MonitoringController {
       });
     } catch (error) {
       logger.error('Failed to get monitoring status:', error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error: 'Failed to retrieve monitoring status'
       });
@@ -50,7 +50,7 @@ export class MonitoringController {
   }
 
   // 手動監視実行
-  static async runManualMonitoring(req: Request, res: Response) {
+  static async runManualMonitoring(_req: Request, res: Response): Promise<Response> {
     try {
       if (!this.schedulerService) {
         return res.status(500).json({
@@ -61,13 +61,13 @@ export class MonitoringController {
 
       await this.schedulerService.runManualMonitoring();
       
-      res.json({
+      return res.json({
         success: true,
         message: 'Manual monitoring completed successfully'
       });
     } catch (error) {
       logger.error('Manual monitoring failed:', error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error: 'Manual monitoring failed',
         details: error instanceof Error ? error.message : String(error)
@@ -76,7 +76,7 @@ export class MonitoringController {
   }
 
   // 単一ゲームの手動監視
-  static async runManualGameMonitoring(req: Request, res: Response) {
+  static async runManualGameMonitoring(req: Request, res: Response): Promise<Response> {
     try {
       if (!this.schedulerService) {
         return res.status(500).json({
@@ -89,13 +89,13 @@ export class MonitoringController {
       
       await this.schedulerService.runManualGameMonitoring(steamAppId);
       
-      res.json({
+      return res.json({
         success: true,
         message: `Manual monitoring completed for game ${steamAppId}`
       });
     } catch (error) {
       logger.error(`Manual game monitoring failed for ${req.params.appId}:`, error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error: 'Manual game monitoring failed',
         details: error instanceof Error ? error.message : String(error)
@@ -104,7 +104,7 @@ export class MonitoringController {
   }
 
   // 監視間隔の更新
-  static async updateMonitoringInterval(req: Request, res: Response) {
+  static async updateMonitoringInterval(req: Request, res: Response): Promise<Response> {
     try {
       if (!this.schedulerService) {
         return res.status(500).json({
@@ -125,13 +125,13 @@ export class MonitoringController {
       this.schedulerService.updateMonitoringInterval(intervalHours);
       
       logger.info(`Monitoring interval updated to ${intervalHours} hours`);
-      res.json({
+      return res.json({
         success: true,
         message: `Monitoring interval updated to ${intervalHours} hours`
       });
     } catch (error) {
       logger.error('Failed to update monitoring interval:', error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error: 'Failed to update monitoring interval'
       });
@@ -139,7 +139,7 @@ export class MonitoringController {
   }
 
   // ヘルスチェック
-  static async healthCheck(req: Request, res: Response) {
+  static async healthCheck(_req: Request, res: Response): Promise<Response> {
     try {
       if (!this.schedulerService) {
         return res.status(500).json({
@@ -155,14 +155,14 @@ export class MonitoringController {
                            healthStatus.api.overall && 
                            healthStatus.database;
 
-      res.status(overallHealth ? 200 : 503).json({
+      return res.status(overallHealth ? 200 : 503).json({
         success: overallHealth,
         data: healthStatus,
         timestamp: new Date().toISOString()
       });
     } catch (error) {
       logger.error('Health check failed:', error);
-      res.status(503).json({
+      return res.status(503).json({
         success: false,
         error: 'Health check failed',
         timestamp: new Date().toISOString()
@@ -194,12 +194,12 @@ export class MonitoringController {
   }
 
   // システム情報取得
-  static async getSystemInfo(req: Request, res: Response) {
+  static async getSystemInfo(_req: Request, res: Response): Promise<Response> {
     try {
       const memoryUsage = process.memoryUsage();
       const uptime = process.uptime();
       
-      res.json({
+      return res.json({
         success: true,
         data: {
           node: {
@@ -224,7 +224,7 @@ export class MonitoringController {
       });
     } catch (error) {
       logger.error('Failed to get system info:', error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error: 'Failed to retrieve system information'
       });

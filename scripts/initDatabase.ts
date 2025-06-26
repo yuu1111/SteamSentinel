@@ -1,6 +1,6 @@
 import database from '../src/db/database';
-import logger from '../src/utils/logger';
-import { config, validateRequiredConfig } from '../src/config';
+// import logger from '../src/utils/logger'; // May be used for future logging needs
+import { validateRequiredConfig } from '../src/config';
 
 async function initializeDatabase() {
   try {

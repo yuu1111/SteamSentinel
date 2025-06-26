@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
-import { config } from '../config';
 
 // レート制限の設定
 export const createRateLimiter = (windowMs: number = 15 * 60 * 1000, max: number = 100) => {
@@ -57,15 +56,16 @@ export const securityHeaders = helmet({
 });
 
 // 入力検証用のヘルパー
-export const validateSteamAppId = (req: Request, res: Response, next: NextFunction) => {
+export const validateSteamAppId = (req: Request, res: Response, next: NextFunction): void => {
   const { appId } = req.params;
   const steamAppId = parseInt(appId, 10);
   
   if (isNaN(steamAppId) || steamAppId <= 0) {
-    return res.status(400).json({
+    res.status(400).json({
       error: 'Invalid Steam App ID',
       message: 'Steam App ID must be a positive integer'
     });
+    return;
   }
   
   req.params.appId = steamAppId.toString();
@@ -76,21 +76,23 @@ export const validateSteamAppId = (req: Request, res: Response, next: NextFuncti
 export const jsonSizeLimit = '10mb';
 
 // エラーハンドリングミドルウェア
-export const errorHandler = (error: any, req: Request, res: Response, next: NextFunction) => {
+export const errorHandler = (error: any, _req: Request, res: Response, _next: NextFunction): void => {
   console.error('Error:', error);
   
   if (error.type === 'entity.parse.failed') {
-    return res.status(400).json({
+    res.status(400).json({
       error: 'Invalid JSON',
       message: 'Request body contains invalid JSON'
     });
+    return;
   }
   
   if (error.type === 'entity.too.large') {
-    return res.status(413).json({
+    res.status(413).json({
       error: 'Payload too large',
       message: 'Request body is too large'
     });
+    return;
   }
   
   res.status(500).json({
