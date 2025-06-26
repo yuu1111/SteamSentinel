@@ -1,17 +1,17 @@
 @echo off
-REM SteamSentinel ビルドスクリプト実行補助 (Batch)
-REM このファイルはbuild.ps1をPowerShell 7+で実行します
+REM "SteamSentinel ビルドスクリプト実行補助 (Batch)"
+REM "このファイルはbuild.ps1をPowerShell 7+で実行します"
 
 setlocal
 
-REM PowerShell 7+ (pwsh) の存在確認
+REM "PowerShell 7+ (pwsh) の存在確認"
 where pwsh >nul 2>&1
 if %errorlevel% equ 0 (
     echo "[INFO] PowerShell 7+ が見つかりました"
     goto :run_script
 )
 
-REM PowerShell 7+ が見つからない場合
+REM "PowerShell 7+ が見つからない場合"
 echo.
 echo "[ERROR] PowerShell 7+ (pwsh) が見つかりません"
 echo.
@@ -34,10 +34,10 @@ exit /b 1
 echo "[INFO] SteamSentinel ビルドを開始します..."
 echo.
 
-REM PowerShell実行ポリシーを一時的に変更してスクリプト実行
+REM "PowerShell実行ポリシーを一時的に変更してスクリプト実行"
 pwsh.exe -ExecutionPolicy Bypass -File "%~dp0build.ps1" %*
 
-REM 実行結果の確認
+REM "実行結果の確認"
 if %errorlevel% equ 0 (
     echo.
     echo "[SUCCESS] ビルドが完了しました！"
