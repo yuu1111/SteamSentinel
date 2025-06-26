@@ -19,6 +19,7 @@ build/
 data/*.db
 data/*.db-journal
 data/*.db-wal
+data/*.db-shm
 
 # Logs
 logs/
@@ -47,3 +48,6 @@ coverage/
 # Backup files
 *.backup
 *.bak
+
+# API
+./API/*
