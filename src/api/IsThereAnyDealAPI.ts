@@ -130,10 +130,10 @@ export class IsThereAnyDealAPI extends BaseAPI {
         }
       });
 
-      if (response) {
+      if (response && Array.isArray(response)) {
         // Steam App IDごとの価格情報を構築
         for (const [steamAppId, gameId] of gameIdMap.entries()) {
-          const gameData = response[gameId];
+          const gameData = response.find((item: any) => item.id === gameId);
           
           if (gameData?.deals && gameData.deals.length > 0) {
             const steamDeal = gameData.deals.find((deal: any) => deal.shop?.id === 61);

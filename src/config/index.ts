@@ -169,7 +169,7 @@ export function validateRequiredConfig(): { valid: boolean; errors: string[] } {
   
   if (!config.itadApiKey) {
     errors.push(
-      'ITAD_API_KEY is required. Get your API key from: https://isthereanydeal.com/dev/app/'
+      'ITAD_API_KEY is required. Get your API key from: https://isthereanydeal.com/apps/my/'
     );
   }
   
