@@ -1,0 +1,19 @@
+{
+  "monitoring": {
+    "enabled": true,
+    "auto_add_popular": false
+  },
+  "preset_games": {
+    "enabled": true
+  },
+  "features": {
+    "discord_enabled": false,
+    "high_discount_detection": true,
+    "epic_games_notification": true
+  },
+  "ui": {
+    "theme": "light",
+    "responsive": true,
+    "dark_mode_available": true
+  }
+}

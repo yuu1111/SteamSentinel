@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SteamSentinel - Steam価格監視システム</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    
+    <!-- Custom CSS -->
+    <link href="/css/style.css" rel="stylesheet">
+    
+    <meta name="description" content="Steam価格監視システム - セール時の過去最安値更新を検知">
+    <link rel="icon" type="image/x-icon" href="/img/favicon.ico">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#" onclick="showDashboard()">
+                <i class="bi bi-controller me-2"></i>
+                SteamSentinel
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" onclick="showDashboard()">
+                            <i class="bi bi-house-door me-1"></i>ダッシュボード
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="showGames()">
+                            <i class="bi bi-collection me-1"></i>ゲーム管理
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="showAlerts()">
+                            <i class="bi bi-bell me-1"></i>アラート履歴
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="showMonitoring()">
+                            <i class="bi bi-activity me-1"></i>監視状況
+                        </a>
+                    </li>
+                </ul>
+                
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <button class="btn btn-outline-light btn-sm me-2" onclick="runManualMonitoring()">
+                            <i class="bi bi-arrow-clockwise me-1"></i>手動更新
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="btn btn-outline-light btn-sm" onclick="toggleDarkMode()">
+                            <i class="bi bi-moon-fill" id="darkModeIcon"></i>
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay d-none">
+        <div class="d-flex justify-content-center align-items-center h-100">
+            <div class="text-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <div class="mt-2">処理中...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Messages -->
+    <div id="alertContainer" class="container-fluid mt-3">
+        <!-- Dynamic alerts will be inserted here -->
+    </div>
+
+    <!-- Main Content -->
+    <main class="container-fluid mt-4">
+        <!-- Dashboard View -->
+        <div id="dashboardView" class="view">
+            <div class="row">
+                <div class="col-12">
+                    <h2><i class="bi bi-house-door me-2"></i>ダッシュボード</h2>
+                </div>
+            </div>
+            
+            <!-- Statistics Cards -->
+            <div class="row mb-4" id="statsCards">
+                <!-- Statistics cards will be loaded here -->
+            </div>
+            
+            <!-- Game List -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="bi bi-collection me-2"></i>監視中ゲーム</h5>
+                            <div>
+                                <button class="btn btn-sm btn-outline-primary me-2" onclick="refreshGameList()">
+                                    <i class="bi bi-arrow-clockwise"></i> 更新
+                                </button>
+                                <button class="btn btn-sm btn-primary" onclick="showAddGameModal()">
+                                    <i class="bi bi-plus-lg"></i> ゲーム追加
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover" id="gamesTable">
+                                    <thead>
+                                        <tr>
+                                            <th>ゲーム名</th>
+                                            <th>現在価格</th>
+                                            <th>元価格</th>
+                                            <th>割引率</th>
+                                            <th>歴代最安値</th>
+                                            <th>セール中</th>
+                                            <th>最終更新</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="gamesTableBody">
+                                        <!-- Game data will be loaded here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Games Management View -->
+        <div id="gamesView" class="view d-none">
+            <div class="row">
+                <div class="col-12">
+                    <h2><i class="bi bi-collection me-2"></i>ゲーム管理</h2>
+                </div>
+            </div>
+            <!-- Games management content will be added here -->
+        </div>
+
+        <!-- Alerts View -->
+        <div id="alertsView" class="view d-none">
+            <div class="row">
+                <div class="col-12">
+                    <h2><i class="bi bi-bell me-2"></i>アラート履歴</h2>
+                </div>
+            </div>
+            <!-- Alerts content will be added here -->
+        </div>
+
+        <!-- Monitoring View -->
+        <div id="monitoringView" class="view d-none">
+            <div class="row">
+                <div class="col-12">
+                    <h2><i class="bi bi-activity me-2"></i>監視状況</h2>
+                </div>
+            </div>
+            <!-- Monitoring content will be added here -->
+        </div>
+    </main>
+
+    <!-- Add Game Modal -->
+    <div class="modal fade" id="addGameModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">ゲーム追加</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addGameForm">
+                        <div class="mb-3">
+                            <label for="steamAppId" class="form-label">Steam App ID *</label>
+                            <input type="number" class="form-control" id="steamAppId" required>
+                            <div class="form-text">
+                                SteamのストアページURLから取得できます<br>
+                                例: https://store.steampowered.com/app/730/ → 730
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="gameName" class="form-label">ゲーム名 *</label>
+                            <input type="text" class="form-control" id="gameName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="priceThreshold" class="form-label">価格閾値 (円)</label>
+                            <input type="number" class="form-control" id="priceThreshold" min="0" step="0.01">
+                            <div class="form-text">この金額以下になったときにアラートを送信</div>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="gameEnabled" checked>
+                            <label class="form-check-label" for="gameEnabled">監視を有効にする</label>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="alertEnabled" checked>
+                            <label class="form-check-label" for="alertEnabled">アラートを有効にする</label>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                    <button type="button" class="btn btn-primary" onclick="addGame()">追加</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Price Chart Modal -->
+    <div class="modal fade" id="priceChartModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="priceChartTitle">価格推移グラフ</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <canvas id="priceChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-5 py-4 bg-light text-center">
+        <div class="container">
+            <small class="text-muted">
+                SteamSentinel v1.0.0 - Steam価格監視システム<br>
+                <a href="https://github.com/your-repo/steam-sentinel" target="_blank" class="text-decoration-none">
+                    <i class="bi bi-github"></i> GitHub
+                </a>
+            </small>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script src="/js/app.js"></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/ui.js"></script>
+    <script src="/js/charts.js"></script>
+</body>
+</html>

@@ -1,0 +1,62 @@
+{
+  "name": "steam-sentinel",
+  "version": "1.0.0",
+  "description": "Steam価格監視システム - セール時の過去最安値更新を検知し、WebサイトとDiscord通知で情報提供",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "nodemon --exec ts-node src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "db:init": "ts-node scripts/initDatabase.ts",
+    "seed:games": "ts-node scripts/seedGames.ts",
+    "test": "jest",
+    "lint": "eslint src/**/*.ts",
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist node_modules package-lock.json",
+    "release": "npm run clean && npm install && npm run typecheck && npm run lint && npm version patch && git add package.json package-lock.json && git commit -m \"chore: bump version to $(node -p \"require('./package.json').version\")\" && git tag v$(node -p \"require('./package.json').version\")",
+    "release:minor": "npm run clean && npm install && npm run typecheck && npm run lint && npm version minor && git add package.json package-lock.json && git commit -m \"chore: bump version to $(node -p \"require('./package.json').version\")\" && git tag v$(node -p \"require('./package.json').version\")",
+    "release:major": "npm run clean && npm install && npm run typecheck && npm run lint && npm version major && git add package.json package-lock.json && git commit -m \"chore: bump version to $(node -p \"require('./package.json').version\")\" && git tag v$(node -p \"require('./package.json').version\")"
+  },
+  "keywords": [
+    "steam",
+    "price-tracker",
+    "gaming",
+    "deals",
+    "monitoring"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.2",
+    "better-sqlite3": "^9.2.2",
+    "chart.js": "^4.4.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.1.5",
+    "helmet": "^7.1.0",
+    "node-cron": "^3.0.3",
+    "winston": "^3.11.0",
+    "winston-daily-rotate-file": "^4.7.1"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.8",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/jest": "^29.5.11",
+    "@types/node": "^20.10.5",
+    "@types/node-cron": "^3.0.11",
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0",
+    "eslint": "^8.56.0",
+    "jest": "^29.7.0",
+    "nodemon": "^3.0.2",
+    "rimraf": "^5.0.5",
+    "ts-jest": "^29.1.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
