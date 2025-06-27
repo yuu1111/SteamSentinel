@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { GameModel } from '../models/Game';
 import { PriceHistoryModel } from '../models/PriceHistory';
 import { AlertModel } from '../models/Alert';
+import { MonitoringService } from '../services/MonitoringService';
 import logger from '../utils/logger';
 
 export class GameController {
@@ -96,9 +97,30 @@ export class GameController {
       });
 
       logger.info(`Game added: ${name} (${steam_app_id})`);
+
+      // 初回価格データを取得（非同期・エラーでも処理続行）
+      try {
+        logger.info(`Fetching initial price data for newly added game: ${name} (${steam_app_id})`);
+        const monitoringService = new MonitoringService();
+        await monitoringService.initialize();
+        
+        // 単一ゲームの監視を実行（初回データ取得）
+        const monitoringResult = await monitoringService.monitorSingleGame(steam_app_id);
+        
+        if (monitoringResult.error) {
+          logger.warn(`Failed to fetch initial price data for ${name}: ${monitoringResult.error.message}`);
+        } else {
+          logger.info(`Successfully fetched initial price data for ${name}`);
+        }
+      } catch (priceError) {
+        // 価格取得失敗はログのみで、ゲーム追加は成功扱い
+        logger.warn(`Initial price data fetch failed for ${name} (${steam_app_id}):`, priceError);
+      }
+
       return res.status(201).json({
         success: true,
-        data: game
+        data: game,
+        message: `${name} を追加しました。価格データを取得中です...`
       });
     } catch (error) {
       logger.error('Failed to add game:', error);
