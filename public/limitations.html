@@ -285,6 +285,97 @@
             </div>
         </div>
 
+        <!-- データ取得エラー -->
+        <div class="row mb-5">
+            <div class="col-12">
+                <div class="card border-danger">
+                    <div class="card-header bg-danger text-white">
+                        <h3 class="card-title mb-0">
+                            <i class="bi bi-exclamation-octagon me-2"></i>
+                            データ取得エラーについて
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-danger mb-3">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            <strong>重要:</strong> 一部のゲームでは正確な価格データが取得できない場合があります。
+                        </div>
+                        
+                        <h5>エラーが発生しやすいゲーム</h5>
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="card bg-light h-100">
+                                    <div class="card-body">
+                                        <h6 class="card-title">
+                                            <i class="bi bi-puzzle me-2 text-warning"></i>
+                                            特殊なゲームタイプ
+                                        </h6>
+                                        <ul class="mb-0">
+                                            <li>DLC・アドオン類</li>
+                                            <li>ソフトウェア・ツール類</li>
+                                            <li>古いゲーム（データベース未登録）</li>
+                                            <li>地域限定販売ゲーム</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card bg-light h-100">
+                                    <div class="card-body">
+                                        <h6 class="card-title">
+                                            <i class="bi bi-server me-2 text-warning"></i>
+                                            API側の問題
+                                        </h6>
+                                        <ul class="mb-0">
+                                            <li>Steam App IDの誤認識</li>
+                                            <li>価格データベースの不整合</li>
+                                            <li>APIサーバーの一時的障害</li>
+                                            <li>レート制限による取得失敗</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h5>間違ったデータの例</h5>
+                        <div class="row mb-4">
+                            <div class="col-md-4">
+                                <div class="text-center p-3 bg-light rounded">
+                                    <i class="bi bi-currency-yen text-danger" style="font-size: 2rem;"></i>
+                                    <h6 class="mt-2">価格の誤表示</h6>
+                                    <small class="text-muted">¥0や異常に高い価格</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="text-center p-3 bg-light rounded">
+                                    <i class="bi bi-graph-down text-danger" style="font-size: 2rem;"></i>
+                                    <h6 class="mt-2">最安値の誤認</h6>
+                                    <small class="text-muted">実際より高い・低い価格</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="text-center p-3 bg-light rounded">
+                                    <i class="bi bi-patch-question text-danger" style="font-size: 2rem;"></i>
+                                    <h6 class="mt-2">ゲーム名の不一致</h6>
+                                    <small class="text-muted">別ゲームのデータを取得</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-warning">
+                            <h6><i class="bi bi-shield-exclamation me-2"></i>対処法</h6>
+                            <ul class="mb-0">
+                                <li><strong>購入前には必ずSteamストアで価格を確認</strong>してください</li>
+                                <li>異常な価格が表示された場合は手動更新を試してください</li>
+                                <li>データ取得失敗が続く場合は、そのゲームの監視を一時停止することを推奨</li>
+                                <li>複数の価格比較サイト（SteamDB、IsThereAnyDeal等）で確認することを強く推奨</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- 推奨事項 -->
         <div class="row mb-5">
             <div class="col-12">
@@ -317,6 +408,8 @@
                                     <li>✅ 歴代最安値は参考程度に活用</li>
                                     <li>✅ 複数のセール比較サイトを併用</li>
                                     <li>✅ セール期間の終了日時を確認</li>
+                                    <li>✅ <strong>異常な価格は疑って再確認</strong></li>
+                                    <li>✅ データ取得失敗ゲームは監視を一時停止</li>
                                 </ul>
                             </div>
                         </div>
