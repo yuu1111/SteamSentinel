@@ -308,6 +308,14 @@ function updateStatisticsCards(statistics) {
                 </div>
             </div>
         </div>
+        <div class="col-12">
+            <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                <i class="bi bi-info-circle me-2"></i>
+                <strong>ご注意:</strong> 歴代最安値は過去6ヶ月間のデータのみです。より古いセール情報は含まれていません。
+                <a href="/limitations.html" class="alert-link ms-2">詳細を確認</a>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        </div>
     `;
 }
 
@@ -570,6 +578,20 @@ function editGame(gameId) {
     showInfo('ゲーム編集機能は実装中です');
 }
 
+// ゲームリスト更新関数
+async function refreshGameList() {
+    try {
+        showLoading();
+        await loadDashboardData();
+        showSuccess('ゲームリストを更新しました');
+    } catch (error) {
+        console.error('Failed to refresh game list:', error);
+        showError('ゲームリストの更新に失敗しました');
+    } finally {
+        hideLoading();
+    }
+}
+
 // SteamDBページを開く
 function openSteamDB(steamAppId) {
     try {
@@ -593,12 +615,32 @@ function openSteamDB(steamAppId) {
     }
 }
 
-// グローバルウィンドウオブジェクトに明示的に追加
+// グローバルウィンドウオブジェクトに明示的に追加（HTMLのonclick属性から呼び出すため）
 window.openSteamDB = openSteamDB;
+window.showAddGameModal = showAddGameModal;
+window.addGame = addGame;
+window.deleteGame = deleteGame;
+window.editGame = editGame;
+window.runSingleGameMonitoring = runSingleGameMonitoring;
+window.runManualMonitoring = runManualMonitoring;
+window.refreshGameList = refreshGameList;
+
+// ナビゲーション関数もグローバルに追加
+window.showDashboard = showDashboard;
+window.showGames = showGames;
+window.showAlerts = showAlerts;
+window.showMonitoring = showMonitoring;
+window.toggleDarkMode = toggleDarkMode;
 
 // デバッグ用: 関数が正しく定義されているかチェック
-console.log('openSteamDB function defined:', typeof openSteamDB);
-console.log('window.openSteamDB defined:', typeof window.openSteamDB);
+console.log('Global functions defined:', {
+    openSteamDB: typeof window.openSteamDB,
+    showAddGameModal: typeof window.showAddGameModal,
+    addGame: typeof window.addGame,
+    deleteGame: typeof window.deleteGame,
+    editGame: typeof window.editGame,
+    runSingleGameMonitoring: typeof window.runSingleGameMonitoring
+});
 
 // テスト用関数
 window.testSteamDB = function() {

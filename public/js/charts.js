@@ -346,3 +346,6 @@ window.addEventListener('resize', debounce(() => {
         priceChart.resize();
     }
 }, 250));
+
+// グローバルスコープに関数を追加（HTMLのonclick属性から呼び出すため）
+window.showPriceChart = showPriceChart;
