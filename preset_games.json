@@ -1,98 +1,382 @@
 [
-  {"app_id": 1091500, "name": "Cyberpunk 2077"},
-  {"app_id": 292030, "name": "The Witcher 3: Wild Hunt"},
-  {"app_id": 1086940, "name": "Baldur's Gate 3"},
-  {"app_id": 374320, "name": "DARK SOULS III"},
-  {"app_id": 271590, "name": "Grand Theft Auto V"},
-  {"app_id": 1174180, "name": "Red Dead Redemption 2"},
-  {"app_id": 413150, "name": "Stardew Valley"},
-  {"app_id": 105600, "name": "Terraria"},
-  {"app_id": 367520, "name": "Hollow Knight"},
-  {"app_id": 632470, "name": "Disco Elysium - The Final Cut"},
-  {"app_id": 1145360, "name": "Hades"},
-  {"app_id": 620, "name": "Portal 2"},
-  {"app_id": 400, "name": "Portal"},
-  {"app_id": 8930, "name": "Sid Meier's Civilization V"},
-  {"app_id": 289070, "name": "Sid Meier's Civilization VI"},
-  {"app_id": 221410, "name": "Steam Deck"},
-  {"app_id": 1332010, "name": "Stray"},
-  {"app_id": 753640, "name": "Outer Wilds"},
-  {"app_id": 1150690, "name": "OMORI"},
-  {"app_id": 504230, "name": "Celeste"},
-  {"app_id": 311690, "name": "Enter the Gungeon"},
-  {"app_id": 200260, "name": "Batman: Arkham City - Game of the Year Edition"},
-  {"app_id": 35720, "name": "Batman: Arkham Asylum Game of the Year Edition"},
-  {"app_id": 208650, "name": "Batman: Arkham Knight"},
-  {"app_id": 227300, "name": "Euro Truck Simulator 2"},
-  {"app_id": 252490, "name": "Rust"},
-  {"app_id": 1238080, "name": "BATTLETECH"},
-  {"app_id": 281990, "name": "Stellaris"},
-  {"app_id": 236850, "name": "Europa Universalis IV"},
-  {"app_id": 394360, "name": "Hearts of Iron IV"},
-  {"app_id": 203160, "name": "Tomb Raider"},
-  {"app_id": 391220, "name": "Rise of the Tomb Raider"},
-  {"app_id": 750920, "name": "Shadow of the Tomb Raider: Definitive Edition"},
-  {"app_id": 435150, "name": "Divinity: Original Sin 2 - Definitive Edition"},
-  {"app_id": 1203220, "name": "NARAKA: BLADEPOINT"},
-  {"app_id": 578080, "name": "PLAYERUNKNOWN'S BATTLEGROUNDS"},
-  {"app_id": 1599340, "name": "Lost Ark"},
-  {"app_id": 1938090, "name": "Call of Duty"},
-  {"app_id": 976730, "name": "Halo: The Master Chief Collection"},
-  {"app_id": 1716740, "name": "Starfield"},
-  {"app_id": 489830, "name": "The Elder Scrolls V: Skyrim Special Edition"},
-  {"app_id": 22330, "name": "The Elder Scrolls IV: Oblivion Game of the Year Edition"},
-  {"app_id": 306130, "name": "The Elder Scrolls Online"},
-  {"app_id": 377160, "name": "Fallout 4"},
-  {"app_id": 22370, "name": "Fallout 3 - Game of the Year Edition"},
-  {"app_id": 22380, "name": "Fallout: New Vegas"},
-  {"app_id": 1151640, "name": "Horizon Zero Dawn Complete Edition"},
-  {"app_id": 1659040, "name": "Horizon Forbidden West Complete Edition"},
-  {"app_id": 1313860, "name": "EA SPORTS FC 24"},
-  {"app_id": 1811260, "name": "EA SPORTS FC 25"},
-  {"app_id": 1222670, "name": "FIFA 23"},
-  {"app_id": 1506830, "name": "FIFA 22"},
-  {"app_id": 2426210, "name": "F1 23"},
-  {"app_id": 1928980, "name": "F1 Manager 2023"},
-  {"app_id": 2108330, "name": "F1 24"},
-  {"app_id": 2488430, "name": "F1 Manager 2024"},
-  {"app_id": 1551360, "name": "Forza Horizon 5"},
-  {"app_id": 1293830, "name": "Forza Horizon 4"},
-  {"app_id": 397540, "name": "Borderlands 3"},
-  {"app_id": 729040, "name": "Borderlands Game of the Year Enhanced"},
-  {"app_id": 8980, "name": "Borderlands"},
-  {"app_id": 49520, "name": "Borderlands 2"},
-  {"app_id": 205100, "name": "Dishonored"},
-  {"app_id": 403640, "name": "Dishonored 2"},
-  {"app_id": 614570, "name": "Dishonored: Death of the Outsider"},
-  {"app_id": 1252330, "name": "Deathloop"},
-  {"app_id": 1254120, "name": "Ghostwire: Tokyo"},
-  {"app_id": 990080, "name": "Hogwarts Legacy"},
-  {"app_id": 814380, "name": "Sekiro: Shadows Die Twice - GOTY Edition"},
-  {"app_id": 1245620, "name": "ELDEN RING"},
-  {"app_id": 2358720, "name": "Black Myth: Wukong"},
-  {"app_id": 2369390, "name": "Palworld"},
-  {"app_id": 892970, "name": "Valheim"},
-  {"app_id": 252950, "name": "Rocket League"},
-  {"app_id": 431960, "name": "Wallpaper Engine"},
-  {"app_id": 646570, "name": "Slay the Spire"},
-  {"app_id": 1868140, "name": "Dave the Diver"},
-  {"app_id": 2379780, "name": "Balatro"},
-  {"app_id": 601150, "name": "Devil May Cry 5"},
-  {"app_id": 883710, "name": "Resident Evil 2"},
-  {"app_id": 952060, "name": "Resident Evil 3"},
-  {"app_id": 1196590, "name": "Resident Evil Village"},
-  {"app_id": 2050650, "name": "Resident Evil 4"},
-  {"app_id": 418240, "name": "Shadow Tactics: Blades of the Shogun"},
-  {"app_id": 1184050, "name": "Shadow Tactics: Aiko's Choice"},
-  {"app_id": 610370, "name": "Desperados III"},
-  {"app_id": 2140330, "name": "Shadow Gambit: The Cursed Crew"},
-  {"app_id": 393380, "name": "Squad"},
-  {"app_id": 686810, "name": "Hell Let Loose"},
-  {"app_id": 581320, "name": "Insurgency: Sandstorm"},
-  {"app_id": 1678540, "name": "Hunt: Showdown 1896"},
-  {"app_id": 275850, "name": "No Man's Sky"},
-  {"app_id": 1063730, "name": "New World"},
-  {"app_id": 1604030, "name": "V Rising"},
-  {"app_id": 858810, "name": "Enshrouded"},
-  {"app_id": 1966720, "name": "Lethal Company"}
+  {
+    "app_id": 1091500,
+    "name": "Cyberpunk 2077"
+  },
+  {
+    "app_id": 292030,
+    "name": "The Witcher 3: Wild Hunt"
+  },
+  {
+    "app_id": 1086940,
+    "name": "Baldur's Gate 3"
+  },
+  {
+    "app_id": 374320,
+    "name": "DARK SOULS III"
+  },
+  {
+    "app_id": 3240220,
+    "name": "Grand Theft Auto V Enhanced"
+  },
+  {
+    "app_id": 1174180,
+    "name": "Red Dead Redemption 2"
+  },
+  {
+    "app_id": 413150,
+    "name": "Stardew Valley"
+  },
+  {
+    "app_id": 105600,
+    "name": "Terraria"
+  },
+  {
+    "app_id": 367520,
+    "name": "Hollow Knight"
+  },
+  {
+    "app_id": 632470,
+    "name": "Disco Elysium - The Final Cut"
+  },
+  {
+    "app_id": 1145360,
+    "name": "Hades"
+  },
+  {
+    "app_id": 620,
+    "name": "Portal 2"
+  },
+  {
+    "app_id": 400,
+    "name": "Portal"
+  },
+  {
+    "app_id": 8930,
+    "name": "Sid Meier's Civilization V"
+  },
+  {
+    "app_id": 289070,
+    "name": "Sid Meier's Civilization VI"
+  },
+  {
+    "app_id": 1332010,
+    "name": "Stray"
+  },
+  {
+    "app_id": 753640,
+    "name": "Outer Wilds"
+  },
+  {
+    "app_id": 1150690,
+    "name": "OMORI"
+  },
+  {
+    "app_id": 504230,
+    "name": "Celeste"
+  },
+  {
+    "app_id": 311690,
+    "name": "Enter the Gungeon"
+  },
+  {
+    "app_id": 200260,
+    "name": "Batman: Arkham City - Game of the Year Edition"
+  },
+  {
+    "app_id": 35720,
+    "name": "Batman: Arkham Asylum Game of the Year Edition"
+  },
+  {
+    "app_id": 208650,
+    "name": "Batman: Arkham Knight"
+  },
+  {
+    "app_id": 227300,
+    "name": "Euro Truck Simulator 2"
+  },
+  {
+    "app_id": 252490,
+    "name": "Rust"
+  },
+  {
+    "app_id": 1238080,
+    "name": "BATTLETECH"
+  },
+  {
+    "app_id": 281990,
+    "name": "Stellaris"
+  },
+  {
+    "app_id": 236850,
+    "name": "Europa Universalis IV"
+  },
+  {
+    "app_id": 394360,
+    "name": "Hearts of Iron IV"
+  },
+  {
+    "app_id": 203160,
+    "name": "Tomb Raider"
+  },
+  {
+    "app_id": 391220,
+    "name": "Rise of the Tomb Raider"
+  },
+  {
+    "app_id": 435150,
+    "name": "Divinity: Original Sin 2 - Definitive Edition"
+  },
+  {
+    "app_id": 976730,
+    "name": "Halo: The Master Chief Collection"
+  },
+  {
+    "app_id": 1716740,
+    "name": "Starfield"
+  },
+  {
+    "app_id": 489830,
+    "name": "The Elder Scrolls V: Skyrim Special Edition"
+  },
+  {
+    "app_id": 22330,
+    "name": "The Elder Scrolls IV: Oblivion Game of the Year Edition"
+  },
+  {
+    "app_id": 306130,
+    "name": "The Elder Scrolls Online"
+  },
+  {
+    "app_id": 377160,
+    "name": "Fallout 4"
+  },
+  {
+    "app_id": 22370,
+    "name": "Fallout 3 - Game of the Year Edition"
+  },
+  {
+    "app_id": 22380,
+    "name": "Fallout: New Vegas"
+  },
+  {
+    "app_id": 1659040,
+    "name": "Horizon Forbidden West Complete Edition"
+  },
+  {
+    "app_id": 2426210,
+    "name": "F1 23"
+  },
+  {
+    "app_id": 1928980,
+    "name": "F1 Manager 2023"
+  },
+  {
+    "app_id": 1551360,
+    "name": "Forza Horizon 5"
+  },
+  {
+    "app_id": 397540,
+    "name": "Borderlands 3"
+  },
+  {
+    "app_id": 729040,
+    "name": "Borderlands Game of the Year Enhanced"
+  },
+  {
+    "app_id": 8980,
+    "name": "Borderlands"
+  },
+  {
+    "app_id": 49520,
+    "name": "Borderlands 2"
+  },
+  {
+    "app_id": 205100,
+    "name": "Dishonored"
+  },
+  {
+    "app_id": 403640,
+    "name": "Dishonored 2"
+  },
+  {
+    "app_id": 614570,
+    "name": "Dishonored: Death of the Outsider"
+  },
+  {
+    "app_id": 1252330,
+    "name": "Deathloop"
+  },
+  {
+    "app_id": 990080,
+    "name": "Hogwarts Legacy"
+  },
+  {
+    "app_id": 814380,
+    "name": "Sekiro: Shadows Die Twice - GOTY Edition"
+  },
+  {
+    "app_id": 1245620,
+    "name": "ELDEN RING"
+  },
+  {
+    "app_id": 2358720,
+    "name": "Black Myth: Wukong"
+  },
+  {
+    "app_id": 2369390,
+    "name": "Palworld"
+  },
+  {
+    "app_id": 892970,
+    "name": "Valheim"
+  },
+  {
+    "app_id": 431960,
+    "name": "Wallpaper Engine"
+  },
+  {
+    "app_id": 646570,
+    "name": "Slay the Spire"
+  },
+  {
+    "app_id": 1868140,
+    "name": "Dave the Diver"
+  },
+  {
+    "app_id": 2379780,
+    "name": "Balatro"
+  },
+  {
+    "app_id": 601150,
+    "name": "Devil May Cry 5"
+  },
+  {
+    "app_id": 883710,
+    "name": "Resident Evil 2"
+  },
+  {
+    "app_id": 952060,
+    "name": "Resident Evil 3"
+  },
+  {
+    "app_id": 1196590,
+    "name": "Resident Evil Village"
+  },
+  {
+    "app_id": 2050650,
+    "name": "Resident Evil 4"
+  },
+  {
+    "app_id": 418240,
+    "name": "Shadow Tactics: Blades of the Shogun"
+  },
+  {
+    "app_id": 1184050,
+    "name": "Shadow Tactics: Aiko's Choice"
+  },
+  {
+    "app_id": 610370,
+    "name": "Desperados III"
+  },
+  {
+    "app_id": 393380,
+    "name": "Squad"
+  },
+  {
+    "app_id": 686810,
+    "name": "Hell Let Loose"
+  },
+  {
+    "app_id": 581320,
+    "name": "Insurgency: Sandstorm"
+  },
+  {
+    "app_id": 275850,
+    "name": "No Man's Sky"
+  },
+  {
+    "app_id": 1063730,
+    "name": "New World"
+  },
+  {
+    "app_id": 1604030,
+    "name": "V Rising"
+  },
+  {
+    "app_id": 858810,
+    "name": "Enshrouded"
+  },
+  {
+    "app_id": 1966720,
+    "name": "Lethal Company"
+  },
+  {
+    "app_id": 1817070,
+    "name": "Marvel's Spider-Man Remastered"
+  },
+  {
+    "app_id": 1817190,
+    "name": "Marvel's Spider-Man: Miles Morales"
+  },
+  {
+    "app_id": 582010,
+    "name": "Monster Hunter: World"
+  },
+  {
+    "app_id": 1446780,
+    "name": "Monster Hunter Rise"
+  },
+  {
+    "app_id": 2080690,
+    "name": "Street Fighter 6"
+  },
+  {
+    "app_id": 1517290,
+    "name": "Battlefield 2042"
+  },
+  {
+    "app_id": 1938090,
+    "name": "Call of Duty: Modern Warfare II"
+  },
+  {
+    "app_id": 230410,
+    "name": "Warframe"
+  },
+  {
+    "app_id": 1085660,
+    "name": "Destiny 2"
+  },
+  {
+    "app_id": 1172470,
+    "name": "Apex Legends"
+  },
+  {
+    "app_id": 1190460,
+    "name": "DEATH STRANDING DIRECTOR'S CUT"
+  },
+  {
+    "app_id": 678960,
+    "name": "Code Vein"
+  },
+  {
+    "app_id": 435790,
+    "name": "Total War: ROME II - Emperor Edition"
+  },
+  {
+    "app_id": 594650,
+    "name": "Hunt: Showdown"
+  },
+  {
+    "app_id": 1238840,
+    "name": "Crusader Kings III"
+  },
+  {
+    "app_id": 945360,
+    "name": "Among Us"
+  },
+  {
+    "app_id": 322330,
+    "name": "Don't Starve Together"
+  }
 ]
