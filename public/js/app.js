@@ -164,137 +164,14 @@ async function loadDashboardData() {
         
         if (response.success) {
             dashboardData = response.data;
+            console.log('loadDashboardData: Updating special game status...');
+            updateSpecialGameStatus(response.data.games);
+            
             console.log('loadDashboardData: Updating statistics cards...');
             updateStatisticsCards(response.data.statistics);
             
             console.log('loadDashboardData: Updating games table...');
             updateGamesTable(response.data.games);
-            
-            // ゲームをカテゴリ別に分類
-            const gameCategories = {
-                failed: [],
-                freeToPlay: [],
-                unreleased: [],
-                removed: []
-            };
-            
-            response.data.games.forEach(game => {
-                if (!game.latestPrice) {
-                    gameCategories.failed.push(game);
-                } else {
-                    switch (game.latestPrice.source) {
-                        case 'steam_free':
-                            gameCategories.freeToPlay.push(game);
-                            break;
-                        case 'steam_unreleased':
-                            gameCategories.unreleased.push(game);
-                            break;
-                        case 'steam_removed':
-                            gameCategories.removed.push(game);
-                            break;
-                    }
-                }
-            });
-            
-            // カテゴリ別の統計表示
-            const totalSpecialGames = gameCategories.failed.length + gameCategories.freeToPlay.length + 
-                                     gameCategories.unreleased.length + gameCategories.removed.length;
-            
-            if (totalSpecialGames > 0) {
-                console.info(`特別なゲーム状況:`, {
-                    'データ取得失敗': gameCategories.failed.length,
-                    '基本無料ゲーム': gameCategories.freeToPlay.length,
-                    '未リリースゲーム': gameCategories.unreleased.length,
-                    '販売終了ゲーム': gameCategories.removed.length
-                });
-                
-                // カテゴリ別のゲームリストを作成
-                const createGameList = (games, categoryName, badgeClass = 'bg-secondary') => {
-                    if (games.length === 0) return '';
-                    
-                    const gameList = games.map(game => 
-                        `<div class="mb-2">
-                            <span class="badge ${badgeClass} me-2">${categoryName}</span>
-                            <strong>${game.name}</strong> (ID: ${game.steam_app_id})
-                            <br>
-                            <a href="https://store.steampowered.com/app/${game.steam_app_id}/" target="_blank" class="btn btn-sm btn-outline-primary mt-1">
-                                <i class="bi bi-box-arrow-up-right"></i> Steamページ
-                            </a>
-                        </div>`
-                    ).join('');
-                    
-                    return `<div class="mb-3">
-                        <h6 class="text-${badgeClass.replace('bg-', '')}">${categoryName} (${games.length}件)</h6>
-                        ${gameList}
-                    </div>`;
-                };
-                
-                // 全てのゲームリストを結合
-                const allGamesList = [
-                    createGameList(gameCategories.failed, '価格取得失敗', 'bg-danger'),
-                    createGameList(gameCategories.freeToPlay, '基本無料ゲーム', 'bg-success'),
-                    createGameList(gameCategories.unreleased, '未リリースゲーム', 'bg-info'),
-                    createGameList(gameCategories.removed, '販売終了ゲーム', 'bg-warning')
-                ].filter(list => list !== '').join('');
-                
-                // コピー用のテキストリストを作成
-                const allGamesForCopy = [
-                    ...gameCategories.failed.map(game => `[価格取得失敗] ${game.name} (ID: ${game.steam_app_id}) - https://store.steampowered.com/app/${game.steam_app_id}/`),
-                    ...gameCategories.freeToPlay.map(game => `[基本無料] ${game.name} (ID: ${game.steam_app_id}) - https://store.steampowered.com/app/${game.steam_app_id}/`),
-                    ...gameCategories.unreleased.map(game => `[未リリース] ${game.name} (ID: ${game.steam_app_id}) - https://store.steampowered.com/app/${game.steam_app_id}/`),
-                    ...gameCategories.removed.map(game => `[販売終了] ${game.name} (ID: ${game.steam_app_id}) - https://store.steampowered.com/app/${game.steam_app_id}/`)
-                ].join('\n');
-                
-                const copyButtonId = 'copy-failed-games-' + Date.now();
-                
-                const detailsHTML = `
-                    <div class="game-categories-list">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="mb-0">ゲーム状況詳細:</h6>
-                            <button id="${copyButtonId}" class="btn btn-sm btn-outline-secondary" title="リストをコピー">
-                                <i class="bi bi-clipboard"></i> コピー
-                            </button>
-                        </div>
-                        ${allGamesList}
-                        <hr class="my-3">
-                        <small class="text-muted">
-                            <strong>カテゴリ説明:</strong><br>
-                            • <span class="badge bg-danger">価格取得失敗</span> - API障害、地域制限等<br>
-                            • <span class="badge bg-success">基本無料ゲーム</span> - F2Pゲーム（価格監視対象外）<br>
-                            • <span class="badge bg-info">未リリースゲーム</span> - 発売前ゲーム（リリース日監視）<br>
-                            • <span class="badge bg-warning">販売終了ゲーム</span> - Steam販売停止ゲーム
-                        </small>
-                    </div>
-                `;
-                
-                // 警告を表示した後にコピーボタンのイベントリスナーを追加
-                setTimeout(() => {
-                    const copyButton = document.getElementById(copyButtonId);
-                    if (copyButton) {
-                        copyButton.addEventListener('click', () => {
-                            copyToClipboard(allGamesForCopy).then(() => {
-                                // コピー成功時のボタン表示変更
-                                const originalHTML = copyButton.innerHTML;
-                                copyButton.innerHTML = '<i class="bi bi-check-lg"></i> コピー済み';
-                                copyButton.classList.remove('btn-outline-secondary');
-                                copyButton.classList.add('btn-success');
-                                
-                                setTimeout(() => {
-                                    copyButton.innerHTML = originalHTML;
-                                    copyButton.classList.remove('btn-success');
-                                    copyButton.classList.add('btn-outline-secondary');
-                                }, 2000);
-                            });
-                        });
-                    }
-                }, 100);
-                
-                showWarning(
-                    `${totalSpecialGames}ゲームが特別な状況です（基本無料・未リリース・販売終了・データ取得失敗）`, 
-                    0, // 自動消去しない
-                    detailsHTML
-                );
-            }
             console.log('loadDashboardData: Dashboard data loaded successfully');
         } else {
             console.error('loadDashboardData: API returned success=false:', response);
@@ -314,8 +191,75 @@ APIエンドポイント: /api/games/dashboard
     }
 }
 
+function updateSpecialGameStatus(games) {
+    const alertContainer = document.getElementById('specialGameAlert');
+    
+    // DOM要素が存在しない場合は処理をスキップ
+    if (!alertContainer) {
+        console.warn('specialGameAlert element not found, skipping special game status update');
+        return;
+    }
+    
+    // ゲームをカテゴリ別に分類
+    const gameCategories = {
+        failed: [],
+        freeToPlay: [],
+        unreleased: [],
+        removed: []
+    };
+    
+    games.forEach(game => {
+        if (!game.latestPrice) {
+            gameCategories.failed.push(game);
+        } else {
+            switch (game.latestPrice.source) {
+                case 'steam_free':
+                    gameCategories.freeToPlay.push(game);
+                    break;
+                case 'steam_unreleased':
+                    gameCategories.unreleased.push(game);
+                    break;
+                case 'steam_removed':
+                    gameCategories.removed.push(game);
+                    break;
+            }
+        }
+    });
+    
+    // カテゴリ別の統計表示
+    const totalSpecialGames = gameCategories.failed.length + gameCategories.freeToPlay.length + 
+                             gameCategories.unreleased.length + gameCategories.removed.length;
+    
+    if (totalSpecialGames > 0) {
+        const alertHTML = `
+            <div class="col-12">
+                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <strong>${totalSpecialGames}ゲームが特別な状況です：</strong>
+                    価格取得失敗 ${gameCategories.failed.length}件、
+                    基本無料 ${gameCategories.freeToPlay.length}件、
+                    未リリース ${gameCategories.unreleased.length}件、
+                    販売終了 ${gameCategories.removed.length}件
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            </div>
+        `;
+        
+        alertContainer.innerHTML = alertHTML;
+        alertContainer.style.display = 'block';
+    } else {
+        alertContainer.style.display = 'none';
+    }
+}
+
 function updateStatisticsCards(statistics) {
     const statsContainer = document.getElementById('statsCards');
+    
+    // DOM要素が存在しない場合は処理をスキップ
+    if (!statsContainer) {
+        console.warn('statsCards element not found, skipping statistics update');
+        return;
+    }
     
     statsContainer.innerHTML = `
         <div class="col-md-3 col-sm-6 mb-3">
@@ -367,6 +311,13 @@ function updateStatisticsCards(statistics) {
 
 function updateGamesTable(games) {
     const tableBody = document.getElementById('gamesTableBody');
+    
+    // DOM要素が存在しない場合は処理をスキップ
+    if (!tableBody) {
+        console.warn('gamesTableBody element not found, skipping games table update');
+        return;
+    }
+    
     gamesData = games;
     
     if (!games || games.length === 0) {
@@ -465,35 +416,39 @@ function updateGamesTable(games) {
                     <div class="d-flex align-items-center">
                         <img src="https://cdn.akamai.steamstatic.com/steam/apps/${game.steam_app_id}/header.jpg" 
                              alt="${game.name}" 
-                             class="game-header-img me-3"
+                             class="game-header-img me-3 d-none d-md-block"
                              onerror="this.style.display='none'"
                              loading="lazy">
                         <div>
                             <a href="https://store.steampowered.com/app/${game.steam_app_id}/" target="_blank" class="steam-link">
                                 <i class="bi bi-box-arrow-up-right me-1"></i>${game.name}
                             </a>
-                            <br><small class="text-muted">ID: ${game.steam_app_id}</small>
+                            <br><small class="text-muted d-none d-sm-inline">ID: ${game.steam_app_id}</small>
+                            <div class="d-sm-none mt-1">
+                                <small class="text-muted">${priceDisplay}</small>
+                                ${discountBadge !== '<span class="text-muted">-</span>' ? `<br><small>${discountBadge}</small>` : ''}
+                            </div>
                         </div>
                     </div>
                 </td>
-                <td>${priceDisplay}</td>
-                <td>${originalPriceDisplay}</td>
-                <td>${discountBadge}</td>
-                <td>${historicalLowDisplay}</td>
+                <td class="d-none d-sm-table-cell">${priceDisplay}</td>
+                <td class="d-none d-lg-table-cell">${originalPriceDisplay}</td>
+                <td class="d-none d-md-table-cell">${discountBadge}</td>
+                <td class="d-none d-lg-table-cell">${historicalLowDisplay}</td>
                 <td>${saleStatus}</td>
-                <td><small>${lastUpdated}</small></td>
+                <td class="d-none d-xl-table-cell"><small>${lastUpdated}</small></td>
                 <td>
                     <div class="action-buttons">
                         <button class="action-btn" onclick="showPriceChart(${game.steam_app_id}, '${game.name}')" title="価格推移">
                             <i class="bi bi-graph-up"></i>
                         </button>
-                        <button class="action-btn" onclick="openSteamDB(${game.steam_app_id})" title="SteamDB" data-app-id="${game.steam_app_id}">
+                        <button class="action-btn d-none d-md-inline-block" onclick="openSteamDB(${game.steam_app_id})" title="SteamDB" data-app-id="${game.steam_app_id}">
                             <i class="bi bi-database"></i>
                         </button>
                         <button class="action-btn" onclick="editGame(${game.id})" title="編集">
                             <i class="bi bi-pencil"></i>
                         </button>
-                        <button class="action-btn" onclick="runSingleGameMonitoring(${game.steam_app_id})" title="手動更新">
+                        <button class="action-btn d-none d-sm-inline-block" onclick="runSingleGameMonitoring(${game.steam_app_id})" title="手動更新">
                             <i class="bi bi-arrow-clockwise"></i>
                         </button>
                         <button class="action-btn danger" onclick="deleteGame(${game.id}, '${game.name}')" title="削除">
