@@ -12,6 +12,41 @@ export class MonitoringController {
     this.schedulerService = service;
   }
 
+  // 監視進捗状況取得
+  static async getProgress(_req: Request, res: Response): Promise<Response> {
+    try {
+      if (!this.schedulerService) {
+        logger.error('Scheduler service is not initialized');
+        return res.status(500).json({
+          success: false,
+          error: 'Scheduler service not initialized'
+        });
+      }
+
+      const monitoringService = this.schedulerService.getMonitoringService();
+      if (!monitoringService) {
+        logger.error('Monitoring service is not available');
+        return res.status(500).json({
+          success: false,
+          error: 'Monitoring service not available'
+        });
+      }
+
+      const progress = monitoringService.getProgress();
+
+      return res.json({
+        success: true,
+        data: progress
+      });
+    } catch (error) {
+      logger.error('Failed to get monitoring progress:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to retrieve monitoring progress'
+      });
+    }
+  }
+
   // 監視状況取得
   static async getStatus(_req: Request, res: Response): Promise<Response> {
     try {

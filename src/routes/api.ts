@@ -11,26 +11,27 @@ router.use(apiLimiter);
 // ゲーム関連のルート
 const gameRoutes = Router();
 
-gameRoutes.get('/', GameController.getAllGames);
-gameRoutes.get('/dashboard', GameController.getDashboardData);
-gameRoutes.get('/:id', GameController.getGameById);
-gameRoutes.post('/', GameController.addGame);
-gameRoutes.put('/:id', GameController.updateGame);
-gameRoutes.delete('/:id', GameController.deleteGame);
-gameRoutes.get('/:appId/price-history', validateSteamAppId, GameController.getGamePriceHistory);
+gameRoutes.get('/', (req, res) => GameController.getAllGames(req, res));
+gameRoutes.get('/dashboard', (req, res) => GameController.getDashboardData(req, res));
+gameRoutes.get('/:id', (req, res) => GameController.getGameById(req, res));
+gameRoutes.post('/', (req, res) => GameController.addGame(req, res));
+gameRoutes.put('/:id', (req, res) => GameController.updateGame(req, res));
+gameRoutes.delete('/:id', (req, res) => GameController.deleteGame(req, res));
+gameRoutes.get('/:appId/price-history', validateSteamAppId, (req, res) => GameController.getGamePriceHistory(req, res));
 
 router.use('/games', gameRoutes);
 
 // 監視関連のルート
 const monitoringRoutes = Router();
 
-monitoringRoutes.get('/status', MonitoringController.getStatus);
-monitoringRoutes.post('/run', MonitoringController.runManualMonitoring);
-monitoringRoutes.post('/run/:appId', validateSteamAppId, MonitoringController.runManualGameMonitoring);
-monitoringRoutes.put('/interval', MonitoringController.updateMonitoringInterval);
-monitoringRoutes.get('/health', MonitoringController.healthCheck);
-monitoringRoutes.get('/logs', MonitoringController.getLogs);
-monitoringRoutes.get('/system', MonitoringController.getSystemInfo);
+monitoringRoutes.get('/status', (req, res) => MonitoringController.getStatus(req, res));
+monitoringRoutes.get('/progress', (req, res) => MonitoringController.getProgress(req, res));
+monitoringRoutes.post('/run', (req, res) => MonitoringController.runManualMonitoring(req, res));
+monitoringRoutes.post('/run/:appId', validateSteamAppId, (req, res) => MonitoringController.runManualGameMonitoring(req, res));
+monitoringRoutes.put('/interval', (req, res) => MonitoringController.updateMonitoringInterval(req, res));
+monitoringRoutes.get('/health', (req, res) => MonitoringController.healthCheck(req, res));
+monitoringRoutes.get('/logs', (req, res) => MonitoringController.getLogs(req, res));
+monitoringRoutes.get('/system', (req, res) => MonitoringController.getSystemInfo(req, res));
 
 router.use('/monitoring', monitoringRoutes);
 
