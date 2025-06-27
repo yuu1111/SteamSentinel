@@ -147,6 +147,19 @@ export class APIService {
       
       if (gameType === 'unreleased') {
         logger.info(`${gameName} is unreleased (coming soon)`);
+        
+        // Steam APIからリリース日を取得
+        let releaseDate: string | undefined;
+        try {
+          const steamDetails = await this.steamAPI.getAppDetails(steamAppId);
+          if (steamDetails?.data?.release_date?.date) {
+            releaseDate = steamDetails.data.release_date.date;
+            logger.info(`Release date for ${gameName}: ${releaseDate}`);
+          }
+        } catch (error) {
+          logger.warn(`Failed to get release date for ${gameName}:`, error);
+        }
+        
         // 未リリースゲームは価格0で記録（リリース日監視用）
         return {
           steam_app_id: steamAppId,
@@ -157,6 +170,7 @@ export class APIService {
           is_on_sale: false,
           source: 'steam_unreleased',
           recorded_at: new Date(),
+          release_date: releaseDate,
           gameName: actualGameName
         };
       }

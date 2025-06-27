@@ -193,6 +193,12 @@ export class MonitoringService {
       // 前回の価格履歴を取得
       const lastPrice = PriceHistoryModel.getLatestByGameId(game.steam_app_id);
 
+      // リリース日監視: 未リリース → リリース済みの変化を検知
+      if (lastPrice?.source === 'steam_unreleased' && newPriceHistory.source !== 'steam_unreleased') {
+        logger.info(`🎉 Game released detected: ${game.name} (${game.steam_app_id})`);
+        await this.createReleaseAlert(game, newPriceHistory);
+      }
+
       // gameName プロパティを除いて価格履歴を保存
       const { gameName, ...priceHistoryData } = newPriceHistory;
       const savedPriceHistory = PriceHistoryModel.create(priceHistoryData);
@@ -334,5 +340,22 @@ export class MonitoringService {
   // APIサービスの取得（テスト用）
   getAPIService(): APIService {
     return this.apiService;
+  }
+
+  // リリースアラートの作成
+  private async createReleaseAlert(game: Game, priceHistory: PriceHistory): Promise<Alert> {
+    const releaseAlert: Omit<Alert, 'id' | 'created_at'> = {
+      steam_app_id: game.steam_app_id,
+      alert_type: 'release',
+      trigger_price: priceHistory.current_price,
+      previous_low: undefined,
+      discount_percent: priceHistory.discount_percent,
+      notified_discord: false
+    };
+
+    const alert = AlertModel.create(releaseAlert);
+    logger.info(`🎉 Game release alert created: ${game.name} (${game.steam_app_id}) - Released with price ¥${priceHistory.current_price}`);
+    
+    return alert;
   }
 }
