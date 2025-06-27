@@ -30,6 +30,7 @@ function setupGlobalFunctions() {
     window.addGame = addGame;
     window.deleteGame = deleteGame;
     window.editGame = editGame;
+    window.saveGameEdit = saveGameEdit;
     window.runSingleGameMonitoring = runSingleGameMonitoring;
     window.runManualMonitoring = runManualMonitoring;
     window.refreshGameList = refreshGameList;
@@ -40,6 +41,14 @@ function setupGlobalFunctions() {
     window.showAlerts = showAlerts;
     window.showMonitoring = showMonitoring;
     window.toggleDarkMode = toggleDarkMode;
+    
+    // バックアップ/復元関数
+    window.exportGames = exportGames;
+    window.showImportModal = showImportModal;
+    window.importGames = importGames;
+    
+    // ゲーム管理関数
+    window.refreshAllGamesList = refreshAllGamesList;
     
 
     console.log('Global functions initialized successfully');
@@ -70,6 +79,10 @@ async function initializeApp() {
         // Setup table sorting
         setupTableSorting();
         console.log('Table sorting setup complete');
+        
+        // Setup threshold type listeners
+        setupThresholdTypeListeners();
+        console.log('Threshold type listeners setup complete');
         
         // Setup button event listeners (optional - HTMLのonclick属性も併用)
         // setupButtonListeners();
@@ -572,7 +585,9 @@ async function addGame() {
     try {
         const steamAppId = parseInt(document.getElementById('steamAppId').value);
         const gameName = document.getElementById('gameName').value.trim();
+        const thresholdType = document.querySelector('input[name="thresholdType"]:checked').value;
         const priceThreshold = parseFloat(document.getElementById('priceThreshold').value) || null;
+        const discountThreshold = parseInt(document.getElementById('discountThreshold').value) || null;
         const gameEnabled = document.getElementById('gameEnabled').checked;
         const alertEnabled = document.getElementById('alertEnabled').checked;
         
@@ -581,12 +596,25 @@ async function addGame() {
             return;
         }
         
+        // 閾値の検証
+        if (thresholdType === 'price' && priceThreshold && priceThreshold <= 0) {
+            showError('価格閾値は0より大きい値を入力してください');
+            return;
+        }
+        
+        if (thresholdType === 'discount' && (!discountThreshold || discountThreshold < 1 || discountThreshold > 99)) {
+            showError('割引率は1-99の範囲で入力してください');
+            return;
+        }
+        
         showLoading();
         
         const response = await api.post('/games', {
             steam_app_id: steamAppId,
             name: gameName,
-            price_threshold: priceThreshold,
+            price_threshold: thresholdType === 'price' ? priceThreshold : null,
+            price_threshold_type: thresholdType,
+            discount_threshold_percent: thresholdType === 'discount' ? discountThreshold : null,
             enabled: gameEnabled,
             alert_enabled: alertEnabled
         });
@@ -633,9 +661,103 @@ async function deleteGame(gameId, gameName) {
     }
 }
 
-function editGame(gameId) {
-    // TODO: Implement edit game functionality
-    showInfo('ゲーム編集機能は実装中です');
+async function editGame(gameId) {
+    try {
+        // ゲーム情報を取得
+        const response = await api.get(`/games/${gameId}`);
+        
+        if (response.success && response.data && response.data.game) {
+            const game = response.data.game;
+            
+            // フォームに既存データを設定
+            document.getElementById('editGameId').value = game.id;
+            document.getElementById('editSteamAppId').value = game.steam_app_id;
+            document.getElementById('editGameName').value = game.name || '';
+            
+            // 閾値タイプを設定
+            const thresholdType = game.price_threshold_type || 'price';
+            document.querySelector(`input[name="editThresholdType"][value="${thresholdType}"]`).checked = true;
+            
+            // 閾値フィールドを設定
+            document.getElementById('editPriceThreshold').value = game.price_threshold || '';
+            document.getElementById('editDiscountThreshold').value = game.discount_threshold_percent || '';
+            
+            // チェックボックス設定
+            document.getElementById('editGameEnabled').checked = Boolean(game.enabled);
+            document.getElementById('editAlertEnabled').checked = Boolean(game.alert_enabled);
+            
+            // 閾値フィールドの表示を更新
+            toggleThresholdFields('edit');
+            
+            // モーダルを表示
+            const modal = new bootstrap.Modal(document.getElementById('editGameModal'));
+            modal.show();
+        } else {
+            showError('ゲーム情報の取得に失敗しました');
+            console.error('Invalid response structure:', response);
+        }
+    } catch (error) {
+        console.error('Failed to load game for editing:', error);
+        showError('ゲーム情報の読み込み中にエラーが発生しました');
+    }
+}
+
+async function saveGameEdit() {
+    try {
+        const gameId = parseInt(document.getElementById('editGameId').value);
+        const gameName = document.getElementById('editGameName').value.trim();
+        const thresholdType = document.querySelector('input[name="editThresholdType"]:checked').value;
+        const priceThreshold = parseFloat(document.getElementById('editPriceThreshold').value) || null;
+        const discountThreshold = parseInt(document.getElementById('editDiscountThreshold').value) || null;
+        const gameEnabled = document.getElementById('editGameEnabled').checked;
+        const alertEnabled = document.getElementById('editAlertEnabled').checked;
+        
+        if (!gameName) {
+            showError('ゲーム名は必須です');
+            return;
+        }
+        
+        // 閾値の検証
+        if (thresholdType === 'price' && priceThreshold && priceThreshold <= 0) {
+            showError('価格閾値は0より大きい値を入力してください');
+            return;
+        }
+        
+        if (thresholdType === 'discount' && (!discountThreshold || discountThreshold < 1 || discountThreshold > 99)) {
+            showError('割引率は1-99の範囲で入力してください');
+            return;
+        }
+        
+        showLoading();
+        
+        const response = await api.put(`/games/${gameId}`, {
+            name: gameName,
+            price_threshold: thresholdType === 'price' ? priceThreshold : null,
+            price_threshold_type: thresholdType,
+            discount_threshold_percent: thresholdType === 'discount' ? discountThreshold : null,
+            enabled: gameEnabled,
+            alert_enabled: alertEnabled
+        });
+        
+        if (response.success) {
+            showSuccess(`${gameName} の設定を更新しました`);
+            bootstrap.Modal.getInstance(document.getElementById('editGameModal')).hide();
+            
+            // 現在の画面に応じてデータを更新
+            if (currentView === 'dashboard') {
+                await loadDashboardData();
+            } else if (currentView === 'games') {
+                await loadAllGamesView();
+            }
+        } else {
+            showError('ゲーム設定の更新に失敗しました: ' + response.error);
+        }
+    } catch (error) {
+        console.error('Failed to save game edit:', error);
+        showError('ゲーム設定の保存中にエラーが発生しました');
+    } finally {
+        hideLoading();
+    }
 }
 
 // ゲームリスト更新関数
@@ -1016,3 +1138,275 @@ window.addEventListener('beforeunload', function() {
         clearInterval(progressInterval);
     }
 });
+
+// バックアップ/復元機能
+
+// ゲームリストをエクスポート
+async function exportGames() {
+    try {
+        showLoading();
+        
+        const response = await api.get('/games/export');
+        
+        if (response) {
+            // JSONデータをBlob化
+            const jsonStr = JSON.stringify(response, null, 2);
+            const blob = new Blob([jsonStr], { type: 'application/json' });
+            
+            // ダウンロードリンクを作成
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = response.version ? 
+                `steamsentinel_backup_${new Date().toISOString().split('T')[0].replace(/-/g, '')}.json` : 
+                'steamsentinel_backup.json';
+            
+            // ダウンロードを実行
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            
+            showSuccess(`${response.gameCount}件のゲームをエクスポートしました`);
+        }
+    } catch (error) {
+        console.error('Failed to export games:', error);
+        showError('ゲームリストのエクスポートに失敗しました');
+    } finally {
+        hideLoading();
+    }
+}
+
+// インポートモーダルを表示
+function showImportModal() {
+    document.getElementById('importGamesForm').reset();
+    const modal = new bootstrap.Modal(document.getElementById('importGamesModal'));
+    modal.show();
+}
+
+// ゲームリストをインポート
+async function importGames() {
+    try {
+        const fileInput = document.getElementById('importFile');
+        const file = fileInput.files[0];
+        
+        if (!file) {
+            showError('ファイルを選択してください');
+            return;
+        }
+        
+        // ファイルを読み込む
+        const fileContent = await readFileAsText(file);
+        let importData;
+        
+        try {
+            importData = JSON.parse(fileContent);
+        } catch (e) {
+            showError('無効なJSONファイルです');
+            return;
+        }
+        
+        // バリデーション
+        if (!importData.games || !Array.isArray(importData.games)) {
+            showError('無効なバックアップファイル形式です');
+            return;
+        }
+        
+        const importMode = document.querySelector('input[name="importMode"]:checked').value;
+        
+        // 確認ダイアログ
+        const confirmMessage = importMode === 'replace' ? 
+            `既存のゲーム・履歴データをすべて削除して、${importData.gameCount}件のゲームをインポートします。よろしいですか？` :
+            `${importData.gameCount}件のゲームをインポートします。よろしいですか？`;
+            
+        if (!confirm(confirmMessage)) {
+            return;
+        }
+        
+        showLoading();
+        
+        // インポート実行
+        importData.mode = importMode;
+        const response = await api.post('/games/import', importData);
+        
+        if (response.success) {
+            showSuccess(response.message || 'インポートが完了しました');
+            bootstrap.Modal.getInstance(document.getElementById('importGamesModal')).hide();
+            
+            // エラーがある場合は警告表示
+            if (response.data && response.data.errors && response.data.errors.length > 0) {
+                console.warn('Import errors:', response.data.errors);
+                showWarning(`インポート完了（${response.data.errors.length}件のエラーあり）`);
+            }
+            
+            // ゲームリストを更新
+            await loadDashboardData();
+        } else {
+            showError('インポートに失敗しました: ' + response.error);
+        }
+    } catch (error) {
+        console.error('Failed to import games:', error);
+        showError('ゲームリストのインポート中にエラーが発生しました');
+    } finally {
+        hideLoading();
+    }
+}
+
+// ファイルをテキストとして読み込む
+function readFileAsText(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => resolve(e.target.result);
+        reader.onerror = reject;
+        reader.readAsText(file);
+    });
+}
+
+// 閾値タイプ選択のイベントリスナー設定
+function setupThresholdTypeListeners() {
+    // 追加モーダルの閾値タイプ選択
+    document.querySelectorAll('input[name="thresholdType"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            toggleThresholdFields('');
+        });
+    });
+    
+    // 編集モーダルの閾値タイプ選択
+    document.querySelectorAll('input[name="editThresholdType"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            toggleThresholdFields('edit');
+        });
+    });
+}
+
+// 閾値フィールドの表示切り替え
+function toggleThresholdFields(prefix) {
+    let thresholdTypeName, priceFieldId, discountFieldId;
+    
+    if (prefix === 'edit') {
+        thresholdTypeName = 'editThresholdType';
+        priceFieldId = 'editPriceThresholdField';
+        discountFieldId = 'editDiscountThresholdField';
+    } else {
+        thresholdTypeName = 'thresholdType';
+        priceFieldId = 'priceThresholdField';
+        discountFieldId = 'discountThresholdField';
+    }
+    
+    const selectedType = document.querySelector(`input[name="${thresholdTypeName}"]:checked`)?.value;
+    const priceField = document.getElementById(priceFieldId);
+    const discountField = document.getElementById(discountFieldId);
+    
+    if (priceField && discountField) {
+        if (selectedType === 'price') {
+            priceField.style.display = 'block';
+            discountField.style.display = 'none';
+        } else if (selectedType === 'discount') {
+            priceField.style.display = 'none';
+            discountField.style.display = 'block';
+        } else {
+            priceField.style.display = 'none';
+            discountField.style.display = 'none';
+        }
+    }
+}
+
+// ゲーム管理画面の表示
+function showGames() {
+    showView('games');
+    loadAllGamesView();
+}
+
+// 全ゲーム一覧の読み込み
+async function loadAllGamesView() {
+    try {
+        const response = await api.get('/games?enabled=all');
+        
+        if (response.success && response.data) {
+            renderAllGamesTable(response.data);
+        }
+    } catch (error) {
+        console.error('Failed to load all games:', error);
+        showError('ゲーム一覧の読み込みに失敗しました');
+    }
+}
+
+// 全ゲームテーブルのレンダリング
+function renderAllGamesTable(games) {
+    const tbody = document.getElementById('allGamesTableBody');
+    
+    if (!tbody) {
+        console.error('allGamesTableBody element not found');
+        return;
+    }
+    
+    tbody.innerHTML = games.map(game => {
+        // 監視状態
+        const monitoringStatus = game.enabled ? 
+            '<span class="badge bg-success">有効</span>' : 
+            '<span class="badge bg-secondary">無効</span>';
+        
+        // アラート条件
+        let alertCondition = '-';
+        if (game.price_threshold_type === 'price' && game.price_threshold) {
+            alertCondition = `¥${game.price_threshold.toLocaleString()}以下`;
+        } else if (game.price_threshold_type === 'discount' && game.discount_threshold_percent) {
+            alertCondition = `${game.discount_threshold_percent}%以上割引`;
+        } else if (game.price_threshold_type === 'any_sale') {
+            alertCondition = 'セール開始時';
+        }
+        
+        // アラート状態
+        const alertStatus = game.alert_enabled ? 
+            '<span class="badge bg-primary">有効</span>' : 
+            '<span class="badge bg-secondary">無効</span>';
+        
+        return `
+            <tr>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <img src="https://cdn.akamai.steamstatic.com/steam/apps/${game.steam_app_id}/header.jpg" 
+                             alt="${game.name}" 
+                             class="game-header-img me-3"
+                             style="width: 60px; height: 28px; object-fit: cover;"
+                             onerror="this.style.display='none'"
+                             loading="lazy">
+                        <div>
+                            <a href="https://store.steampowered.com/app/${game.steam_app_id}/" target="_blank" class="steam-link">
+                                ${game.name}
+                            </a>
+                            <br><small class="text-muted">ID: ${game.steam_app_id}</small>
+                        </div>
+                    </div>
+                </td>
+                <td>${monitoringStatus}</td>
+                <td>${alertCondition}</td>
+                <td>${alertStatus}</td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="action-btn" onclick="editGame(${game.id})" title="編集">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="action-btn danger" onclick="deleteGame(${game.id}, '${game.name}')" title="削除">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// 全ゲーム一覧の更新
+async function refreshAllGamesList() {
+    try {
+        showLoading();
+        await loadAllGamesView();
+        showSuccess('ゲーム一覧を更新しました');
+    } catch (error) {
+        console.error('Failed to refresh all games list:', error);
+        showError('ゲーム一覧の更新に失敗しました');
+    } finally {
+        hideLoading();
+    }
+}
