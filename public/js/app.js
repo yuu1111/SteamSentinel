@@ -13,8 +13,70 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM Content Loaded - Starting application initialization');
     console.log('Current location:', window.location.href);
     console.log('User Agent:', navigator.userAgent);
+    
+    // 即座にグローバル関数を設定
+    setupGlobalFunctions();
+    
     initializeApp();
 });
+
+// グローバル関数の設定を分離
+function setupGlobalFunctions() {
+    console.log('Setting up global functions...');
+    
+    // グローバルウィンドウオブジェクトに明示的に追加（HTMLのonclick属性から呼び出すため）
+    window.openSteamDB = openSteamDB;
+    window.showAddGameModal = showAddGameModal;
+    window.addGame = addGame;
+    window.deleteGame = deleteGame;
+    window.editGame = editGame;
+    window.runSingleGameMonitoring = runSingleGameMonitoring;
+    window.runManualMonitoring = runManualMonitoring;
+    window.refreshGameList = refreshGameList;
+
+    // ナビゲーション関数もグローバルに追加
+    window.showDashboard = showDashboard;
+    window.showGames = showGames;
+    window.showAlerts = showAlerts;
+    window.showMonitoring = showMonitoring;
+    window.toggleDarkMode = toggleDarkMode;
+    
+    // テスト用関数
+    window.testSteamDB = function() {
+        console.log('Testing SteamDB function...');
+        openSteamDB(730); // CS2のSteam App ID
+    };
+
+    window.testAddGameModal = function() {
+        console.log('Testing Add Game Modal...');
+        console.log('Bootstrap:', typeof bootstrap);
+        console.log('Modal element:', document.getElementById('addGameModal'));
+        try {
+            showAddGameModal();
+            console.log('showAddGameModal executed successfully');
+        } catch (error) {
+            console.error('Error in showAddGameModal:', error);
+        }
+    };
+    
+    // 基本的なクリックテスト関数
+    window.testClick = function() {
+        console.log('testClick function called!');
+        alert('Click test successful!');
+    };
+
+    // デバッグ用: 関数が正しく定義されているかチェック
+    console.log('Global functions defined:', {
+        openSteamDB: typeof window.openSteamDB,
+        showAddGameModal: typeof window.showAddGameModal,
+        addGame: typeof window.addGame,
+        deleteGame: typeof window.deleteGame,
+        editGame: typeof window.editGame,
+        runSingleGameMonitoring: typeof window.runSingleGameMonitoring,
+        testAddGameModal: typeof window.testAddGameModal,
+        testClick: typeof window.testClick
+    });
+}
 
 // Application initialization
 async function initializeApp() {
@@ -41,6 +103,10 @@ async function initializeApp() {
         // Setup table sorting
         setupTableSorting();
         console.log('Table sorting setup complete');
+        
+        // Setup button event listeners (optional - HTMLのonclick属性も併用)
+        // setupButtonListeners();
+        console.log('Button listeners setup skipped - using onclick attributes');
         
         showSuccess('SteamSentinel が正常に起動しました');
         console.log('Application initialization completed successfully');
@@ -506,8 +572,33 @@ function loadMonitoringView() {
 
 // Game management
 function showAddGameModal() {
-    const modal = new bootstrap.Modal(document.getElementById('addGameModal'));
-    modal.show();
+    console.log('showAddGameModal called');
+    
+    // Bootstrap の読み込み確認
+    if (typeof bootstrap === 'undefined') {
+        console.error('Bootstrap is not loaded');
+        alert('Bootstrap ライブラリが読み込まれていません。ページを再読み込みしてください。');
+        return;
+    }
+    
+    // モーダル要素の確認
+    const modalElement = document.getElementById('addGameModal');
+    if (!modalElement) {
+        console.error('Modal element not found');
+        alert('モーダル要素が見つかりません。');
+        return;
+    }
+    
+    console.log('Creating Bootstrap modal');
+    try {
+        const modal = new bootstrap.Modal(modalElement);
+        console.log('Modal created, showing...');
+        modal.show();
+        console.log('Modal.show() called');
+    } catch (error) {
+        console.error('Error creating or showing modal:', error);
+        alert('モーダルの表示でエラーが発生しました: ' + error.message);
+    }
 }
 
 async function addGame() {
@@ -615,38 +706,7 @@ function openSteamDB(steamAppId) {
     }
 }
 
-// グローバルウィンドウオブジェクトに明示的に追加（HTMLのonclick属性から呼び出すため）
-window.openSteamDB = openSteamDB;
-window.showAddGameModal = showAddGameModal;
-window.addGame = addGame;
-window.deleteGame = deleteGame;
-window.editGame = editGame;
-window.runSingleGameMonitoring = runSingleGameMonitoring;
-window.runManualMonitoring = runManualMonitoring;
-window.refreshGameList = refreshGameList;
-
-// ナビゲーション関数もグローバルに追加
-window.showDashboard = showDashboard;
-window.showGames = showGames;
-window.showAlerts = showAlerts;
-window.showMonitoring = showMonitoring;
-window.toggleDarkMode = toggleDarkMode;
-
-// デバッグ用: 関数が正しく定義されているかチェック
-console.log('Global functions defined:', {
-    openSteamDB: typeof window.openSteamDB,
-    showAddGameModal: typeof window.showAddGameModal,
-    addGame: typeof window.addGame,
-    deleteGame: typeof window.deleteGame,
-    editGame: typeof window.editGame,
-    runSingleGameMonitoring: typeof window.runSingleGameMonitoring
-});
-
-// テスト用関数
-window.testSteamDB = function() {
-    console.log('Testing SteamDB function...');
-    openSteamDB(730); // CS2のSteam App ID
-};
+// 重複削除: グローバル関数はsetupGlobalFunctionsで設定済み
 
 // Progress monitoring functions
 async function checkAndStartProgressMonitoring() {

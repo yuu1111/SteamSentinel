@@ -37,12 +37,20 @@ async function showPriceChart(steamAppId, gameName) {
 // Create price chart using Chart.js
 function createPriceChart(chartData, gameName) {
     const canvas = document.getElementById('priceChart');
-    const ctx = canvas.getContext('2d');
     
     // Destroy existing chart
     if (priceChart) {
         priceChart.destroy();
+        priceChart = null;
     }
+    
+    // Reset canvas size attributes to allow proper responsive behavior
+    canvas.removeAttribute('width');
+    canvas.removeAttribute('height');
+    canvas.style.width = '';
+    canvas.style.height = '';
+    
+    const ctx = canvas.getContext('2d');
     
     // Prepare data
     const labels = chartData.map(item => {

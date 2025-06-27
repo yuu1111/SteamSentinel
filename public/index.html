@@ -165,6 +165,9 @@
                                 <button class="btn btn-sm btn-primary" onclick="showAddGameModal()">
                                     <i class="bi bi-plus-lg"></i> ゲーム追加
                                 </button>
+                                <button class="btn btn-sm btn-warning ms-2" onclick="testClick()">
+                                    <i class="bi bi-bug"></i> テスト
+                                </button>
                             </div>
                         </div>
                         <div class="card-body">
@@ -294,7 +297,9 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <canvas id="priceChart" width="400" height="200"></canvas>
+                    <div style="position: relative; height: 400px; width: 100%;">
+                        <canvas id="priceChart"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
@@ -326,5 +331,24 @@
     <script src="/js/api.js"></script>
     <script src="/js/ui.js"></script>
     <script src="/js/charts.js"></script>
+    
+    <!-- Debug Script -->
+    <script>
+        // ページ読み込み完了後のデバッグ
+        window.addEventListener('load', function() {
+            console.log('Window load event fired');
+            console.log('Available functions:', {
+                testClick: typeof window.testClick,
+                testAddGameModal: typeof window.testAddGameModal,
+                showAddGameModal: typeof window.showAddGameModal,
+                bootstrap: typeof bootstrap
+            });
+        });
+        
+        // エラーハンドリング
+        window.addEventListener('error', function(e) {
+            console.error('Global error:', e.error);
+        });
+    </script>
 </body>
 </html>
