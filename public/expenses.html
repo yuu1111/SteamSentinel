@@ -9,39 +9,13 @@
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    
+    <!-- Navigation Component -->
+    <script src="/js/components/navigation.js" defer></script>
 </head>
 <body class="bg-dark text-light">
-    <header class="bg-primary py-3">
-        <div class="container-fluid">
-            <nav class="navbar navbar-expand-lg navbar-dark">
-                <a href="/" class="navbar-brand">
-                    <i class="fas fa-chart-line me-2"></i>SteamSentinel - 出費追跡
-                </a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="collapse navbar-collapse" id="navbarNav">
-                    <ul class="navbar-nav ms-auto">
-                        <li class="nav-item">
-                            <a href="/" class="nav-link">
-                                <i class="fas fa-home me-1"></i>メイン
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="/expenses.html" class="nav-link active">
-                                <i class="fas fa-chart-pie me-1"></i>出費追跡
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <button id="theme-toggle" class="btn btn-outline-light btn-sm nav-link border-0">
-                                <i class="fas fa-moon" id="theme-icon"></i>
-                            </button>
-                        </li>
-                    </ul>
-                </div>
-            </nav>
-        </div>
-    </header>
+    <!-- Navigation Container -->
+    <div id="navigation-container"></div>
 
     <main class="container-fluid py-4">
         <!-- 期間選択 -->
@@ -74,7 +48,7 @@
 
         <!-- サマリーカード -->
         <div class="row mb-4">
-            <div class="col-lg-3 col-md-6 mb-3">
+            <div class="col-lg-3 col-md-6 col-sm-6 mb-3">
                 <div class="card bg-secondary text-center">
                     <div class="card-body">
                         <i class="fas fa-yen-sign fa-2x text-danger mb-2"></i>
@@ -83,7 +57,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-lg-3 col-md-6 mb-3">
+            <div class="col-lg-3 col-md-6 col-sm-6 mb-3">
                 <div class="card bg-secondary text-center">
                     <div class="card-body">
                         <i class="fas fa-piggy-bank fa-2x text-success mb-2"></i>
@@ -92,7 +66,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-lg-3 col-md-6 mb-3">
+            <div class="col-lg-3 col-md-6 col-sm-6 mb-3">
                 <div class="card bg-secondary text-center">
                     <div class="card-body">
                         <i class="fas fa-gamepad fa-2x text-info mb-2"></i>
@@ -101,7 +75,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-lg-3 col-md-6 mb-3">
+            <div class="col-lg-3 col-md-6 col-sm-6 mb-3">
                 <div class="card bg-secondary text-center">
                     <div class="card-body">
                         <i class="fas fa-percentage fa-2x text-warning mb-2"></i>
