@@ -57,7 +57,7 @@ export class APIService {
   }
 
   // 単一ゲームの価格情報を取得
-  async getGamePriceInfo(steamAppId: number, gameName: string): Promise<PriceHistory | null> {
+  async getGamePriceInfo(steamAppId: number, gameName: string): Promise<(PriceHistory & { gameName?: string }) | null> {
     if (!this.isInitialized) {
       throw new Error('API Service not initialized');
     }
@@ -97,6 +97,21 @@ export class APIService {
       let steamDiscount = 0;
       let steamOnSale = false;
       let gameType: 'paid' | 'free' | 'unreleased' | 'dlc' | 'removed' = 'paid';
+      let actualGameName: string | undefined;
+
+      // 常にSteam APIから詳細情報を取得してゲームタイプを判別
+      try {
+        const steamDetails = await this.steamAPI.getAppDetails(steamAppId);
+        if (steamDetails?.gameType) {
+          gameType = steamDetails.gameType;
+        }
+        if (steamDetails?.data?.name) {
+          actualGameName = steamDetails.data.name;
+          logger.info(`Got actual game name from Steam API: ${actualGameName} (was: ${gameName})`);
+        }
+      } catch (error) {
+        logger.warn(`Failed to get game type for ${gameName}:`, error);
+      }
 
       if (steamPrice.status === 'fulfilled' && steamPrice.value) {
         const price = steamPrice.value;
@@ -105,46 +120,59 @@ export class APIService {
         steamDiscount = price.discountPercent;
         steamOnSale = price.isOnSale;
       } else {
-        // Steam APIから詳細情報を取得してゲームタイプを判別
-        try {
-          const steamDetails = await this.steamAPI.getAppDetails(steamAppId);
-          if (steamDetails?.gameType) {
-            gameType = steamDetails.gameType;
-            
-            // 基本無料ゲームの場合
-            if (gameType === 'free') {
-              logger.info(`${gameName} is a free-to-play game`);
-              return null; // 基本無料ゲームは価格監視対象外
-            }
-            
-            // 未リリースゲームの場合
-            if (gameType === 'unreleased') {
-              logger.info(`${gameName} is unreleased (coming soon)`);
-              // 未リリースゲームは価格0で記録（リリース日監視用）
-              return {
-                steam_app_id: steamAppId,
-                current_price: 0,
-                original_price: 0,
-                discount_percent: 0,
-                historical_low: 0,
-                is_on_sale: false,
-                source: 'steam_unreleased',
-                recorded_at: new Date()
-              };
-            }
-            
-            // 販売終了・削除されたゲームの場合
-            if (gameType === 'removed') {
-              logger.warn(`${gameName} has been removed from Steam store`);
-              return null; // 販売終了ゲームは監視対象外
-            }
-          }
-        } catch (error) {
-          logger.warn(`Failed to get game type for ${gameName}:`, error);
-        }
-        
         logger.warn(`Steam data unavailable for ${gameName}:`, 
           steamPrice.status === 'rejected' ? steamPrice.reason : 'No data');
+      }
+
+      // ゲームタイプに応じた特別処理（価格の有無に関係なく）
+      if (gameType === 'free') {
+        logger.info(`${gameName} is a free-to-play game - returning steam_free record`);
+        const freeGameRecord = {
+          steam_app_id: steamAppId,
+          current_price: 0,
+          original_price: 0,
+          discount_percent: 0,
+          historical_low: 0,
+          is_on_sale: false,
+          source: 'steam_free' as const,
+          recorded_at: new Date(),
+          gameName: actualGameName
+        };
+        logger.debug(`Free game record for ${actualGameName || gameName}:`, freeGameRecord);
+        return freeGameRecord;
+      }
+      
+      if (gameType === 'unreleased') {
+        logger.info(`${gameName} is unreleased (coming soon)`);
+        // 未リリースゲームは価格0で記録（リリース日監視用）
+        return {
+          steam_app_id: steamAppId,
+          current_price: 0,
+          original_price: 0,
+          discount_percent: 0,
+          historical_low: 0,
+          is_on_sale: false,
+          source: 'steam_unreleased',
+          recorded_at: new Date(),
+          gameName: actualGameName
+        };
+      }
+      
+      if (gameType === 'removed') {
+        logger.warn(`${gameName} has been removed from Steam store - returning steam_removed record`);
+        const removedGameRecord = {
+          steam_app_id: steamAppId,
+          current_price: 0,
+          original_price: 0,
+          discount_percent: 0,
+          historical_low: 0,
+          is_on_sale: false,
+          source: 'steam_removed' as const,
+          recorded_at: new Date(),
+          gameName: actualGameName
+        };
+        logger.debug(`Removed game record for ${actualGameName || gameName}:`, removedGameRecord);
+        return removedGameRecord;
       }
 
       // データの統合（ITADを優先、Steamをフォールバック）
@@ -161,7 +189,7 @@ export class APIService {
         return null;
       }
 
-      const priceHistory: PriceHistory = {
+      const priceHistory: PriceHistory & { gameName?: string } = {
         steam_app_id: steamAppId,
         current_price: currentPrice,
         original_price: originalPrice,
@@ -169,7 +197,8 @@ export class APIService {
         historical_low: finalHistoricalLow,
         is_on_sale: isOnSale,
         source: itadCurrentPrice > 0 ? 'itad' : 'steam',
-        recorded_at: new Date()
+        recorded_at: new Date(),
+        gameName: actualGameName
       };
 
       logger.debug(`Price info collected for ${gameName}: Current=${currentPrice}, Historical Low=${finalHistoricalLow}, Sale=${isOnSale}`);
@@ -182,7 +211,15 @@ export class APIService {
   }
 
   // 複数ゲームの価格情報を取得
-  async getMultipleGamePriceInfo(games: Array<{ steam_app_id: number; name: string }>, isManualRequest = false): Promise<Array<{
+  async getMultipleGamePriceInfo(
+    games: Array<{ steam_app_id: number; name: string }>, 
+    isManualRequest = false,
+    onProgress?: (currentGame: string, completed: number, total: number, priceResult?: {
+      game: { steam_app_id: number; name: string };
+      priceHistory: PriceHistory | null;
+      error?: APIError;
+    }) => void | Promise<void>
+  ): Promise<Array<{
     game: { steam_app_id: number; name: string };
     priceHistory: PriceHistory | null;
     error?: APIError;
@@ -208,13 +245,20 @@ export class APIService {
           }
           
           const priceHistory = await this.getGamePriceInfoWithRetry(game.steam_app_id, game.name);
-          return {
+          const result = {
             game,
             priceHistory
           };
+          
+          // 進捗コールバックを呼び出し（価格取得完了後）
+          if (onProgress) {
+            await onProgress(game.name, results.length + index + 1, games.length, result);
+          }
+          
+          return result;
         } catch (error) {
           logger.error(`Error processing ${game.name}:`, error);
-          return {
+          const result = {
             game,
             priceHistory: null,
             error: {
@@ -223,6 +267,13 @@ export class APIService {
               details: error
             } as APIError
           };
+          
+          // エラーの場合も進捗コールバックを呼び出し
+          if (onProgress) {
+            await onProgress(game.name, results.length + index + 1, games.length, result);
+          }
+          
+          return result;
         }
       });
 

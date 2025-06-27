@@ -6,10 +6,31 @@ import { Game, PriceHistory, Alert, MonitoringResult } from '../types';
 import { config } from '../config';
 import logger from '../utils/logger';
 
+export interface MonitoringProgress {
+  isRunning: boolean;
+  currentGame: string | null;
+  totalGames: number;
+  completedGames: number;
+  failedGames: number;
+  startTime: Date | null;
+  estimatedTimeRemaining: number | null;
+  lastRunTime: Date | null;
+}
+
 export class MonitoringService {
   private apiService: APIService;
   private isRunning = false;
   private lastRunTime: Date | null = null;
+  private progress: MonitoringProgress = {
+    isRunning: false,
+    currentGame: null,
+    totalGames: 0,
+    completedGames: 0,
+    failedGames: 0,
+    startTime: null,
+    estimatedTimeRemaining: null,
+    lastRunTime: null
+  };
 
   constructor() {
     this.apiService = new APIService();
@@ -19,6 +40,11 @@ export class MonitoringService {
   async initialize(): Promise<void> {
     await this.apiService.initialize();
     logger.info('Monitoring Service initialized');
+  }
+
+  // 進捗状況を取得
+  getProgress(): MonitoringProgress {
+    return { ...this.progress };
   }
 
   // 全ゲームの監視実行
@@ -31,6 +57,18 @@ export class MonitoringService {
     this.isRunning = true;
     const startTime = Date.now();
     
+    // 進捗状況を初期化
+    this.progress = {
+      isRunning: true,
+      currentGame: null,
+      totalGames: 0,
+      completedGames: 0,
+      failedGames: 0,
+      startTime: new Date(),
+      estimatedTimeRemaining: null,
+      lastRunTime: this.lastRunTime
+    };
+    
     try {
       logger.info('Starting price monitoring cycle');
       
@@ -38,42 +76,69 @@ export class MonitoringService {
       const enabledGames = GameModel.getAll(true);
       if (enabledGames.length === 0) {
         logger.warn('No enabled games found for monitoring');
+        this.progress.isRunning = false;
         return [];
       }
 
+      this.progress.totalGames = enabledGames.length;
       logger.info(`Monitoring ${enabledGames.length} games`);
 
-      // 価格情報を取得
-      const priceResults = await this.apiService.getMultipleGamePriceInfo(
+      // 価格情報を取得して即座に処理（進捗コールバック付き）
+      const results: MonitoringResult[] = [];
+      
+      await this.apiService.getMultipleGamePriceInfo(
         enabledGames.map(game => ({
           steam_app_id: game.steam_app_id,
           name: game.name
         })),
-        isManualRequest
-      );
-
-      const results: MonitoringResult[] = [];
-
-      // 各ゲームの結果を処理
-      for (const result of priceResults) {
-        const game = enabledGames.find(g => g.steam_app_id === result.game.steam_app_id);
-        if (!game) continue;
-
-        try {
-          const monitoringResult = await this.processGamePriceUpdate(game, result.priceHistory, result.error);
-          results.push(monitoringResult);
-        } catch (error) {
-          logger.error(`Error processing game ${game.name}:`, error);
-          results.push({
-            game,
-            error: {
-              code: 'PROCESSING_ERROR',
-              message: `Failed to process ${game.name}`,
-              details: error
+        isManualRequest,
+        async (currentGame: string, completed: number, total: number, priceResult?: {
+          game: { steam_app_id: number; name: string };
+          priceHistory: PriceHistory | null;
+          error?: any;
+        }) => {
+          // 進捗を更新
+          this.progress.currentGame = currentGame;
+          this.progress.completedGames = completed;
+          
+          // 残り時間を推定
+          if (completed > 0 && this.progress.startTime) {
+            const elapsed = Date.now() - this.progress.startTime.getTime();
+            const avgTimePerGame = elapsed / completed;
+            const remaining = total - completed;
+            this.progress.estimatedTimeRemaining = Math.round((avgTimePerGame * remaining) / 1000);
+          }
+          
+          // 価格データを即座にデータベースに保存
+          if (priceResult) {
+            const game = enabledGames.find(g => g.steam_app_id === priceResult.game.steam_app_id);
+            if (game) {
+              try {
+                const monitoringResult = await this.processGamePriceUpdate(game, priceResult.priceHistory, priceResult.error);
+                results.push(monitoringResult);
+                
+                // 失敗したゲームの数を更新
+                if (monitoringResult.error) {
+                  this.progress.failedGames++;
+                }
+                
+                logger.debug(`Saved price data for ${game.name} immediately`);
+              } catch (error) {
+                logger.error(`Error processing game ${game.name}:`, error);
+                this.progress.failedGames++;
+                results.push({
+                  game,
+                  error: {
+                    code: 'PROCESSING_ERROR',
+                    message: `Failed to process ${game.name}`,
+                    details: error
+                  }
+                });
+              }
             }
-          });
+          }
         }
-      }
+      );
 
       this.lastRunTime = new Date();
       const duration = Date.now() - startTime;
@@ -92,13 +157,16 @@ export class MonitoringService {
       throw error;
     } finally {
       this.isRunning = false;
+      this.progress.isRunning = false;
+      this.progress.currentGame = null;
+      this.progress.lastRunTime = this.lastRunTime;
     }
   }
 
   // 単一ゲームの価格更新処理
   private async processGamePriceUpdate(
     game: Game, 
-    newPriceHistory: PriceHistory | null, 
+    newPriceHistory: (PriceHistory & { gameName?: string }) | null, 
     error?: any
   ): Promise<MonitoringResult> {
     if (error || !newPriceHistory) {
@@ -112,11 +180,22 @@ export class MonitoringService {
     }
 
     try {
+      // APIから取得したゲーム名でゲーム情報を更新
+      if (newPriceHistory.gameName && newPriceHistory.gameName !== game.name) {
+        logger.info(`Updating game name: "${game.name}" → "${newPriceHistory.gameName}" (${game.steam_app_id})`);
+        const updatedGame = GameModel.update(game.id!, { name: newPriceHistory.gameName });
+        // ゲームオブジェクトを更新
+        if (updatedGame) {
+          game.name = updatedGame.name;
+        }
+      }
+
       // 前回の価格履歴を取得
       const lastPrice = PriceHistoryModel.getLatestByGameId(game.steam_app_id);
 
-      // 価格履歴を保存
-      const savedPriceHistory = PriceHistoryModel.create(newPriceHistory);
+      // gameName プロパティを除いて価格履歴を保存
+      const { gameName, ...priceHistoryData } = newPriceHistory;
+      const savedPriceHistory = PriceHistoryModel.create(priceHistoryData);
 
       // アラート条件をチェック
       const alert = await this.checkAlertConditions(game, newPriceHistory, lastPrice);

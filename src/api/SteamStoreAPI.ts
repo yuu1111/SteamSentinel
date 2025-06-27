@@ -85,9 +85,18 @@ export class SteamStoreAPI extends BaseAPI {
     return priceMap;
   }
 
-  // 価格を円に変換（Steam APIは分単位で返すため）
-  private convertPriceToYen(priceInCents: number): number {
-    return priceInCents / 100;
+  // 価格を円に変換（通貨によって単位が異なる）
+  private convertPriceToYen(price: number, currency: string = 'JPY'): number {
+    // Steam APIは通貨によって異なる単位で価格を返す
+    // JPY: センチ単位（100で割る必要あり）
+    // USD, EUR: セント単位（100で割る必要あり）
+    if (currency === 'JPY') {
+      // 日本円はセンチ単位で返されるため100で割る
+      return Math.round(price / 100);
+    }
+    
+    // その他の通貨もセント単位なので100で割る
+    return Math.round(price / 100);
   }
 
   // フォーマット済み価格情報の取得
@@ -110,9 +119,18 @@ export class SteamStoreAPI extends BaseAPI {
 
       const priceOverview = priceInfo.data.price_overview;
       
+      // Steam APIの価格データをログ出力して確認
+      logger.debug(`Steam API price data for ${appId}:`, {
+        currency: priceOverview.currency,
+        final: priceOverview.final,
+        initial: priceOverview.initial,
+        final_formatted: priceOverview.final_formatted,
+        initial_formatted: priceOverview.initial_formatted
+      });
+      
       return {
-        currentPrice: this.convertPriceToYen(priceOverview.final),
-        originalPrice: this.convertPriceToYen(priceOverview.initial),
+        currentPrice: this.convertPriceToYen(priceOverview.final, priceOverview.currency),
+        originalPrice: this.convertPriceToYen(priceOverview.initial, priceOverview.currency),
         discountPercent: priceOverview.discount_percent,
         isOnSale: priceOverview.discount_percent > 0,
         formatted: {

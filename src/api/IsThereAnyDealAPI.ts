@@ -26,10 +26,14 @@ export class IsThereAnyDealAPI extends BaseAPI {
         }
       });
 
+      logger.debug(`ITAD lookup response for ${steamAppId}:`, JSON.stringify(response));
+
       const plain = `app/${steamAppId}`;
       if (response && response[plain]) {
+        logger.debug(`Found ITAD game ID for ${steamAppId}: ${response[plain]}`);
         return response[plain];
       }
+      logger.warn(`No ITAD game ID found for Steam App ID ${steamAppId} in response`);
       return null;
     } catch (error) {
       logger.error(`Failed to lookup game ID for Steam App ID ${steamAppId}:`, error);
@@ -178,6 +182,8 @@ export class IsThereAnyDealAPI extends BaseAPI {
         return null;
       }
 
+      logger.debug(`Getting overview for game ID ${gameId} (Steam App ID: ${steamAppId})`);
+
       const response = await this.post<any>('/games/overview/v2', [gameId], {
         params: {
           key: this.apiKey,
@@ -186,17 +192,23 @@ export class IsThereAnyDealAPI extends BaseAPI {
         }
       });
 
+      logger.debug(`ITAD overview response for ${steamAppId}:`, JSON.stringify(response));
+
       if (response?.prices && response.prices.length > 0) {
         const gameData = response.prices.find((p: any) => p.id === gameId);
         if (gameData) {
-          return {
+          logger.debug(`Found game data for ${steamAppId}:`, JSON.stringify(gameData));
+          const overview = {
             price: gameData.current,
             lowest: gameData.lowest,
             bundles: response.bundles || []
           };
+          logger.info(`ITAD overview for ${steamAppId}: current=${gameData.current?.price}, lowest=${gameData.lowest?.price}`);
+          return overview;
         }
       }
 
+      logger.warn(`No price data found in ITAD overview response for ${steamAppId}`);
       return null;
     } catch (error) {
       logger.error(`Failed to get game overview for ${steamAppId}:`, error);
