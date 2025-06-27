@@ -235,4 +235,24 @@ export class PriceHistoryModel {
       throw error;
     }
   }
+
+  // 未リリースゲームのSteam App IDを取得
+  static getUnreleasedGames(): number[] {
+    try {
+      const db = database.getConnection();
+      const records = db.prepare(`
+        SELECT DISTINCT steam_app_id
+        FROM price_history
+        WHERE source = 'steam_unreleased'
+          AND id IN (
+            SELECT MAX(id) FROM price_history GROUP BY steam_app_id
+          )
+      `).all() as Array<{ steam_app_id: number }>;
+      
+      return records.map(record => record.steam_app_id);
+    } catch (error) {
+      logger.error('Failed to fetch unreleased games:', error);
+      throw error;
+    }
+  }
 }
