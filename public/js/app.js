@@ -41,41 +41,8 @@ function setupGlobalFunctions() {
     window.showMonitoring = showMonitoring;
     window.toggleDarkMode = toggleDarkMode;
     
-    // テスト用関数
-    window.testSteamDB = function() {
-        console.log('Testing SteamDB function...');
-        openSteamDB(730); // CS2のSteam App ID
-    };
 
-    window.testAddGameModal = function() {
-        console.log('Testing Add Game Modal...');
-        console.log('Bootstrap:', typeof bootstrap);
-        console.log('Modal element:', document.getElementById('addGameModal'));
-        try {
-            showAddGameModal();
-            console.log('showAddGameModal executed successfully');
-        } catch (error) {
-            console.error('Error in showAddGameModal:', error);
-        }
-    };
-    
-    // 基本的なクリックテスト関数
-    window.testClick = function() {
-        console.log('testClick function called!');
-        alert('Click test successful!');
-    };
-
-    // デバッグ用: 関数が正しく定義されているかチェック
-    console.log('Global functions defined:', {
-        openSteamDB: typeof window.openSteamDB,
-        showAddGameModal: typeof window.showAddGameModal,
-        addGame: typeof window.addGame,
-        deleteGame: typeof window.deleteGame,
-        editGame: typeof window.editGame,
-        runSingleGameMonitoring: typeof window.runSingleGameMonitoring,
-        testAddGameModal: typeof window.testAddGameModal,
-        testClick: typeof window.testClick
-    });
+    console.log('Global functions initialized successfully');
 }
 
 // Application initialization
@@ -625,7 +592,9 @@ async function addGame() {
         });
         
         if (response.success) {
-            showSuccess(`${gameName} を追加しました`);
+            // サーバーからメッセージがある場合はそれを使用、なければデフォルトメッセージ
+            const message = response.message || `${gameName} を追加しました`;
+            showSuccess(message);
             bootstrap.Modal.getInstance(document.getElementById('addGameModal')).hide();
             document.getElementById('addGameForm').reset();
             await loadDashboardData();
@@ -684,19 +653,30 @@ async function refreshGameList() {
 }
 
 // SteamDBページを開く
-function openSteamDB(steamAppId) {
+function openSteamDB(steamAppId, event) {
     try {
+        // デフォルト動作を防止（重複タブ防止）
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        
         console.log(`Opening SteamDB for app ID: ${steamAppId}`);
         const steamDbUrl = `https://steamdb.info/app/${steamAppId}/`;
+        
+        // 新タブで安全に開く
         const newWindow = window.open(steamDbUrl, '_blank', 'noopener,noreferrer');
         
         if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-            // ポップアップがブロックされた場合、ユーザーに通知
-            console.warn('Popup blocked by browser');
-            showWarning(
-                `ポップアップがブロックされました。SteamDBページを開くには、ブラウザの設定でポップアップを許可してください。`, 
-                0 // 0に設定することで自動消去しない
-            );
+            // ポップアップがブロックされた場合、フォールバック
+            console.warn('Popup blocked, using fallback method');
+            const link = document.createElement('a');
+            link.href = steamDbUrl;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         } else {
             console.log(`Successfully opened SteamDB: ${steamDbUrl}`);
         }

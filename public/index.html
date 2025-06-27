@@ -165,9 +165,6 @@
                                 <button class="btn btn-sm btn-primary" onclick="showAddGameModal()">
                                     <i class="bi bi-plus-lg"></i> ゲーム追加
                                 </button>
-                                <button class="btn btn-sm btn-warning ms-2" onclick="testClick()">
-                                    <i class="bi bi-bug"></i> テスト
-                                </button>
                             </div>
                         </div>
                         <div class="card-body">
@@ -332,23 +329,5 @@
     <script src="/js/ui.js"></script>
     <script src="/js/charts.js"></script>
     
-    <!-- Debug Script -->
-    <script>
-        // ページ読み込み完了後のデバッグ
-        window.addEventListener('load', function() {
-            console.log('Window load event fired');
-            console.log('Available functions:', {
-                testClick: typeof window.testClick,
-                testAddGameModal: typeof window.testAddGameModal,
-                showAddGameModal: typeof window.showAddGameModal,
-                bootstrap: typeof bootstrap
-            });
-        });
-        
-        // エラーハンドリング
-        window.addEventListener('error', function(e) {
-            console.error('Global error:', e.error);
-        });
-    </script>
 </body>
 </html>
