@@ -433,7 +433,7 @@ const url = `https://api.isthereanydeal.com/v01/deals/list/` +
 ### **実装予定機能**
 - [x] **アラート履歴表示** - 過去の最安値更新履歴
 - [x] **Steamストアページ直リンク** - 各ゲームから購入ページへ
-- [x] **ゲーム別アラート設定** - 個別通知ON/OFF
+- [x] **ゲーム別アラート設定** - 個別通知ON/OFF（編集モーダルで設定可能）
 - [x] **価格閾値設定** - 「○○円以下で通知」の個別設定
 - [x] **価格推移グラフ** - Chart.jsによる価格履歴可視化
 - [x] **セール期間表示** - 現在セールの終了日時
@@ -461,6 +461,12 @@ const url = `https://api.isthereanydeal.com/v01/deals/list/` +
 - [x] **CSP (Content Security Policy) 最適化** - セキュリティ保持とUI機能両立
 - [x] **UI機能完全動作確認** - モーダル、チャート、ボタン等の全機能動作済み
 - [x] **データ取得エラー警告** - 制限事項ページに価格データエラーの詳細説明追加
+- [x] **拡張価格閾値システム** - 3つのアラート条件（価格閾値・割引率閾値・セール開始）完全実装
+- [x] **ゲーム管理専用画面** - 全ゲーム一覧・詳細設定・監視無効ゲームも編集可能
+- [x] **データベースマイグレーション機能** - バージョン管理による自動スキーマ更新
+- [x] **包括的バックアップシステム** - エクスポート/インポート、3つのモード（マージ・スキップ・置換）
+- [x] **単一ゲーム監視機能** - 個別ゲームの即座価格更新・編集後自動更新
+- [x] **ゲーム編集モーダル** - 追加後の詳細設定変更、閾値タイプ動的切り替え
 
 ---
 
@@ -529,14 +535,16 @@ const url = `https://api.isthereanydeal.com/v01/deals/list/` +
 ### **ゲーム情報テーブル**
 ```sql
 games (
-  id INTEGER PRIMARY KEY,
-  steam_app_id INTEGER UNIQUE,
-  name TEXT,
-  enabled BOOLEAN DEFAULT true,
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  steam_app_id INTEGER UNIQUE NOT NULL,
+  name TEXT NOT NULL,
+  enabled BOOLEAN DEFAULT 1,
   price_threshold REAL,
-  alert_enabled BOOLEAN DEFAULT true,
-  created_at TIMESTAMP,
-  updated_at TIMESTAMP
+  price_threshold_type TEXT DEFAULT 'price' CHECK(price_threshold_type IN ('price', 'discount', 'any_sale')),
+  discount_threshold_percent INTEGER DEFAULT NULL,
+  alert_enabled BOOLEAN DEFAULT 1,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 )
 ```
 
@@ -571,9 +579,15 @@ alerts (
 )
 ```
 
----
+### **データベースバージョン管理テーブル**
+```sql
+db_version (
+  version INTEGER PRIMARY KEY,
+  applied_at DATETIME DEFAULT CURRENT_TIMESTAMP
+)
+```
 
-## ⚙️ 設定ファイル形式
+---
 
 ## ⚙️ 設定ファイル形式
 
@@ -753,3 +767,8 @@ LOG_MAX_FILES=7
 - **全UI機能バグ修正完了**: ゲーム追加モーダル、価格推移グラフ等の動作確認済み
 - **データ品質警告強化**: 制限事項ページでの価格データエラーに関する詳細な注意喚起追加
 - **UI/UXクリーンアップ**: デバッグコード削除とユーザー体験向上のための最適化完了
+- **拡張価格閾値システム完成**: 価格・割引率・セール開始の3つのアラート条件実装
+- **ゲーム管理画面完成**: 監視無効ゲームも含む全ゲーム管理・編集機能
+- **データベースマイグレーション実装**: 自動バージョン管理とスキーマ更新
+- **包括的バックアップシステム完成**: エクスポート/インポート、3つのモード対応
+- **ゲーム編集機能完成**: 詳細設定変更、動的フォーム、編集後自動更新
