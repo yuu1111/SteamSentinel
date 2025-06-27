@@ -79,13 +79,16 @@ export class APIService {
 
       if (itadOverview.status === 'fulfilled' && itadOverview.value) {
         const overview = itadOverview.value;
-        historicalLow = overview.lowest?.price || 0;
+        // 新ITAD API形式: price.amount を使用
+        historicalLow = overview.lowest?.price?.amount || 0;
         
         if (overview.price) {
-          itadCurrentPrice = overview.price.price;
-          itadDiscount = overview.price.cut;
+          itadCurrentPrice = overview.price.price?.amount || 0;
+          itadDiscount = overview.price.cut || 0;
           itadOnSale = itadDiscount > 0;
         }
+        
+        logger.debug(`ITAD data for ${gameName}: historical_low=${historicalLow}, current=${itadCurrentPrice}, discount=${itadDiscount}%`);
       } else {
         logger.warn(`ITAD data unavailable for ${gameName}:`, 
           itadOverview.status === 'rejected' ? itadOverview.reason : 'No data');

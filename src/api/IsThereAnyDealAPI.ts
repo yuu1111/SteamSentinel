@@ -203,7 +203,7 @@ export class IsThereAnyDealAPI extends BaseAPI {
             lowest: gameData.lowest,
             bundles: response.bundles || []
           };
-          logger.info(`ITAD overview for ${steamAppId}: current=${gameData.current?.price}, lowest=${gameData.lowest?.price}`);
+          logger.info(`ITAD overview for ${steamAppId}: current=${gameData.current?.price?.amount}, lowest=${gameData.lowest?.price?.amount}`);
           return overview;
         }
       }
@@ -288,7 +288,7 @@ export class IsThereAnyDealAPI extends BaseAPI {
   async getHistoricalLow(steamAppId: number): Promise<number | null> {
     try {
       const overview = await this.getGameOverview(steamAppId);
-      return overview?.lowest?.price || null;
+      return overview?.lowest?.price?.amount || null;
     } catch (error) {
       logger.error(`Failed to get historical low for ${steamAppId}:`, error);
       return null;
