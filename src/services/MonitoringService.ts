@@ -22,7 +22,7 @@ export class MonitoringService {
   }
 
   // 全ゲームの監視実行
-  async runMonitoring(): Promise<MonitoringResult[]> {
+  async runMonitoring(isManualRequest = false): Promise<MonitoringResult[]> {
     if (this.isRunning) {
       logger.warn('Monitoring already in progress, skipping this run');
       return [];
@@ -48,7 +48,8 @@ export class MonitoringService {
         enabledGames.map(game => ({
           steam_app_id: game.steam_app_id,
           name: game.name
-        }))
+        })),
+        isManualRequest
       );
 
       const results: MonitoringResult[] = [];
