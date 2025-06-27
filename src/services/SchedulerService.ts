@@ -1,5 +1,7 @@
 import * as cron from 'node-cron';
 import { MonitoringService } from './MonitoringService';
+import highDiscountDetectionService from './HighDiscountDetectionService';
+import epicGamesNotificationService from './EpicGamesNotificationService';
 import { config } from '../config';
 import logger from '../utils/logger';
 import database from '../db/database';
@@ -29,6 +31,12 @@ export class SchedulerService {
     try {
       // 価格監視タスク
       this.schedulePriceMonitoring();
+      
+      // 高割引ゲーム検知タスク
+      this.scheduleHighDiscountDetection();
+      
+      // Epic Games無料ゲーム通知タスク
+      this.scheduleEpicGamesNotification();
       
       // データベースクリーンアップタスク
       this.scheduleDatabaseCleanup();
@@ -123,6 +131,48 @@ export class SchedulerService {
     logger.info('Health check scheduled every 15 minutes');
   }
 
+  // 高割引ゲーム検知スケジュール
+  private scheduleHighDiscountDetection(): void {
+    // 6時間ごとに実行
+    const task = cron.schedule('0 */6 * * *', async () => {
+      try {
+        logger.info('Running scheduled high discount detection');
+        await highDiscountDetectionService.detectHighDiscountGames();
+      } catch (error) {
+        logger.error('Scheduled high discount detection failed:', error);
+      }
+    }, {
+      scheduled: false,
+      timezone: 'Asia/Tokyo'
+    });
+
+    this.scheduledTasks.set('highDiscountDetection', task);
+    task.start();
+    
+    logger.info('High discount detection scheduled every 6 hours');
+  }
+
+  // Epic Games無料ゲーム通知スケジュール
+  private scheduleEpicGamesNotification(): void {
+    // 毎日午前10時に実行（JST）
+    const task = cron.schedule('0 10 * * *', async () => {
+      try {
+        logger.info('Running scheduled Epic Games free games check');
+        await epicGamesNotificationService.checkEpicFreeGames();
+      } catch (error) {
+        logger.error('Scheduled Epic Games check failed:', error);
+      }
+    }, {
+      scheduled: false,
+      timezone: 'Asia/Tokyo'
+    });
+
+    this.scheduledTasks.set('epicGamesNotification', task);
+    task.start();
+    
+    logger.info('Epic Games notification scheduled daily at 10:00 AM JST');
+  }
+
   // 時間間隔からcron式を生成
   private generateCronExpression(hours: number): string {
     if (hours >= 24) {
@@ -179,6 +229,32 @@ export class SchedulerService {
       logger.info(`Manual monitoring completed for game ${steamAppId}`);
     } catch (error) {
       logger.error(`Manual monitoring failed for game ${steamAppId}:`, error);
+      throw error;
+    }
+  }
+
+  // 手動高割引ゲーム検知
+  async runManualHighDiscountDetection(): Promise<any[]> {
+    try {
+      logger.info('Manual high discount detection triggered');
+      const results = await highDiscountDetectionService.detectHighDiscountGames();
+      logger.info(`Manual high discount detection completed: ${results.length} games found`);
+      return results;
+    } catch (error) {
+      logger.error('Manual high discount detection failed:', error);
+      throw error;
+    }
+  }
+
+  // 手動Epic Games無料ゲーム検知
+  async runManualEpicGamesCheck(): Promise<any[]> {
+    try {
+      logger.info('Manual Epic Games check triggered');
+      const results = await epicGamesNotificationService.checkEpicFreeGames();
+      logger.info(`Manual Epic Games check completed: ${results.length} free games found`);
+      return results;
+    } catch (error) {
+      logger.error('Manual Epic Games check failed:', error);
       throw error;
     }
   }

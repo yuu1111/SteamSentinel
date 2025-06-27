@@ -341,6 +341,83 @@ export class IsThereAnyDealAPI extends BaseAPI {
     }
   }
 
+  // 高割引ゲームの取得
+  async getHighDiscountDeals(options: {
+    minDiscount: number;
+    limit?: number;
+    region?: string;
+    maxPrice?: number;
+  }): Promise<Array<{
+    name: string;
+    steam_app_id: number;
+    current_price: number;
+    original_price: number;
+    discount_percent: number;
+    review_score?: number;
+    review_count?: number;
+  }>> {
+    try {
+      const response = await this.get<any>('/deals/v2', {
+        params: {
+          key: this.apiKey,
+          country: options.region || this.country,
+          shops: '61', // Steam shop ID
+          limit: options.limit || 100,
+          cut: options.minDiscount,
+          price_to: options.maxPrice,
+          sort: 'cut:desc' // 割引率順でソート
+        }
+      });
+
+      if (!response?.list || !Array.isArray(response.list)) {
+        logger.warn('No deals found in ITAD response');
+        return [];
+      }
+
+      const highDiscountGames = [];
+
+      for (const deal of response.list) {
+        try {
+          // Steam店舗のデータのみを処理
+          if (deal.shop?.id === 61 && deal.plain) {
+            // Steam App IDを抽出（app/123456形式から）
+            const appIdMatch = deal.plain.match(/app\/(\d+)/);
+            if (!appIdMatch) continue;
+
+            const steamAppId = parseInt(appIdMatch[1], 10);
+            
+            const gameData = {
+              name: deal.title || 'Unknown Game',
+              steam_app_id: steamAppId,
+              current_price: deal.price_new || 0,
+              original_price: deal.price_old || 0,
+              discount_percent: deal.price_cut || 0,
+              review_score: undefined, // ITADにはレビューデータがないため
+              review_count: undefined
+            };
+
+            // 基本的な妥当性チェック
+            if (gameData.discount_percent >= options.minDiscount && 
+                gameData.current_price > 0 && 
+                gameData.original_price > gameData.current_price) {
+              highDiscountGames.push(gameData);
+            }
+          }
+        } catch (dealError) {
+          logger.warn('Error processing deal:', dealError);
+          continue;
+        }
+      }
+
+      logger.info(`Found ${highDiscountGames.length} high discount games (${options.minDiscount}%+ off)`);
+      return highDiscountGames;
+
+    } catch (error) {
+      logger.error('Failed to get high discount deals:', error);
+      throw error;
+    }
+  }
+
   // APIキーの検証
   async validateApiKey(): Promise<boolean> {
     try {
