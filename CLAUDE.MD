@@ -452,6 +452,9 @@ const url = `https://api.isthereanydeal.com/v01/deals/list/` +
 - [x] **SteamDBボタン** - 各ゲームのSteamDBページへの直接アクセス（セキュリティ配慮済み）
 - [x] **ゲーム名自動更新** - Steam APIから取得したゲーム名でデータベース自動更新
 - [x] **カテゴリ別統計表示** - 基本無料・未リリース・販売終了・失敗ゲームの詳細統計
+- [x] **制限事項・ライセンス情報ページ** - フッターからアクセス可能な詳細ドキュメント
+- [x] **データ制限警告機能** - 歴代最安値の6ヶ月制限について警告アイコンとツールチップ表示
+- [x] **未リリースゲームのリリース日監視基盤** - データベーススキーマとインターフェース準備完了
 
 ---
 
@@ -481,7 +484,7 @@ const url = `https://api.isthereanydeal.com/v01/deals/list/` +
 ## ⚡ 技術要件
 
 ### **API制限・エラー処理**
-- **IsThereAnyDeal API**: リクエスト間隔3秒以上、ヒューリスティック制限対応
+- **IsThereAnyDeal API**: リクエスト間隔2秒以上、ヒューリスティック制限対応、API v2形式対応
 - **Steam Store API**: リクエスト間隔3秒以上、1日1000リクエスト程度の制限
 - **429エラー対応**: 指数バックオフ戦略（初回1秒、最大60秒）
 - **API障害時**: 次回監視サイクルまで該当ゲームをスキップ
@@ -541,7 +544,8 @@ price_history (
   historical_low REAL,
   is_on_sale BOOLEAN,
   source TEXT, -- 'itad', 'steam', 'steam_unreleased', 'steam_free', 'steam_removed'
-  recorded_at TIMESTAMP
+  recorded_at TIMESTAMP,
+  release_date TEXT -- 未リリースゲームのリリース日（ISO文字列）
 )
 ```
 
@@ -550,12 +554,13 @@ price_history (
 alerts (
   id INTEGER PRIMARY KEY,
   steam_app_id INTEGER,
-  alert_type TEXT, -- 'new_low' or 'sale_start'
+  alert_type TEXT, -- 'new_low', 'sale_start', 'release'
   trigger_price REAL,
   previous_low REAL,
   discount_percent INTEGER,
   notified_discord BOOLEAN DEFAULT false,
-  created_at TIMESTAMP
+  created_at TIMESTAMP,
+  release_date TEXT -- リリース通知の場合のリリース日
 )
 ```
 
@@ -714,6 +719,8 @@ LOG_MAX_FILES=7
 2. **エラーハンドリング**: API障害時の適切なフォールバック
 3. **設定値検証**: 仕様書記載の制限値内での動作保証
 4. **レスポンシブUI**: モバイル対応、ダークモード対応
+5. **データ制限の明示**: ITAD APIの6ヶ月データ制限について適切な警告表示
+6. **ライセンス遵守**: 使用中のライブラリ・サービスのライセンス情報を適切に表示
 
 ### **APIキー管理**
 - フェーズ1実装時: ITAD_API_KEY のみ必須
@@ -725,3 +732,11 @@ LOG_MAX_FILES=7
 - IGDB API失敗時のOpenCritic自動フォールバック
 - 非公式API障害時の適切なエラーメッセージ
 - Steam Store API制限時の監視間隔自動調整
+
+### **最新実装状況**
+- **ITAD API v2対応完了**: 新しいネスト構造のデータ形式に対応
+- **制限事項・ライセンス情報ページ完成**: フッターからアクセス可能
+- **歴代最安値データ制限警告**: 6ヶ月制限の適切な表示
+- **未リリースゲームリリース日監視基盤**: データベーススキーマ更新済み
+- **セキュリティ強化**: SteamDBボタンの新タブ専用化
+- **UI/UX改善**: ユーザー体験向上のための各種調整
