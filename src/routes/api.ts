@@ -13,6 +13,7 @@ const gameRoutes = Router();
 
 gameRoutes.get('/', (req, res) => GameController.getAllGames(req, res));
 gameRoutes.get('/dashboard', (req, res) => GameController.getDashboardData(req, res));
+gameRoutes.get('/expenses', (req, res) => GameController.getExpenseData(req, res));
 gameRoutes.get('/export', (req, res) => GameController.exportGames(req, res));
 gameRoutes.post('/import', (req, res) => GameController.importGames(req, res));
 gameRoutes.get('/:id', (req, res) => GameController.getGameById(req, res));
@@ -20,6 +21,10 @@ gameRoutes.post('/', (req, res) => GameController.addGame(req, res));
 gameRoutes.put('/:id', (req, res) => GameController.updateGame(req, res));
 gameRoutes.delete('/:id', (req, res) => GameController.deleteGame(req, res));
 gameRoutes.get('/:appId/price-history', validateSteamAppId, (req, res) => GameController.getGamePriceHistory(req, res));
+gameRoutes.get('/:appId/reviews', validateSteamAppId, (req, res) => GameController.getGameReviews(req, res));
+gameRoutes.post('/reviews/batch', (req, res) => GameController.getMultipleGameReviews(req, res));
+gameRoutes.get('/:appId/info', validateSteamAppId, (req, res) => GameController.getGameInfo(req, res));
+gameRoutes.post('/info/batch', (req, res) => GameController.getMultipleGameInfo(req, res));
 
 router.use('/games', gameRoutes);
 

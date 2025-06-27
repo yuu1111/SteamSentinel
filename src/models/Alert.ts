@@ -235,4 +235,27 @@ export class AlertModel {
       throw error;
     }
   }
+
+  // 日付範囲でアラートを取得（出費追跡用）
+  static getByDateRange(startDate: Date, endDate: Date): Alert[] {
+    try {
+      const db = database.getConnection();
+      const records = db.prepare(`
+        SELECT a.*, g.name as game_name
+        FROM alerts a
+        JOIN games g ON a.steam_app_id = g.steam_app_id
+        WHERE a.created_at BETWEEN ? AND ?
+        ORDER BY a.created_at DESC
+      `).all(startDate.toISOString(), endDate.toISOString()) as any[];
+      
+      return records.map(record => ({
+        ...record,
+        notified_discord: record.notified_discord === 1,
+        created_at: new Date(record.created_at)
+      }));
+    } catch (error) {
+      logger.error('Failed to fetch alerts by date range:', error);
+      throw error;
+    }
+  }
 }

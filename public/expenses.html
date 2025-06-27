@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>出費追跡ダッシュボード - SteamSentinel</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+</head>
+<body class="bg-dark text-light">
+    <header class="bg-primary py-3">
+        <div class="container-fluid">
+            <nav class="navbar navbar-expand-lg navbar-dark">
+                <a href="/" class="navbar-brand">
+                    <i class="fas fa-chart-line me-2"></i>SteamSentinel - 出費追跡
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item">
+                            <a href="/" class="nav-link">
+                                <i class="fas fa-home me-1"></i>メイン
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="/expenses.html" class="nav-link active">
+                                <i class="fas fa-chart-pie me-1"></i>出費追跡
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <button id="theme-toggle" class="btn btn-outline-light btn-sm nav-link border-0">
+                                <i class="fas fa-moon" id="theme-icon"></i>
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container-fluid py-4">
+        <!-- 期間選択 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card bg-secondary">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-calendar-alt me-2"></i>分析期間
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="btn-group" role="group">
+                            <input type="radio" class="btn-check" name="period" id="period-month" value="month" checked>
+                            <label class="btn btn-outline-light" for="period-month">直近1ヶ月</label>
+                            
+                            <input type="radio" class="btn-check" name="period" id="period-quarter" value="quarter">
+                            <label class="btn btn-outline-light" for="period-quarter">直近3ヶ月</label>
+                            
+                            <input type="radio" class="btn-check" name="period" id="period-year" value="year">
+                            <label class="btn btn-outline-light" for="period-year">直近1年</label>
+                        </div>
+                        <button id="refresh-data" class="btn btn-primary ms-3">
+                            <i class="fas fa-sync-alt me-1"></i>データ更新
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- サマリーカード -->
+        <div class="row mb-4">
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="card bg-secondary text-center">
+                    <div class="card-body">
+                        <i class="fas fa-yen-sign fa-2x text-danger mb-2"></i>
+                        <h4 id="total-expenses" class="text-danger">¥0</h4>
+                        <p class="mb-0">総支出額</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="card bg-secondary text-center">
+                    <div class="card-body">
+                        <i class="fas fa-piggy-bank fa-2x text-success mb-2"></i>
+                        <h4 id="total-savings" class="text-success">¥0</h4>
+                        <p class="mb-0">節約額</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="card bg-secondary text-center">
+                    <div class="card-body">
+                        <i class="fas fa-gamepad fa-2x text-info mb-2"></i>
+                        <h4 id="total-games" class="text-info">0</h4>
+                        <p class="mb-0">購入ゲーム数</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="card bg-secondary text-center">
+                    <div class="card-body">
+                        <i class="fas fa-percentage fa-2x text-warning mb-2"></i>
+                        <h4 id="savings-rate" class="text-warning">0%</h4>
+                        <p class="mb-0">節約率</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- チャートエリア -->
+        <div class="row mb-4">
+            <div class="col-lg-8 mb-3">
+                <div class="card bg-secondary">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-line me-2"></i>月別支出トレンド
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="monthly-expenses-chart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4 mb-3">
+                <div class="card bg-secondary">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-pie me-2"></i>割引カテゴリ別
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="category-chart" width="300" height="300"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ゲーム別支出テーブル -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card bg-secondary">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-list me-2"></i>ゲーム別支出一覧
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table id="game-expenses-table" class="table table-dark table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>ゲーム名</th>
+                                        <th>支出額</th>
+                                        <th>購入回数</th>
+                                        <th>平均割引率</th>
+                                        <th>最終購入日</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="game-expenses-body">
+                                    <!-- 動的に生成 -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 最近の購入履歴 -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card bg-secondary">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-clock me-2"></i>最近の購入履歴
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="recent-purchases" class="list-group list-group-flush">
+                            <!-- 動的に生成 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Loading スピナー -->
+    <div id="loading-spinner" class="d-none position-fixed top-50 start-50 translate-middle">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+
+    <footer class="bg-secondary text-center py-3 mt-5">
+        <div class="container">
+            <p class="mb-0">
+                <a href="/limitations.html" class="text-light text-decoration-none me-3">制限事項</a>
+                <a href="/licenses.html" class="text-light text-decoration-none">ライセンス情報</a>
+            </p>
+            <p class="mb-0">&copy; 2025 SteamSentinel. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/expenses.js"></script>
+</body>
+</html>

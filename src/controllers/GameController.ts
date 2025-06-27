@@ -3,6 +3,8 @@ import { GameModel } from '../models/Game';
 import { PriceHistoryModel } from '../models/PriceHistory';
 import { AlertModel } from '../models/Alert';
 import { MonitoringService } from '../services/MonitoringService';
+import reviewIntegrationService from '../services/ReviewIntegrationService';
+import gameInfoService from '../services/GameInfoService';
 import logger from '../utils/logger';
 
 export class GameController {
@@ -418,6 +420,271 @@ export class GameController {
       return res.status(500).json({
         success: false,
         error: 'Failed to import games'
+      });
+    }
+  }
+
+  // 出費追跡データ取得
+  static async getExpenseData(req: Request, res: Response): Promise<Response> {
+    try {
+      const period = req.query.period as string || 'month'; // month, quarter, year
+      const startDate = new Date();
+      
+      // 期間設定
+      switch (period) {
+        case 'quarter':
+          startDate.setMonth(startDate.getMonth() - 3);
+          break;
+        case 'year':
+          startDate.setFullYear(startDate.getFullYear() - 1);
+          break;
+        default: // month
+          startDate.setMonth(startDate.getMonth() - 1);
+      }
+
+      // 期間内のアラート（実際の購入として扱う）
+      const alerts = AlertModel.getByDateRange(startDate, new Date());
+      
+      // ゲームごとの出費計算
+      const expensesByGame = new Map<number, {
+        game: any;
+        totalSpent: number;
+        purchaseCount: number;
+        averageDiscount: number;
+        lastPurchase: Date;
+      }>();
+
+      let totalExpenses = 0;
+      let totalSavings = 0;
+
+      for (const alert of alerts) {
+        const game = GameModel.getBySteamAppId(alert.steam_app_id);
+        if (!game) continue;
+
+        const purchasePrice = alert.trigger_price || 0;
+        const originalPrice = alert.previous_low || purchasePrice;
+        const savings = originalPrice - purchasePrice;
+
+        totalExpenses += purchasePrice;
+        totalSavings += savings;
+
+        if (expensesByGame.has(alert.steam_app_id)) {
+          const existing = expensesByGame.get(alert.steam_app_id)!;
+          existing.totalSpent += purchasePrice;
+          existing.purchaseCount++;
+          existing.averageDiscount = ((existing.averageDiscount * (existing.purchaseCount - 1)) + (alert.discount_percent || 0)) / existing.purchaseCount;
+          if (alert.created_at > existing.lastPurchase) {
+            existing.lastPurchase = alert.created_at;
+          }
+        } else {
+          expensesByGame.set(alert.steam_app_id, {
+            game,
+            totalSpent: purchasePrice,
+            purchaseCount: 1,
+            averageDiscount: alert.discount_percent || 0,
+            lastPurchase: alert.created_at
+          });
+        }
+      }
+
+      // 月別支出統計
+      const monthlyExpenses = new Map<string, number>();
+      const monthlySavings = new Map<string, number>();
+      
+      for (const alert of alerts) {
+        const monthKey = alert.created_at.toISOString().substring(0, 7); // YYYY-MM
+        const purchasePrice = alert.trigger_price || 0;
+        const originalPrice = alert.previous_low || purchasePrice;
+        const savings = originalPrice - purchasePrice;
+
+        monthlyExpenses.set(monthKey, (monthlyExpenses.get(monthKey) || 0) + purchasePrice);
+        monthlySavings.set(monthKey, (monthlySavings.get(monthKey) || 0) + savings);
+      }
+
+      // カテゴリ別統計（割引率による分類）
+      const categories = {
+        bargain: { count: 0, total: 0, label: '大幅割引 (70%+)' },
+        moderate: { count: 0, total: 0, label: '中割引 (30-69%)' },
+        small: { count: 0, total: 0, label: '小割引 (1-29%)' },
+        full_price: { count: 0, total: 0, label: '定価購入' }
+      };
+
+      for (const alert of alerts) {
+        const discountPercent = alert.discount_percent || 0;
+        const price = alert.trigger_price || 0;
+
+        if (discountPercent >= 70) {
+          categories.bargain.count++;
+          categories.bargain.total += price;
+        } else if (discountPercent >= 30) {
+          categories.moderate.count++;
+          categories.moderate.total += price;
+        } else if (discountPercent > 0) {
+          categories.small.count++;
+          categories.small.total += price;
+        } else {
+          categories.full_price.count++;
+          categories.full_price.total += price;
+        }
+      }
+
+      return res.json({
+        success: true,
+        data: {
+          period,
+          summary: {
+            totalExpenses,
+            totalSavings,
+            totalGames: expensesByGame.size,
+            averagePrice: expensesByGame.size > 0 ? totalExpenses / expensesByGame.size : 0,
+            savingsRate: totalExpenses > 0 ? (totalSavings / (totalExpenses + totalSavings)) * 100 : 0
+          },
+          gameExpenses: Array.from(expensesByGame.values()).sort((a, b) => b.totalSpent - a.totalSpent),
+          monthlyTrends: {
+            expenses: Array.from(monthlyExpenses.entries()).map(([month, amount]) => ({ month, amount })),
+            savings: Array.from(monthlySavings.entries()).map(([month, amount]) => ({ month, amount }))
+          },
+          categories,
+          recentPurchases: alerts.slice(0, 10)
+        }
+      });
+    } catch (error) {
+      logger.error('Failed to get expense data:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to retrieve expense data'
+      });
+    }
+  }
+
+  // ゲームレビュー情報取得
+  static async getGameReviews(req: Request, res: Response): Promise<Response> {
+    try {
+      const steamAppId = parseInt(req.params.appId, 10);
+      
+      const game = GameModel.getBySteamAppId(steamAppId);
+      if (!game) {
+        return res.status(404).json({
+          success: false,
+          error: 'Game not found'
+        });
+      }
+
+      const reviews = await reviewIntegrationService.getGameReviews(steamAppId, game.name);
+      
+      return res.json({
+        success: true,
+        data: reviews
+      });
+    } catch (error) {
+      logger.error('Failed to get game reviews:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to retrieve game reviews'
+      });
+    }
+  }
+
+  // 複数ゲームのレビュー一括取得
+  static async getMultipleGameReviews(req: Request, res: Response): Promise<Response> {
+    try {
+      const gameIds = req.body.gameIds as number[];
+      
+      if (!Array.isArray(gameIds) || gameIds.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'Game IDs array is required'
+        });
+      }
+
+      const games = gameIds.map(id => {
+        const game = GameModel.getBySteamAppId(id);
+        return game ? { steamAppId: id, name: game.name } : null;
+      }).filter(Boolean) as Array<{ steamAppId: number; name: string }>;
+
+      const reviewsMap = await reviewIntegrationService.getMultipleGameReviews(games);
+      
+      // Map を Object に変換
+      const reviewsObject: Record<number, any> = {};
+      for (const [steamAppId, reviews] of reviewsMap.entries()) {
+        reviewsObject[steamAppId] = reviews;
+      }
+
+      return res.json({
+        success: true,
+        data: reviewsObject
+      });
+    } catch (error) {
+      logger.error('Failed to get multiple game reviews:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to retrieve game reviews'
+      });
+    }
+  }
+
+  // ゲーム詳細情報取得（HowLongToBeat, PCGamingWiki, ProtonDB統合）
+  static async getGameInfo(req: Request, res: Response): Promise<Response> {
+    try {
+      const steamAppId = parseInt(req.params.appId, 10);
+      
+      const game = GameModel.getBySteamAppId(steamAppId);
+      if (!game) {
+        return res.status(404).json({
+          success: false,
+          error: 'Game not found'
+        });
+      }
+
+      const gameInfo = await gameInfoService.getGameInfo(steamAppId, game.name);
+      
+      return res.json({
+        success: true,
+        data: gameInfo
+      });
+    } catch (error) {
+      logger.error('Failed to get game info:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to retrieve game information'
+      });
+    }
+  }
+
+  // 複数ゲームの詳細情報一括取得
+  static async getMultipleGameInfo(req: Request, res: Response): Promise<Response> {
+    try {
+      const gameIds = req.body.gameIds as number[];
+      
+      if (!Array.isArray(gameIds) || gameIds.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'Game IDs array is required'
+        });
+      }
+
+      const games = gameIds.map(id => {
+        const game = GameModel.getBySteamAppId(id);
+        return game ? { steamAppId: id, name: game.name } : null;
+      }).filter(Boolean) as Array<{ steamAppId: number; name: string }>;
+
+      const infoMap = await gameInfoService.getMultipleGameInfo(games);
+      
+      // Map を Object に変換
+      const infoObject: Record<number, any> = {};
+      for (const [steamAppId, info] of infoMap.entries()) {
+        infoObject[steamAppId] = info;
+      }
+
+      return res.json({
+        success: true,
+        data: infoObject
+      });
+    } catch (error) {
+      logger.error('Failed to get multiple game info:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to retrieve game information'
       });
     }
   }
