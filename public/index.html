@@ -159,6 +159,12 @@
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <h5 class="mb-0"><i class="bi bi-collection me-2"></i>監視中ゲーム</h5>
                             <div>
+                                <button class="btn btn-sm btn-outline-success me-2" onclick="exportGames()">
+                                    <i class="bi bi-download"></i> エクスポート
+                                </button>
+                                <button class="btn btn-sm btn-outline-warning me-2" onclick="showImportModal()">
+                                    <i class="bi bi-upload"></i> インポート
+                                </button>
                                 <button class="btn btn-sm btn-outline-primary me-2" onclick="refreshGameList()">
                                     <i class="bi bi-arrow-clockwise"></i> 更新
                                 </button>
@@ -216,7 +222,49 @@
                     <h2><i class="bi bi-collection me-2"></i>ゲーム管理</h2>
                 </div>
             </div>
-            <!-- Games management content will be added here -->
+            
+            <!-- Game Management List -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="bi bi-gear me-2"></i>全ゲーム一覧</h5>
+                            <div>
+                                <button class="btn btn-sm btn-outline-success me-2" onclick="exportGames()">
+                                    <i class="bi bi-download"></i> エクスポート
+                                </button>
+                                <button class="btn btn-sm btn-outline-warning me-2" onclick="showImportModal()">
+                                    <i class="bi bi-upload"></i> インポート
+                                </button>
+                                <button class="btn btn-sm btn-outline-primary me-2" onclick="refreshAllGamesList()">
+                                    <i class="bi bi-arrow-clockwise"></i> 更新
+                                </button>
+                                <button class="btn btn-sm btn-primary" onclick="showAddGameModal()">
+                                    <i class="bi bi-plus-lg"></i> ゲーム追加
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover" id="allGamesTable">
+                                    <thead>
+                                        <tr>
+                                            <th style="white-space: nowrap;">ゲーム名</th>
+                                            <th style="white-space: nowrap;">監視状態</th>
+                                            <th style="white-space: nowrap;">アラート条件</th>
+                                            <th style="white-space: nowrap;">アラート</th>
+                                            <th style="white-space: nowrap;">操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="allGamesTableBody">
+                                        <!-- All games data will be loaded here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Alerts View -->
@@ -263,9 +311,35 @@
                             <input type="text" class="form-control" id="gameName" required>
                         </div>
                         <div class="mb-3">
-                            <label for="priceThreshold" class="form-label">価格閾値 (円)</label>
-                            <input type="number" class="form-control" id="priceThreshold" min="0" step="0.01">
-                            <div class="form-text">この金額以下になったときにアラートを送信</div>
+                            <label class="form-label">アラート条件</label>
+                            <div class="mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="thresholdType" id="thresholdTypePrice" value="price" checked>
+                                    <label class="form-check-label" for="thresholdTypePrice">
+                                        価格閾値 - 指定した金額以下になったら通知
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="thresholdType" id="thresholdTypeDiscount" value="discount">
+                                    <label class="form-check-label" for="thresholdTypeDiscount">
+                                        割引率閾値 - 指定した割引率以上になったら通知
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="thresholdType" id="thresholdTypeAnySale" value="any_sale">
+                                    <label class="form-check-label" for="thresholdTypeAnySale">
+                                        セール開始 - 1円でも安くなったら通知
+                                    </label>
+                                </div>
+                            </div>
+                            <div id="priceThresholdField" class="mb-2">
+                                <input type="number" class="form-control" id="priceThreshold" min="0" step="0.01" placeholder="例: 2000">
+                                <div class="form-text">この金額以下になったときにアラートを送信</div>
+                            </div>
+                            <div id="discountThresholdField" class="mb-2" style="display: none;">
+                                <input type="number" class="form-control" id="discountThreshold" min="1" max="99" step="1" placeholder="例: 50">
+                                <div class="form-text">この割引率以上になったときにアラートを送信（%）</div>
+                            </div>
                         </div>
                         <div class="mb-3 form-check">
                             <input type="checkbox" class="form-check-input" id="gameEnabled" checked>
@@ -285,6 +359,75 @@
         </div>
     </div>
 
+    <!-- Edit Game Modal -->
+    <div class="modal fade" id="editGameModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">ゲーム設定を編集</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editGameForm">
+                        <input type="hidden" id="editGameId">
+                        <div class="mb-3">
+                            <label for="editSteamAppId" class="form-label">Steam App ID</label>
+                            <input type="number" class="form-control" id="editSteamAppId" readonly>
+                            <div class="form-text">Steam App IDは変更できません</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editGameName" class="form-label">ゲーム名 *</label>
+                            <input type="text" class="form-control" id="editGameName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">アラート条件</label>
+                            <div class="mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="editThresholdType" id="editThresholdTypePrice" value="price" checked>
+                                    <label class="form-check-label" for="editThresholdTypePrice">
+                                        価格閾値 - 指定した金額以下になったら通知
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="editThresholdType" id="editThresholdTypeDiscount" value="discount">
+                                    <label class="form-check-label" for="editThresholdTypeDiscount">
+                                        割引率閾値 - 指定した割引率以上になったら通知
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="editThresholdType" id="editThresholdTypeAnySale" value="any_sale">
+                                    <label class="form-check-label" for="editThresholdTypeAnySale">
+                                        セール開始 - 1円でも安くなったら通知
+                                    </label>
+                                </div>
+                            </div>
+                            <div id="editPriceThresholdField" class="mb-2">
+                                <input type="number" class="form-control" id="editPriceThreshold" min="0" step="0.01" placeholder="例: 2000">
+                                <div class="form-text">この金額以下になったときにアラートを送信</div>
+                            </div>
+                            <div id="editDiscountThresholdField" class="mb-2" style="display: none;">
+                                <input type="number" class="form-control" id="editDiscountThreshold" min="1" max="99" step="1" placeholder="例: 50">
+                                <div class="form-text">この割引率以上になったときにアラートを送信（%）</div>
+                            </div>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="editGameEnabled">
+                            <label class="form-check-label" for="editGameEnabled">監視を有効にする</label>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="editAlertEnabled">
+                            <label class="form-check-label" for="editAlertEnabled">アラートを有効にする</label>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                    <button type="button" class="btn btn-primary" onclick="saveGameEdit()">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Price Chart Modal -->
     <div class="modal fade" id="priceChartModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
@@ -297,6 +440,61 @@
                     <div style="position: relative; height: 400px; width: 100%;">
                         <canvas id="priceChart"></canvas>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Games Modal -->
+    <div class="modal fade" id="importGamesModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">ゲームリストをインポート</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="importGamesForm">
+                        <div class="mb-3">
+                            <label for="importFile" class="form-label">バックアップファイルを選択</label>
+                            <input type="file" class="form-control" id="importFile" accept=".json" required>
+                            <div class="form-text">
+                                SteamSentinelでエクスポートしたJSONファイルを選択してください
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">インポートモード</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="importMode" id="importModeMerge" value="merge" checked>
+                                <label class="form-check-label" for="importModeMerge">
+                                    <strong>マージ</strong> - 既存のゲームを保持し、新しいゲームを追加・更新
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="importMode" id="importModeSkip" value="skip">
+                                <label class="form-check-label" for="importModeSkip">
+                                    <strong>スキップ</strong> - 既存のゲームは変更せず、新しいゲームのみ追加
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="importMode" id="importModeReplace" value="replace">
+                                <label class="form-check-label" for="importModeReplace">
+                                    <strong>置換</strong> - 既存のゲームをすべて削除してから追加
+                                    <div class="text-danger small">※ 価格履歴・アラート履歴も削除されます</div>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            インポート前に現在のゲームリストをエクスポートしてバックアップすることをお勧めします。
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                    <button type="button" class="btn btn-warning" onclick="importGames()">
+                        <i class="bi bi-upload"></i> インポート
+                    </button>
                 </div>
             </div>
         </div>
