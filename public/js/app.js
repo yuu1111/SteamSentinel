@@ -231,25 +231,156 @@ function updateSpecialGameStatus(games) {
                              gameCategories.unreleased.length + gameCategories.removed.length;
     
     if (totalSpecialGames > 0) {
+        const detailsHTML = generateSpecialGameDetails(gameCategories);
+        
         const alertHTML = `
             <div class="col-12">
-                <div class="alert alert-warning alert-dismissible fade show" role="alert">
-                    <i class="bi bi-exclamation-triangle me-2"></i>
-                    <strong>${totalSpecialGames}ゲームが特別な状況です：</strong>
-                    価格取得失敗 ${gameCategories.failed.length}件、
-                    基本無料 ${gameCategories.freeToPlay.length}件、
-                    未リリース ${gameCategories.unreleased.length}件、
-                    販売終了 ${gameCategories.removed.length}件
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                <div class="alert alert-warning" role="alert">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            <strong>${totalSpecialGames}ゲームが特別な状況です：</strong>
+                            価格取得失敗 ${gameCategories.failed.length}件、
+                            基本無料 ${gameCategories.freeToPlay.length}件、
+                            未リリース ${gameCategories.unreleased.length}件、
+                            販売終了 ${gameCategories.removed.length}件
+                        </div>
+                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#specialGameDetails" aria-expanded="false" aria-controls="specialGameDetails">
+                            <i class="bi bi-chevron-down"></i> 詳細
+                        </button>
+                    </div>
+                    <div class="collapse mt-3" id="specialGameDetails">
+                        ${detailsHTML}
+                    </div>
                 </div>
             </div>
         `;
         
         alertContainer.innerHTML = alertHTML;
         alertContainer.style.display = 'block';
+        
+        // 折りたたみボタンのアイコン切り替えイベントを追加
+        const collapseElement = document.getElementById('specialGameDetails');
+        if (collapseElement) {
+            collapseElement.addEventListener('show.bs.collapse', function () {
+                const button = document.querySelector('[data-bs-target="#specialGameDetails"] i');
+                if (button) {
+                    button.className = 'bi bi-chevron-up';
+                }
+            });
+            
+            collapseElement.addEventListener('hide.bs.collapse', function () {
+                const button = document.querySelector('[data-bs-target="#specialGameDetails"] i');
+                if (button) {
+                    button.className = 'bi bi-chevron-down';
+                }
+            });
+        }
     } else {
         alertContainer.style.display = 'none';
     }
+}
+
+function generateSpecialGameDetails(gameCategories) {
+    let html = '<div class="row">';
+    
+    // 価格取得失敗
+    if (gameCategories.failed.length > 0) {
+        html += `
+            <div class="col-md-6 mb-3">
+                <div class="card border-danger">
+                    <div class="card-header bg-danger text-white">
+                        <h6 class="mb-0"><i class="bi bi-exclamation-octagon me-2"></i>価格取得失敗 (${gameCategories.failed.length}件)</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="failed-games-list">
+                            ${gameCategories.failed.map(game => `
+                                <div class="mb-2">
+                                    <strong>${game.name}</strong>
+                                    <small class="text-muted d-block">App ID: ${game.steam_app_id}</small>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    // 基本無料ゲーム
+    if (gameCategories.freeToPlay.length > 0) {
+        html += `
+            <div class="col-md-6 mb-3">
+                <div class="card border-success">
+                    <div class="card-header bg-success text-white">
+                        <h6 class="mb-0"><i class="bi bi-gift me-2"></i>基本無料ゲーム (${gameCategories.freeToPlay.length}件)</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="failed-games-list">
+                            ${gameCategories.freeToPlay.map(game => `
+                                <div class="mb-2">
+                                    <strong>${game.name}</strong>
+                                    <small class="text-muted d-block">App ID: ${game.steam_app_id}</small>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    // 未リリースゲーム
+    if (gameCategories.unreleased.length > 0) {
+        html += `
+            <div class="col-md-6 mb-3">
+                <div class="card border-info">
+                    <div class="card-header bg-info text-white">
+                        <h6 class="mb-0"><i class="bi bi-clock me-2"></i>未リリースゲーム (${gameCategories.unreleased.length}件)</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="failed-games-list">
+                            ${gameCategories.unreleased.map(game => `
+                                <div class="mb-2">
+                                    <strong>${game.name}</strong>
+                                    <small class="text-muted d-block">App ID: ${game.steam_app_id}</small>
+                                    ${game.latestPrice && game.latestPrice.release_date ? 
+                                        `<small class="text-info d-block">リリース予定: ${new Date(game.latestPrice.release_date).toLocaleDateString('ja-JP')}</small>` : ''
+                                    }
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    // 販売終了ゲーム
+    if (gameCategories.removed.length > 0) {
+        html += `
+            <div class="col-md-6 mb-3">
+                <div class="card border-secondary">
+                    <div class="card-header bg-secondary text-white">
+                        <h6 class="mb-0"><i class="bi bi-x-circle me-2"></i>販売終了ゲーム (${gameCategories.removed.length}件)</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="failed-games-list">
+                            ${gameCategories.removed.map(game => `
+                                <div class="mb-2">
+                                    <strong>${game.name}</strong>
+                                    <small class="text-muted d-block">App ID: ${game.steam_app_id}</small>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    html += '</div>';
+    return html;
 }
 
 function updateStatisticsCards(statistics) {
@@ -267,7 +398,7 @@ function updateStatisticsCards(statistics) {
                 <div class="card-body text-center">
                     <i class="bi bi-collection display-4 mb-2"></i>
                     <h3 class="display-4">${statistics.gamesTracked || 0}</h3>
-                    <p class="mb-0">監視中ゲーム</p>
+                    <p class="mb-0">監視中のゲーム</p>
                 </div>
             </div>
         </div>
