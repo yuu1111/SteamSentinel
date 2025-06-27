@@ -24,7 +24,13 @@ class DatabaseManager {
   connect(): void {
     try {
       this.db = new Database(this.dbPath);
-      this.db.pragma('journal_mode = WAL');
+      // WSL環境でのWALモードの問題を回避
+      try {
+        this.db.pragma('journal_mode = WAL');
+      } catch (walError) {
+        logger.warn('Failed to set WAL mode, using default journal mode:', walError);
+        this.db.pragma('journal_mode = DELETE');
+      }
       this.db.pragma('foreign_keys = ON');
       logger.info('Database connected successfully');
     } catch (error) {
