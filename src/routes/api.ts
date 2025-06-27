@@ -13,6 +13,8 @@ const gameRoutes = Router();
 
 gameRoutes.get('/', (req, res) => GameController.getAllGames(req, res));
 gameRoutes.get('/dashboard', (req, res) => GameController.getDashboardData(req, res));
+gameRoutes.get('/export', (req, res) => GameController.exportGames(req, res));
+gameRoutes.post('/import', (req, res) => GameController.importGames(req, res));
 gameRoutes.get('/:id', (req, res) => GameController.getGameById(req, res));
 gameRoutes.post('/', (req, res) => GameController.addGame(req, res));
 gameRoutes.put('/:id', (req, res) => GameController.updateGame(req, res));

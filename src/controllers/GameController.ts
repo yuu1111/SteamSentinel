@@ -9,7 +9,17 @@ export class GameController {
   // 全ゲーム取得
   static async getAllGames(req: Request, res: Response) {
     try {
-      const enabledOnly = req.query.enabled === 'true';
+      const enabled = req.query.enabled as string;
+      let enabledOnly = false;
+      
+      if (enabled === 'true') {
+        enabledOnly = true;
+      } else if (enabled === 'all') {
+        enabledOnly = false; // 全ゲーム取得
+      } else {
+        enabledOnly = false; // デフォルトは全ゲーム
+      }
+      
       const games = GameModel.getAll(enabledOnly);
       
       res.json({
@@ -69,7 +79,15 @@ export class GameController {
   // ゲーム追加
   static async addGame(req: Request, res: Response): Promise<Response> {
     try {
-      const { steam_app_id, name, enabled = true, price_threshold, alert_enabled = true } = req.body;
+      const { 
+        steam_app_id, 
+        name, 
+        enabled = true, 
+        price_threshold, 
+        price_threshold_type = 'price',
+        discount_threshold_percent,
+        alert_enabled = true 
+      } = req.body;
 
       // 入力検証
       if (!steam_app_id || !name) {
@@ -93,6 +111,8 @@ export class GameController {
         name,
         enabled,
         price_threshold,
+        price_threshold_type,
+        discount_threshold_percent,
         alert_enabled
       });
 
@@ -258,6 +278,146 @@ export class GameController {
       return res.status(500).json({
         success: false,
         error: 'Failed to retrieve dashboard data'
+      });
+    }
+  }
+
+  // ゲーム設定エクスポート
+  static async exportGames(_req: Request, res: Response): Promise<Response> {
+    try {
+      const games = GameModel.getAll();
+      
+      // エクスポート用に必要なフィールドのみ抽出
+      const exportData = games.map(game => ({
+        steam_app_id: game.steam_app_id,
+        name: game.name,
+        enabled: game.enabled,
+        price_threshold: game.price_threshold,
+        price_threshold_type: game.price_threshold_type || 'price',
+        discount_threshold_percent: game.discount_threshold_percent,
+        alert_enabled: game.alert_enabled
+      }));
+
+      // 現在の日時を日本時間で取得
+      const now = new Date();
+      const jstDate = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+      const dateStr = jstDate.toISOString().split('T')[0].replace(/-/g, '');
+      
+      // ファイル名を設定
+      const filename = `steamsentinel_backup_${dateStr}.json`;
+      
+      // レスポンスヘッダーを設定
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      
+      return res.json({
+        version: '1.0',
+        exportDate: new Date().toISOString(),
+        gameCount: exportData.length,
+        games: exportData
+      });
+    } catch (error) {
+      logger.error('Failed to export games:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to export games'
+      });
+    }
+  }
+
+  // ゲーム設定インポート
+  static async importGames(req: Request, res: Response): Promise<Response> {
+    try {
+      const importData = req.body;
+      
+      // バリデーション
+      if (!importData || !importData.games || !Array.isArray(importData.games)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid import data format'
+        });
+      }
+
+      const games = importData.games;
+      const importMode = req.body.mode || 'merge'; // merge | replace
+      
+      // replaceモードの場合、既存ゲームをすべて削除
+      if (importMode === 'replace') {
+        const existingGames = GameModel.getAll();
+        for (const game of existingGames) {
+          if (game.id !== undefined) {
+            GameModel.delete(game.id);
+          }
+        }
+      }
+
+      let imported = 0;
+      let skipped = 0;
+      let updated = 0;
+      const errors: string[] = [];
+
+      for (const gameData of games) {
+        try {
+          // バリデーション
+          if (!gameData.steam_app_id || !gameData.name) {
+            errors.push(`Invalid game data: missing steam_app_id or name`);
+            continue;
+          }
+
+          // 既存ゲームチェック
+          const existingGame = GameModel.getBySteamAppId(gameData.steam_app_id);
+          
+          if (existingGame) {
+            if (importMode === 'skip') {
+              skipped++;
+              continue;
+            }
+            
+            // 既存ゲームを更新
+            if (existingGame.id !== undefined) {
+              GameModel.update(existingGame.id, {
+                name: gameData.name,
+                enabled: gameData.enabled !== false,
+                price_threshold: gameData.price_threshold || null,
+                price_threshold_type: gameData.price_threshold_type || 'price',
+                discount_threshold_percent: gameData.discount_threshold_percent || null,
+                alert_enabled: gameData.alert_enabled !== false
+              });
+            }
+            updated++;
+          } else {
+            // 新規ゲームを追加
+            GameModel.create({
+              steam_app_id: gameData.steam_app_id,
+              name: gameData.name,
+              enabled: gameData.enabled !== false,
+              price_threshold: gameData.price_threshold || null,
+              price_threshold_type: gameData.price_threshold_type || 'price',
+              discount_threshold_percent: gameData.discount_threshold_percent || null,
+              alert_enabled: gameData.alert_enabled !== false
+            });
+            imported++;
+          }
+        } catch (error) {
+          errors.push(`Failed to import game ${gameData.name}: ${error}`);
+        }
+      }
+
+      return res.json({
+        success: true,
+        data: {
+          imported,
+          updated,
+          skipped,
+          errors: errors.length > 0 ? errors : undefined
+        },
+        message: `インポート完了: ${imported}件追加, ${updated}件更新, ${skipped}件スキップ`
+      });
+    } catch (error) {
+      logger.error('Failed to import games:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to import games'
       });
     }
   }
