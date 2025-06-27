@@ -2,6 +2,7 @@ import { GameModel } from '../models/Game';
 import { PriceHistoryModel } from '../models/PriceHistory';
 import { AlertModel } from '../models/Alert';
 import { APIService } from './APIService';
+import discordService from './DiscordService';
 import { Game, PriceHistory, Alert, MonitoringResult } from '../types';
 import { config } from '../config';
 import logger from '../utils/logger';
@@ -250,8 +251,28 @@ export class MonitoringService {
           notified_discord: false
         };
 
-        alerts.push(AlertModel.create(newLowAlert));
+        const alert = AlertModel.create(newLowAlert);
+        alerts.push(alert);
         logger.info(`New historical low alert: ${game.name} - ${currentPrice.current_price}円 (was ${currentPrice.historical_low}円)`);
+        
+        // Discord通知を送信
+        try {
+          const notificationSent = await discordService.sendPriceAlert(
+            game,
+            'new_low',
+            currentPrice.current_price,
+            currentPrice.original_price,
+            currentPrice.discount_percent,
+            currentPrice.historical_low
+          );
+          
+          if (notificationSent) {
+            AlertModel.markAsNotified(alert.id!);
+            logger.info(`Discord notification sent for new low: ${game.name}`);
+          }
+        } catch (error) {
+          logger.error(`Failed to send Discord notification for new low: ${game.name}`, error);
+        }
       }
     }
 
@@ -273,8 +294,27 @@ export class MonitoringService {
           notified_discord: false
         };
 
-        alerts.push(AlertModel.create(saleStartAlert));
+        const alert = AlertModel.create(saleStartAlert);
+        alerts.push(alert);
         logger.info(`Sale start alert: ${game.name} - ${currentPrice.discount_percent}% off (${currentPrice.current_price}円)`);
+        
+        // Discord通知を送信
+        try {
+          const notificationSent = await discordService.sendPriceAlert(
+            game,
+            'sale_start',
+            currentPrice.current_price,
+            currentPrice.original_price,
+            currentPrice.discount_percent
+          );
+          
+          if (notificationSent) {
+            AlertModel.markAsNotified(alert.id!);
+            logger.info(`Discord notification sent for sale start: ${game.name}`);
+          }
+        } catch (error) {
+          logger.error(`Failed to send Discord notification for sale start: ${game.name}`, error);
+        }
       }
     }
 
@@ -355,6 +395,24 @@ export class MonitoringService {
 
     const alert = AlertModel.create(releaseAlert);
     logger.info(`🎉 Game release alert created: ${game.name} (${game.steam_app_id}) - Released with price ¥${priceHistory.current_price}`);
+    
+    // Discord通知を送信
+    try {
+      const notificationSent = await discordService.sendPriceAlert(
+        game,
+        'release',
+        priceHistory.current_price,
+        priceHistory.original_price,
+        priceHistory.discount_percent
+      );
+      
+      if (notificationSent) {
+        AlertModel.markAsNotified(alert.id!);
+        logger.info(`Discord notification sent for game release: ${game.name}`);
+      }
+    } catch (error) {
+      logger.error(`Failed to send Discord notification for game release: ${game.name}`, error);
+    }
     
     return alert;
   }
