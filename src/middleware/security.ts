@@ -16,11 +16,15 @@ export const createRateLimiter = (windowMs: number = 15 * 60 * 1000, max: number
   });
 };
 
-// 一般的なレート制限
-export const generalLimiter = createRateLimiter(15 * 60 * 1000, 100); // 15分間に100リクエスト
+// 一般的なレート制限（本番環境のみ有効）
+export const generalLimiter = process.env.NODE_ENV === 'production' 
+  ? createRateLimiter(15 * 60 * 1000, 100)  // 本番: 15分間に100リクエスト
+  : (_req: any, _res: any, next: any) => next(); // 開発: 無効化
 
-// API用の厳しいレート制限
-export const apiLimiter = createRateLimiter(15 * 60 * 1000, 50); // 15分間に50リクエスト
+// API用の厳しいレート制限（本番環境のみ有効）
+export const apiLimiter = process.env.NODE_ENV === 'production'
+  ? createRateLimiter(15 * 60 * 1000, 50)   // 本番: 15分間に50リクエスト  
+  : (_req: any, _res: any, next: any) => next(); // 開発: 無効化
 
 // ローカルホストのみアクセス許可
 export const localhostOnly = (req: Request, res: Response, next: NextFunction) => {

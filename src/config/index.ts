@@ -126,14 +126,14 @@ export const config: Config = {
   ),
   
   // API Settings (値の検証)
-  apiRequestIntervalSeconds: parseFloat(process.env.API_REQUEST_INTERVAL_SECONDS || '2'),
+  apiRequestIntervalSeconds: parseFloat(process.env.API_REQUEST_INTERVAL_SECONDS || '3'),
   apiTimeoutSeconds: clamp(
     parseInt(process.env.API_TIMEOUT_SECONDS || '15', 10),
     LIMITS.API_TIMEOUT.min,
     LIMITS.API_TIMEOUT.max
   ),
   apiConcurrentLimit: clamp(
-    parseInt(process.env.API_CONCURRENT_LIMIT || '2', 10),
+    parseInt(process.env.API_CONCURRENT_LIMIT || '1', 10),
     LIMITS.API_CONCURRENT_LIMIT.min,
     LIMITS.API_CONCURRENT_LIMIT.max
   ),

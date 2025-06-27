@@ -11,7 +11,7 @@ const app = express();
 // セキュリティミドルウェア
 app.use(securityHeaders);
 app.use(localhostOnly);
-app.use(generalLimiter);
+app.use(generalLimiter); // 開発環境では自動的に無効化される
 
 // CORS設定
 app.use(cors({
