@@ -196,4 +196,25 @@ export class GameModel {
       throw error;
     }
   }
+
+  // 購入済みゲーム取得
+  static getPurchasedGames(startDate?: Date | null): Game[] {
+    try {
+      const db = database.getConnection();
+      let query = 'SELECT * FROM games WHERE is_purchased = 1';
+      const params: any[] = [];
+      
+      if (startDate) {
+        query += ' AND purchase_date >= ?';
+        params.push(startDate.toISOString());
+      }
+      
+      query += ' ORDER BY purchase_date DESC';
+      
+      return db.prepare(query).all(...params) as Game[];
+    } catch (error) {
+      logger.error('Failed to fetch purchased games:', error);
+      throw error;
+    }
+  }
 }

@@ -698,4 +698,178 @@ export class GameController {
       });
     }
   }
+
+  // 手動最安値設定
+  static async setManualHistoricalLow(req: Request, res: Response): Promise<Response> {
+    try {
+      const gameId = parseInt(req.params.id, 10);
+      const { manual_historical_low } = req.body;
+
+      // 入力検証
+      if (manual_historical_low !== null && (isNaN(manual_historical_low) || manual_historical_low < 0)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid manual historical low price'
+        });
+      }
+
+      const updatedGame = GameModel.update(gameId, { manual_historical_low });
+      
+      if (!updatedGame) {
+        return res.status(404).json({
+          success: false,
+          error: 'Game not found'
+        });
+      }
+
+      logger.info(`Manual historical low set for game: ${updatedGame.name} (${updatedGame.steam_app_id}) - ¥${manual_historical_low || 'cleared'}`);
+      return res.json({
+        success: true,
+        data: updatedGame,
+        message: manual_historical_low ? `手動最安値を¥${manual_historical_low}に設定しました` : '手動最安値をクリアしました'
+      });
+    } catch (error) {
+      logger.error('Failed to set manual historical low:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to set manual historical low'
+      });
+    }
+  }
+
+  // 購入済みマーク設定
+  static async markAsPurchased(req: Request, res: Response): Promise<Response> {
+    try {
+      const gameId = parseInt(req.params.id, 10);
+      const { purchase_price, purchase_date = new Date().toISOString() } = req.body;
+
+      // 入力検証
+      if (purchase_price !== null && (isNaN(purchase_price) || purchase_price < 0)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid purchase price'
+        });
+      }
+
+      const updatedGame = GameModel.update(gameId, { 
+        is_purchased: true,
+        purchase_price,
+        purchase_date: new Date(purchase_date).toISOString()
+      });
+      
+      if (!updatedGame) {
+        return res.status(404).json({
+          success: false,
+          error: 'Game not found'
+        });
+      }
+
+      logger.info(`Game marked as purchased: ${updatedGame.name} (${updatedGame.steam_app_id}) - ¥${purchase_price || 'unknown price'}`);
+      return res.json({
+        success: true,
+        data: updatedGame,
+        message: `${updatedGame.name}を購入済みにマークしました`
+      });
+    } catch (error) {
+      logger.error('Failed to mark game as purchased:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to mark game as purchased'
+      });
+    }
+  }
+
+  // 購入済みマーク解除
+  static async unmarkAsPurchased(req: Request, res: Response): Promise<Response> {
+    try {
+      const gameId = parseInt(req.params.id, 10);
+
+      const updatedGame = GameModel.update(gameId, { 
+        is_purchased: false,
+        purchase_price: undefined,
+        purchase_date: undefined
+      });
+      
+      if (!updatedGame) {
+        return res.status(404).json({
+          success: false,
+          error: 'Game not found'
+        });
+      }
+
+      logger.info(`Game unmarked as purchased: ${updatedGame.name} (${updatedGame.steam_app_id})`);
+      return res.json({
+        success: true,
+        data: updatedGame,
+        message: `${updatedGame.name}の購入済みマークを解除しました`
+      });
+    } catch (error) {
+      logger.error('Failed to unmark game as purchased:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to unmark game as purchased'
+      });
+    }
+  }
+
+  // 購入済みゲーム一覧取得
+  static async getPurchasedGames(req: Request, res: Response): Promise<Response> {
+    try {
+      const period = req.query.period as string || 'all'; // month, quarter, year, all
+      let startDate: Date | null = null;
+      
+      // 期間設定
+      if (period !== 'all') {
+        startDate = new Date();
+        switch (period) {
+          case 'quarter':
+            startDate.setMonth(startDate.getMonth() - 3);
+            break;
+          case 'year':
+            startDate.setFullYear(startDate.getFullYear() - 1);
+            break;
+          default: // month
+            startDate.setMonth(startDate.getMonth() - 1);
+        }
+      }
+
+      const purchasedGames = GameModel.getPurchasedGames(startDate);
+      
+      // 支出統計計算
+      const totalSpent = purchasedGames.reduce((sum, game) => sum + (game.purchase_price || 0), 0);
+      const averagePrice = purchasedGames.length > 0 ? totalSpent / purchasedGames.length : 0;
+      
+      // 月別統計
+      const monthlyStats = new Map<string, { count: number; total: number }>();
+      purchasedGames.forEach(game => {
+        if (game.purchase_date) {
+          const monthKey = game.purchase_date.substring(0, 7); // YYYY-MM
+          const existing = monthlyStats.get(monthKey) || { count: 0, total: 0 };
+          existing.count++;
+          existing.total += game.purchase_price || 0;
+          monthlyStats.set(monthKey, existing);
+        }
+      });
+
+      return res.json({
+        success: true,
+        data: {
+          games: purchasedGames,
+          statistics: {
+            totalGames: purchasedGames.length,
+            totalSpent,
+            averagePrice,
+            period,
+            monthlyStats: Object.fromEntries(monthlyStats)
+          }
+        }
+      });
+    } catch (error) {
+      logger.error('Failed to get purchased games:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to retrieve purchased games'
+      });
+    }
+  }
 }

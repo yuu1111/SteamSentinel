@@ -7,6 +7,10 @@ export interface Game {
   price_threshold_type?: 'price' | 'discount' | 'any_sale';
   discount_threshold_percent?: number;
   alert_enabled: boolean;
+  manual_historical_low?: number;
+  is_purchased?: boolean;
+  purchase_price?: number;
+  purchase_date?: string;
   created_at?: Date;
   updated_at?: Date;
 }

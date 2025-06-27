@@ -26,21 +26,6 @@ export const apiLimiter = process.env.NODE_ENV === 'production'
   ? createRateLimiter(15 * 60 * 1000, 50)   // 本番: 15分間に50リクエスト  
   : (_req: any, _res: any, next: any) => next(); // 開発: 無効化
 
-// ローカルホストのみアクセス許可
-export const localhostOnly = (req: Request, res: Response, next: NextFunction) => {
-  const allowedHosts = ['127.0.0.1', 'localhost', '::1'];
-  const clientIP = req.ip || req.connection.remoteAddress || '';
-  
-  if (allowedHosts.some(host => clientIP.includes(host)) || clientIP === '') {
-    next();
-  } else {
-    res.status(403).json({
-      error: 'Access denied',
-      message: 'This application is only accessible from localhost'
-    });
-  }
-};
-
 // セキュリティヘッダーの設定
 export const securityHeaders = helmet({
   contentSecurityPolicy: {

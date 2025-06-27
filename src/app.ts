@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import { config } from './config';
-import { securityHeaders, localhostOnly, generalLimiter, errorHandler, jsonSizeLimit } from './middleware/security';
+import { securityHeaders, generalLimiter, errorHandler, jsonSizeLimit } from './middleware/security';
 import apiRoutes from './routes/api';
 // import logger from './utils/logger'; // May be used for future logging needs
 
@@ -10,7 +10,6 @@ const app = express();
 
 // セキュリティミドルウェア
 app.use(securityHeaders);
-app.use(localhostOnly);
 app.use(generalLimiter); // 開発環境では自動的に無効化される
 
 // CORS設定
@@ -29,11 +28,23 @@ app.use(express.static(config.publicPath));
 // APIルート
 app.use('/api', apiRoutes);
 
+// React build files serving
+app.use(express.static(path.join(__dirname, '../dist/web')));
+
 // SPAのためのキャッチオール（index.htmlを返す）
 app.get('*', (req, res) => {
   // API以外のルートでHTMLを返す
   if (!req.path.startsWith('/api')) {
-    res.sendFile(path.join(config.publicPath, 'index.html'));
+    // Check if React build exists, otherwise fallback to public
+    const reactIndexPath = path.join(__dirname, '../dist/web/index.html');
+    const publicIndexPath = path.join(config.publicPath, 'index.html');
+    
+    try {
+      require('fs').accessSync(reactIndexPath);
+      res.sendFile(reactIndexPath);
+    } catch {
+      res.sendFile(publicIndexPath);
+    }
   } else {
     res.status(404).json({
       success: false,

@@ -115,7 +115,7 @@ class SteamSentinelApp {
     logger.info('====================================');
     logger.info(`📍 Web UI: http://${config.webHost}:${config.webPort}`);
     logger.info(`📊 Monitoring: ${stats?.monitoringStats.enabledGamesCount || 0} games`);
-    logger.info(`⏱️  Interval: ${config.monitoringIntervalHours} hour(s)`);
+    logger.info(`⏱️ Interval: ${config.monitoringIntervalHours} hour(s)`);
     logger.info(`💾 Database: ${database.getConnection().name}`);
     logger.info(`📝 Logs: ${config.logsPath}`);
     logger.info('');

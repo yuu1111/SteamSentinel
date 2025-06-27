@@ -161,6 +161,35 @@ class DatabaseManager {
         db.prepare('INSERT INTO db_version (version) VALUES (?)').run(2);
         logger.info('Migration v2 completed successfully');
       }
+
+      // v3: 手動最安値設定と購入管理の追加
+      if (currentVersion < 3) {
+        logger.info('Running migration v3: Adding manual historical low and purchase tracking fields');
+        
+        // 手動最安値カラムを追加
+        db.exec(`
+          ALTER TABLE games ADD COLUMN manual_historical_low REAL DEFAULT NULL;
+        `);
+        
+        // 購入済みマークカラムを追加
+        db.exec(`
+          ALTER TABLE games ADD COLUMN is_purchased BOOLEAN DEFAULT 0;
+        `);
+        
+        // 購入価格カラムを追加
+        db.exec(`
+          ALTER TABLE games ADD COLUMN purchase_price REAL DEFAULT NULL;
+        `);
+        
+        // 購入日カラムを追加
+        db.exec(`
+          ALTER TABLE games ADD COLUMN purchase_date DATETIME DEFAULT NULL;
+        `);
+        
+        // バージョンを記録
+        db.prepare('INSERT INTO db_version (version) VALUES (?)').run(3);
+        logger.info('Migration v3 completed successfully');
+      }
       
     } catch (error) {
       logger.error('Migration failed:', error);
