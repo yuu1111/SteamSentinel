@@ -459,6 +459,174 @@
         </div>
     </div>
 
+    <!-- Settings Template -->
+    <template id="settingsTemplate">
+        <main class="container-fluid mt-4">
+            <div class="row">
+                <div class="col-12">
+                    <h2><i class="bi bi-gear me-2"></i>設定・テスト</h2>
+                </div>
+            </div>
+            
+            <!-- Discord Settings Section -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-discord me-2"></i>Discord連携</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6>設定状況</h6>
+                                    <div id="discordStatus" class="mb-3">
+                                        <div class="d-flex align-items-center">
+                                            <div class="spinner-border spinner-border-sm me-2" role="status">
+                                                <span class="visually-hidden">Loading...</span>
+                                            </div>
+                                            <span>Discord設定を確認中...</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <h6>Discord Webhook URL設定</h6>
+                                    <p class="text-muted small">
+                                        Discord Webhook URLは環境変数 <code>DISCORD_WEBHOOK_URL</code> で設定してください。<br>
+                                        設定方法については、README.mdの「Discord Webhook (オプション)」セクションを参照してください。
+                                    </p>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <h6>テスト機能</h6>
+                                    <p class="text-muted small">各種Discord通知のテストメッセージを送信できます。</p>
+                                    
+                                    <div class="d-grid gap-2">
+                                        <button class="btn btn-outline-primary" onclick="testDiscord('connection')">
+                                            <i class="bi bi-check-circle"></i> 接続テスト
+                                        </button>
+                                        <button class="btn btn-outline-success" onclick="testDiscord('price_alert')">
+                                            <i class="bi bi-graph-down-arrow"></i> 価格アラートテスト
+                                        </button>
+                                        <button class="btn btn-outline-warning" onclick="testDiscord('high_discount')">
+                                            <i class="bi bi-fire"></i> 高割引ゲームテスト
+                                        </button>
+                                        <button class="btn btn-outline-info" onclick="testDiscord('epic_free')">
+                                            <i class="bi bi-gift"></i> Epic無料ゲームテスト
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Price Alert Test Section -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-bell me-2"></i>価格アラートテスト</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6>手動価格アラートテスト</h6>
+                                    <p class="text-muted small">
+                                        特定のゲームでアラート条件を満たした場合のシミュレーションを実行できます。
+                                    </p>
+                                    
+                                    <form id="priceAlertTestForm">
+                                        <div class="mb-3">
+                                            <label for="testGameSelect" class="form-label">テストするゲーム</label>
+                                            <select class="form-select" id="testGameSelect" required>
+                                                <option value="">ゲームを選択...</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="testAlertType" class="form-label">アラートタイプ</label>
+                                            <select class="form-select" id="testAlertType" required>
+                                                <option value="new_low">新最安値更新</option>
+                                                <option value="sale_start">セール開始</option>
+                                                <option value="threshold_met">価格閾値達成</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="testCurrentPrice" class="form-label">テスト価格（円）</label>
+                                            <input type="number" class="form-control" id="testCurrentPrice" 
+                                                   placeholder="例: 2980" min="0" step="1" required>
+                                            <div class="form-text">このテスト価格でアラートをシミュレーションします</div>
+                                        </div>
+                                        
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" id="testSendDiscord">
+                                            <label class="form-check-label" for="testSendDiscord">
+                                                Discord通知も送信する（Discord設定が必要）
+                                            </label>
+                                        </div>
+                                        
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="bi bi-play-circle"></i> アラートテスト実行
+                                        </button>
+                                    </form>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <h6>テスト結果</h6>
+                                    <div id="priceAlertTestResult" class="border rounded p-3 bg-light">
+                                        <div class="text-muted text-center">
+                                            <i class="bi bi-info-circle"></i><br>
+                                            テストを実行すると結果がここに表示されます
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- System Information Section -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>システム情報</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6>環境設定</h6>
+                                    <div id="systemInfo">
+                                        <div class="d-flex align-items-center">
+                                            <div class="spinner-border spinner-border-sm me-2" role="status">
+                                                <span class="visually-hidden">Loading...</span>
+                                            </div>
+                                            <span>システム情報を取得中...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <h6>APIキー設定状況</h6>
+                                    <div id="apiKeyStatus">
+                                        <div class="d-flex align-items-center">
+                                            <div class="spinner-border spinner-border-sm me-2" role="status">
+                                                <span class="visually-hidden">Loading...</span>
+                                            </div>
+                                            <span>API設定を確認中...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </template>
+
     <!-- Footer -->
     <footer class="mt-5 py-4 text-center">
         <div class="container">
@@ -485,6 +653,7 @@
     <script src="/js/api.js"></script>
     <script src="/js/ui.js"></script>
     <script src="/js/charts.js"></script>
+    <script src="/js/settings.js"></script>
     
 </body>
 </html>

@@ -253,7 +253,16 @@ export class MonitoringController {
             environment: process.env.NODE_ENV || 'development',
             webPort: config.webPort,
             webHost: config.webHost,
-            logLevel: config.logLevel
+            logLevel: config.logLevel,
+            monitoringInterval: config.monitoringIntervalHours
+          },
+          apiKeys: {
+            itad: !!process.env.ITAD_API_KEY,
+            discord: !!process.env.DISCORD_WEBHOOK_URL,
+            steam: !!process.env.STEAM_API_KEY,
+            igdb: !!(process.env.IGDB_CLIENT_ID && process.env.IGDB_CLIENT_SECRET),
+            youtube: !!process.env.YOUTUBE_API_KEY,
+            twitch: !!(process.env.TWITCH_CLIENT_ID && process.env.TWITCH_CLIENT_SECRET)
           }
         }
       });
