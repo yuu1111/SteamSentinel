@@ -11,7 +11,7 @@ export class SteamStoreAPI extends BaseAPI {
     super('Steam', 'https://store.steampowered.com', 3000);
   }
 
-  // 単一ゲームの価格情報取得
+  // 単一ゲームの詳細情報取得（価格 + ゲームタイプ判別）
   async getAppDetails(appId: number): Promise<SteamPriceInfo | null> {
     try {
       const response = await this.get<any>('/api/appdetails', {
@@ -19,7 +19,7 @@ export class SteamStoreAPI extends BaseAPI {
           appids: appId,
           cc: this.countryCode,
           l: 'japanese',
-          filters: 'price_overview'
+          filters: 'basic,price_overview,release_date'
         }
       });
 
@@ -27,17 +27,39 @@ export class SteamStoreAPI extends BaseAPI {
         const appData = response[appId];
         
         if (appData.success && appData.data) {
+          const data = appData.data;
+          
+          // ゲームタイプを判別
+          let gameType: 'paid' | 'free' | 'unreleased' | 'dlc' | 'removed' = 'paid';
+          
+          if (data.is_free) {
+            gameType = 'free';
+          } else if (data.release_date?.coming_soon) {
+            gameType = 'unreleased';
+          } else if (data.type === 'dlc') {
+            gameType = 'dlc';
+          } else if (!data.price_overview && !data.is_free) {
+            gameType = 'removed';
+          }
+          
           return {
             success: true,
             data: {
-              price_overview: appData.data.price_overview
-            }
+              price_overview: data.price_overview,
+              type: data.type,
+              is_free: data.is_free,
+              release_date: data.release_date,
+              name: data.name,
+              steam_appid: data.steam_appid
+            },
+            gameType
           };
         }
       }
 
       return {
-        success: false
+        success: false,
+        gameType: 'removed'
       };
     } catch (error) {
       logger.error(`Failed to get Steam app details for ${appId}:`, error);

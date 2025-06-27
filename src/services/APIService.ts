@@ -22,10 +22,16 @@ export class APIService {
       if (features.core.enabled) {
         this.itadAPI = new IsThereAnyDealAPI();
         
-        // ITAD APIキーの検証
-        const isValid = await this.itadAPI.validateApiKey();
-        if (!isValid) {
-          throw new Error('ITAD API key validation failed');
+        // ITAD APIキーの検証（暫定的に無効化）
+        try {
+          const isValid = await this.itadAPI.validateApiKey();
+          if (isValid) {
+            logger.info('ITAD API validated successfully');
+          } else {
+            logger.warn('ITAD API validation failed, but continuing...');
+          }
+        } catch (error) {
+          logger.warn('ITAD API validation error, but continuing:', error);
         }
         
         logger.info('ITAD API initialized successfully');
@@ -90,6 +96,7 @@ export class APIService {
       let steamOriginalPrice = 0;
       let steamDiscount = 0;
       let steamOnSale = false;
+      let gameType: 'paid' | 'free' | 'unreleased' | 'dlc' | 'removed' = 'paid';
 
       if (steamPrice.status === 'fulfilled' && steamPrice.value) {
         const price = steamPrice.value;
@@ -98,6 +105,44 @@ export class APIService {
         steamDiscount = price.discountPercent;
         steamOnSale = price.isOnSale;
       } else {
+        // Steam APIから詳細情報を取得してゲームタイプを判別
+        try {
+          const steamDetails = await this.steamAPI.getAppDetails(steamAppId);
+          if (steamDetails?.gameType) {
+            gameType = steamDetails.gameType;
+            
+            // 基本無料ゲームの場合
+            if (gameType === 'free') {
+              logger.info(`${gameName} is a free-to-play game`);
+              return null; // 基本無料ゲームは価格監視対象外
+            }
+            
+            // 未リリースゲームの場合
+            if (gameType === 'unreleased') {
+              logger.info(`${gameName} is unreleased (coming soon)`);
+              // 未リリースゲームは価格0で記録（リリース日監視用）
+              return {
+                steam_app_id: steamAppId,
+                current_price: 0,
+                original_price: 0,
+                discount_percent: 0,
+                historical_low: 0,
+                is_on_sale: false,
+                source: 'steam_unreleased',
+                recorded_at: new Date()
+              };
+            }
+            
+            // 販売終了・削除されたゲームの場合
+            if (gameType === 'removed') {
+              logger.warn(`${gameName} has been removed from Steam store`);
+              return null; // 販売終了ゲームは監視対象外
+            }
+          }
+        } catch (error) {
+          logger.warn(`Failed to get game type for ${gameName}:`, error);
+        }
+        
         logger.warn(`Steam data unavailable for ${gameName}:`, 
           steamPrice.status === 'rejected' ? steamPrice.reason : 'No data');
       }
@@ -137,7 +182,7 @@ export class APIService {
   }
 
   // 複数ゲームの価格情報を取得
-  async getMultipleGamePriceInfo(games: Array<{ steam_app_id: number; name: string }>): Promise<Array<{
+  async getMultipleGamePriceInfo(games: Array<{ steam_app_id: number; name: string }>, isManualRequest = false): Promise<Array<{
     game: { steam_app_id: number; name: string };
     priceHistory: PriceHistory | null;
     error?: APIError;
@@ -147,16 +192,22 @@ export class APIService {
     }
 
     const results = [];
-    const batchSize = config.apiConcurrentLimit;
+    const batchSize = isManualRequest ? 1 : config.apiConcurrentLimit; // 手動リクエストは1つずつ処理
+    const baseDelay = isManualRequest ? 4000 : 1000; // 手動リクエストは4秒間隔
     
-    logger.info(`Processing ${games.length} games in batches of ${batchSize}`);
+    logger.info(`Processing ${games.length} games in batches of ${batchSize} (manual: ${isManualRequest})`);
 
     for (let i = 0; i < games.length; i += batchSize) {
       const batch = games.slice(i, i + batchSize);
       
-      const batchPromises = batch.map(async (game) => {
+      const batchPromises = batch.map(async (game, index) => {
         try {
-          const priceHistory = await this.getGamePriceInfo(game.steam_app_id, game.name);
+          // バッチ内でも間隔を空ける（手動リクエスト時）
+          if (isManualRequest && index > 0) {
+            await this.delay(1000);
+          }
+          
+          const priceHistory = await this.getGamePriceInfoWithRetry(game.steam_app_id, game.name);
           return {
             game,
             priceHistory
@@ -180,11 +231,42 @@ export class APIService {
 
       // バッチ間の遅延
       if (i + batchSize < games.length) {
-        await this.delay(1000);
+        await this.delay(baseDelay);
       }
     }
 
     return results;
+  }
+
+  // リトライ機能付きの価格情報取得
+  private async getGamePriceInfoWithRetry(steamAppId: number, gameName: string, maxRetries = 3): Promise<PriceHistory | null> {
+    let lastError;
+    
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        if (attempt > 0) {
+          // 指数バックオフ: 2秒、4秒、8秒
+          const delayMs = Math.min(2000 * Math.pow(2, attempt), 8000);
+          logger.info(`Retrying ${gameName} after ${delayMs}ms (attempt ${attempt + 1}/${maxRetries})`);
+          await this.delay(delayMs);
+        }
+        
+        return await this.getGamePriceInfo(steamAppId, gameName);
+      } catch (error: any) {
+        lastError = error;
+        
+        // レート制限エラーの場合は長めに待つ
+        if (error.message && error.message.includes('Too many requests')) {
+          logger.warn(`Rate limit hit for ${gameName}, waiting longer...`);
+          await this.delay(10000); // 10秒待機
+        } else if (attempt === maxRetries - 1) {
+          // 最後の試行の場合はエラーを投げる
+          throw error;
+        }
+      }
+    }
+    
+    throw lastError;
   }
 
   // APIヘルスチェック

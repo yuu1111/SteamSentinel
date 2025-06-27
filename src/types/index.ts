@@ -17,7 +17,7 @@ export interface PriceHistory {
   discount_percent: number;
   historical_low: number;
   is_on_sale: boolean;
-  source: 'itad' | 'steam';
+  source: 'itad' | 'steam' | 'steam_unreleased' | 'steam_free' | 'steam_removed';
   recorded_at: Date;
 }
 
@@ -84,7 +84,16 @@ export interface SteamPriceInfo {
       initial_formatted: string;
       final_formatted: string;
     };
+    type?: string;
+    is_free?: boolean;
+    release_date?: {
+      coming_soon: boolean;
+      date: string;
+    };
+    name?: string;
+    steam_appid?: number;
   };
+  gameType?: 'paid' | 'free' | 'unreleased' | 'dlc' | 'removed';
 }
 
 export interface APIError {

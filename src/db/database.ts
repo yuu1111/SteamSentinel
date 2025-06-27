@@ -76,7 +76,7 @@ class DatabaseManager {
         discount_percent INTEGER NOT NULL,
         historical_low REAL NOT NULL,
         is_on_sale BOOLEAN NOT NULL,
-        source TEXT NOT NULL CHECK(source IN ('itad', 'steam')),
+        source TEXT NOT NULL CHECK(source IN ('itad', 'steam', 'steam_unreleased', 'steam_free', 'steam_removed')),
         recorded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (steam_app_id) REFERENCES games(steam_app_id)
       )
