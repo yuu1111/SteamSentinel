@@ -84,6 +84,7 @@ class DatabaseManager {
         is_on_sale BOOLEAN NOT NULL,
         source TEXT NOT NULL CHECK(source IN ('itad', 'steam', 'steam_unreleased', 'steam_free', 'steam_removed')),
         recorded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        release_date TEXT, -- 未リリースゲームのリリース日（ISO文字列）
         FOREIGN KEY (steam_app_id) REFERENCES games(steam_app_id)
       )
     `);
@@ -93,7 +94,7 @@ class DatabaseManager {
       CREATE TABLE IF NOT EXISTS alerts (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         steam_app_id INTEGER NOT NULL,
-        alert_type TEXT NOT NULL CHECK(alert_type IN ('new_low', 'sale_start')),
+        alert_type TEXT NOT NULL CHECK(alert_type IN ('new_low', 'sale_start', 'release')),
         trigger_price REAL NOT NULL,
         previous_low REAL,
         discount_percent INTEGER NOT NULL,

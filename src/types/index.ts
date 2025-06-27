@@ -19,17 +19,19 @@ export interface PriceHistory {
   is_on_sale: boolean;
   source: 'itad' | 'steam' | 'steam_unreleased' | 'steam_free' | 'steam_removed';
   recorded_at: Date;
+  release_date?: string; // 未リリースゲームのリリース日（ISO文字列）
 }
 
 export interface Alert {
   id?: number;
   steam_app_id: number;
-  alert_type: 'new_low' | 'sale_start';
+  alert_type: 'new_low' | 'sale_start' | 'release';
   trigger_price: number;
   previous_low?: number;
   discount_percent: number;
   notified_discord: boolean;
   created_at: Date;
+  release_date?: string; // リリース通知の場合のリリース日
 }
 
 export interface ITADGameInfo {
@@ -54,23 +56,48 @@ export interface ITADPriceInfo {
 
 export interface ITADOverview {
   price?: {
-    store: string;
+    shop: {
+      id: number;
+      name: string;
+    };
+    price: {
+      amount: number;
+      amountInt: number;
+      currency: string;
+    };
+    regular: {
+      amount: number;
+      amountInt: number;
+      currency: string;
+    };
     cut: number;
-    price: number;
-    price_formatted: string;
+    voucher: any;
+    flag: string;
+    drm: any[];
+    platforms: any[];
+    timestamp: string;
+    expiry: string;
     url: string;
   };
   lowest?: {
-    store: string;
+    shop: {
+      id: number;
+      name: string;
+    };
+    price: {
+      amount: number;
+      amountInt: number;
+      currency: string;
+    };
+    regular: {
+      amount: number;
+      amountInt: number;
+      currency: string;
+    };
     cut: number;
-    price: number;
-    price_formatted: string;
-    recorded: number;
-    url: string;
+    timestamp: string;
   };
-  bundles?: {
-    count: number;
-  };
+  bundles?: any[];
 }
 
 export interface SteamPriceInfo {
