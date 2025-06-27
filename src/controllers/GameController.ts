@@ -38,6 +38,16 @@ export class GameController {
     }
   }
 
+  // ゲーム詳細取得（内部用）
+  static async getGameByIdInternal(gameId: number) {
+    try {
+      return GameModel.getById(gameId);
+    } catch (error) {
+      logger.error('Failed to get game by id internally:', error);
+      return null;
+    }
+  }
+
   // ゲーム詳細取得
   static async getGameById(req: Request, res: Response): Promise<Response> {
     try {

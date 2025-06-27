@@ -123,6 +123,46 @@ export class DiscordService {
     }
   }
 
+  // テスト用メッセージ送信
+  async sendTestMessage(testType: 'connection' | 'price_alert' | 'high_discount' | 'epic_free'): Promise<{ success: boolean; error?: string }> {
+    if (!this.isEnabled()) {
+      return { success: false, error: 'Discord Webhook URLが設定されていません' };
+    }
+
+    try {
+      let message: DiscordMessage;
+
+      switch (testType) {
+        case 'connection':
+          message = this.createTestConnectionMessage();
+          break;
+        case 'price_alert':
+          message = this.createTestPriceAlertMessage();
+          break;
+        case 'high_discount':
+          message = this.createTestHighDiscountMessage();
+          break;
+        case 'epic_free':
+          message = this.createTestEpicFreeMessage();
+          break;
+        default:
+          return { success: false, error: '不正なテストタイプです' };
+      }
+
+      const success = await this.sendMessage(message);
+      return { 
+        success, 
+        error: success ? undefined : 'Discord Webhook送信に失敗しました'
+      };
+    } catch (error) {
+      logger.error('Failed to send Discord test message:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+
   // メッセージ送信（共通処理）
   private async sendMessage(message: DiscordMessage): Promise<boolean> {
     if (!this.webhookUrl) {
@@ -324,6 +364,135 @@ export class DiscordService {
         text: 'SteamSentinel - Epic Games無料ゲーム監視'
       },
       timestamp: new Date().toISOString()
+    };
+  }
+
+  // テスト用メッセージ作成メソッド
+  private createTestConnectionMessage(): DiscordMessage {
+    return {
+      embeds: [{
+        title: '✅ Discord連携テスト',
+        description: 'SteamSentinelからのテストメッセージです。このメッセージが表示されれば、Discord連携が正常に動作しています。',
+        color: 0x00FF00, // 緑
+        fields: [
+          {
+            name: '📅 テスト実行日時',
+            value: new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }),
+            inline: true
+          },
+          {
+            name: '🔧 テストタイプ',
+            value: '接続テスト',
+            inline: true
+          }
+        ],
+        footer: {
+          text: 'SteamSentinel - Discord連携テスト'
+        },
+        timestamp: new Date().toISOString()
+      }]
+    };
+  }
+
+  private createTestPriceAlertMessage(): DiscordMessage {
+    return {
+      embeds: [{
+        title: '🔥 新最安値を検知！（テスト）',
+        description: '**Cyberpunk 2077** が過去最安値を更新しました！（これはテストメッセージです）',
+        url: 'https://store.steampowered.com/app/1091500/',
+        color: 0xFF4444, // 赤
+        fields: [
+          {
+            name: '💴 現在価格',
+            value: '¥2,980',
+            inline: true
+          },
+          {
+            name: '💸 元価格',
+            value: '¥7,980',
+            inline: true
+          },
+          {
+            name: '🏷️ 割引率',
+            value: '63% OFF',
+            inline: true
+          },
+          {
+            name: '📉 前回最安値',
+            value: '¥3,500',
+            inline: true
+          },
+          {
+            name: '⚙️ アラート条件',
+            value: '¥3,000以下で通知',
+            inline: false
+          }
+        ],
+        thumbnail: {
+          url: 'https://cdn.akamai.steamstatic.com/steam/apps/1091500/header.jpg'
+        },
+        footer: {
+          text: 'SteamSentinel - Steam価格監視システム（テスト）'
+        },
+        timestamp: new Date().toISOString()
+      }]
+    };
+  }
+
+  private createTestHighDiscountMessage(): DiscordMessage {
+    return {
+      embeds: [{
+        title: '🔥 高割引ゲーム発見！（テスト）',
+        description: '80%以上の大幅割引ゲームを発見しました！（3件）（これはテストメッセージです）',
+        color: 0xFF6600, // オレンジ
+        fields: [
+          {
+            name: 'The Witcher 3: Wild Hunt',
+            value: '~~¥6,580~~ → **¥1,316** (80% OFF)\n[Steamで見る](https://store.steampowered.com/app/292030/)',
+            inline: false
+          },
+          {
+            name: 'Grand Theft Auto V',
+            value: '~~¥4,299~~ → **¥859** (80% OFF)\n[Steamで見る](https://store.steampowered.com/app/271590/)',
+            inline: false
+          },
+          {
+            name: 'Red Dead Redemption 2',
+            value: '~~¥8,618~~ → **¥1,723** (80% OFF)\n[Steamで見る](https://store.steampowered.com/app/1174180/)',
+            inline: false
+          }
+        ],
+        footer: {
+          text: 'SteamSentinel - 高割引ゲーム検知（テスト）'
+        },
+        timestamp: new Date().toISOString()
+      }]
+    };
+  }
+
+  private createTestEpicFreeMessage(): DiscordMessage {
+    return {
+      embeds: [{
+        title: '🎁 Epic Games無料ゲーム情報（テスト）',
+        description: '新しい無料ゲームが利用可能です！（2件）（これはテストメッセージです）',
+        color: 0x000000, // Epic Gamesブランドカラー（黒）
+        fields: [
+          {
+            name: 'Control',
+            value: 'Epic Gamesストアで無料配布中\n[Epic Gamesで受け取る](https://store.epicgames.com/)',
+            inline: false
+          },
+          {
+            name: 'Alan Wake',
+            value: 'Epic Gamesストアで無料配布中\n[Epic Gamesで受け取る](https://store.epicgames.com/)',
+            inline: false
+          }
+        ],
+        footer: {
+          text: 'SteamSentinel - Epic Games無料ゲーム監視（テスト）'
+        },
+        timestamp: new Date().toISOString()
+      }]
     };
   }
 }
