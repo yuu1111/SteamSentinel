@@ -30,6 +30,8 @@ LOG_LEVEL=INFO                    # ログレベル
 
 ## セットアップコマンド
 
+### 現行レガシーSPA版
+
 ```bash
 # 1. 依存関係のインストール
 npm install
@@ -52,6 +54,27 @@ npm run dev
 
 # 7. 本番サーバー起動
 npm start
+```
+
+### 次世代React+Next.js版 (計画中)
+
+```bash
+# 1. Next.jsプロジェクト作成
+npx create-next-app@latest steam-sentinel-ui --typescript --tailwind --app
+
+# 2. Ant Design & 依存関係のインストール
+cd steam-sentinel-ui
+npm install antd @ant-design/nextjs-registry @ant-design/icons
+npm install zustand axios chart.js react-chartjs-2
+
+# 3. Next.js設定
+# next.config.js でAnt Design最適化設定
+
+# 4. 開発サーバー起動
+npm run dev
+
+# 5. 本番ビルド
+npm run build && npm start
 ```
 
 ## 設定ファイルテンプレート

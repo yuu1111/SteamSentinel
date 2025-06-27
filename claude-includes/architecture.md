@@ -11,11 +11,20 @@
 
 ## フロントエンド (SPA化完了)
 
+### 現行実装 (レガシーSPA)
 * **言語/フレームワーク**: HTML/CSS/TypeScript。
 * **ルーティング**: SPARouter (TypeScript製、約400行のクライアントサイドルーティング)。
 * **ナビゲーション**: NavigationBar (TypeScript製、約280行の統一ナビゲーション)。
 * **グラフ**: Chart.js (価格推移グラフ)。
 * **UIフレームワーク**: Bootstrap 5 (レスポンシブUI)。
+
+### 次世代実装 (React SPA)
+* **フレームワーク**: React 18+ + Next.js 14+ (App Router対応)。
+* **UI ライブラリ**: Ant Design 5+ (企業レベルUIコンポーネント)。
+* **状態管理**: Zustand または Redux Toolkit。
+* **スタイリング**: CSS Modules + Ant Design テーマカスタマイズ。
+* **型安全性**: TypeScript 5.3+ 完全対応。
+* **ビルドツール**: Next.js内蔵 Turbopack/Webpack。
 
 ## アーキテクチャパターン (企業レベル実装)
 
