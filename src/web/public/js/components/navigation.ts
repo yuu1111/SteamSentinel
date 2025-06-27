@@ -33,6 +33,7 @@ class NavigationBar {
         if (path === '/games') return 'games';
         if (path === '/alerts') return 'alerts';
         if (path === '/monitoring') return 'monitoring';
+        if (path === '/settings') return 'settings';
         if (path === '/' || path === '/dashboard') return 'dashboard';
         return 'dashboard';
     }
@@ -86,6 +87,13 @@ class NavigationBar {
                     label: '手動更新',
                     icon: 'bi-arrow-clockwise',
                     onclick: "runManualMonitoring()"
+                },
+                {
+                    id: 'settings',
+                    label: '設定・テスト',
+                    icon: 'bi-gear',
+                    href: '/settings',
+                    active: this.currentPage === 'settings'
                 },
                 {
                     id: 'limitations',

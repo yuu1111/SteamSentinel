@@ -55,6 +55,11 @@ class SPARouter {
                 title: '監視状況 - SteamSentinel'
             },
             {
+                path: '/settings',
+                component: () => this.showSettings(),
+                title: '設定・テスト - SteamSentinel'
+            },
+            {
                 path: '/limitations',
                 component: () => this.showLimitations(),
                 title: '制限事項・注意点 - SteamSentinel'
@@ -208,6 +213,15 @@ class SPARouter {
     }
     async loadLicensesComponent() {
         await this.loadExternalPage('/licenses.html');
+    }
+    async showSettings() {
+        this.loadTemplate('settingsTemplate');
+        // DOM要素がレンダリングされるまで少し待機
+        await new Promise(resolve => setTimeout(resolve, 50));
+        // 設定画面の初期化を呼び出し
+        if (typeof window.initSettingsPage === 'function') {
+            await window.initSettingsPage();
+        }
     }
     loadTemplate(templateId) {
         const template = document.getElementById(templateId);
