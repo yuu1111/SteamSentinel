@@ -54,12 +54,48 @@ function showSuccess(message, duration = 5000) {
     showAlert(message, 'success', duration);
 }
 
-function showError(message, duration = 8000) {
-    showAlert(message, 'error', duration);
+function showError(message, duration = 8000, details = null) {
+    if (details) {
+        const detailsId = 'error-details-' + Date.now();
+        const errorWithDetails = `
+            ${message}
+            <div class="mt-2">
+                <button class="btn btn-sm btn-outline-light" type="button" data-bs-toggle="collapse" data-bs-target="#${detailsId}" aria-expanded="false">
+                    詳細を表示
+                </button>
+                <div class="collapse mt-2" id="${detailsId}">
+                    <div class="card card-body">
+                        <pre class="mb-0"><small>${details}</small></pre>
+                    </div>
+                </div>
+            </div>
+        `;
+        showAlert(errorWithDetails, 'error', duration);
+    } else {
+        showAlert(message, 'error', duration);
+    }
 }
 
-function showWarning(message, duration = 6000) {
-    showAlert(message, 'warning', duration);
+function showWarning(message, duration = 6000, details = null) {
+    if (details) {
+        const detailsId = 'warning-details-' + Date.now();
+        const warningWithDetails = `
+            ${message}
+            <div class="mt-2">
+                <button class="btn btn-sm btn-outline-dark" type="button" data-bs-toggle="collapse" data-bs-target="#${detailsId}" aria-expanded="false">
+                    詳細を表示
+                </button>
+                <div class="collapse mt-2" id="${detailsId}">
+                    <div class="card card-body">
+                        ${details}
+                    </div>
+                </div>
+            </div>
+        `;
+        showAlert(warningWithDetails, 'warning', duration);
+    } else {
+        showAlert(message, 'warning', duration);
+    }
 }
 
 function showInfo(message, duration = 5000) {
@@ -110,23 +146,30 @@ function setTheme(theme) {
         Chart.defaults.borderColor = gridColor;
         Chart.defaults.backgroundColor = gridColor;
         
-        // Update existing charts
-        Chart.instances.forEach(chart => {
-            chart.options.scales = chart.options.scales || {};
-            if (chart.options.scales.x) {
-                chart.options.scales.x.ticks = chart.options.scales.x.ticks || {};
-                chart.options.scales.x.ticks.color = textColor;
-                chart.options.scales.x.grid = chart.options.scales.x.grid || {};
-                chart.options.scales.x.grid.color = gridColor;
-            }
-            if (chart.options.scales.y) {
-                chart.options.scales.y.ticks = chart.options.scales.y.ticks || {};
-                chart.options.scales.y.ticks.color = textColor;
-                chart.options.scales.y.grid = chart.options.scales.y.grid || {};
-                chart.options.scales.y.grid.color = gridColor;
-            }
-            chart.update();
-        });
+        // Update existing charts - Chart.js 4.x compatible
+        try {
+            // Get all chart instances from the Chart registry
+            const chartInstances = Object.values(Chart.instances || {});
+            chartInstances.forEach(chart => {
+                if (chart && chart.options && chart.options.scales) {
+                    if (chart.options.scales.x) {
+                        chart.options.scales.x.ticks = chart.options.scales.x.ticks || {};
+                        chart.options.scales.x.ticks.color = textColor;
+                        chart.options.scales.x.grid = chart.options.scales.x.grid || {};
+                        chart.options.scales.x.grid.color = gridColor;
+                    }
+                    if (chart.options.scales.y) {
+                        chart.options.scales.y.ticks = chart.options.scales.y.ticks || {};
+                        chart.options.scales.y.ticks.color = textColor;
+                        chart.options.scales.y.grid = chart.options.scales.y.grid || {};
+                        chart.options.scales.y.grid.color = gridColor;
+                    }
+                    chart.update();
+                }
+            });
+        } catch (error) {
+            console.warn('Failed to update chart themes:', error);
+        }
     }
 }
 

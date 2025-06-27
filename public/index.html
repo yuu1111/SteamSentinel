@@ -125,14 +125,28 @@
                                 <table class="table table-hover" id="gamesTable">
                                     <thead>
                                         <tr>
-                                            <th>ゲーム名</th>
-                                            <th>現在価格</th>
-                                            <th>元価格</th>
-                                            <th>割引率</th>
-                                            <th>歴代最安値</th>
-                                            <th>セール中</th>
-                                            <th>最終更新</th>
-                                            <th>操作</th>
+                                            <th class="sortable" data-sort="name" style="white-space: nowrap; cursor: pointer;">
+                                                ゲーム名 <i class="bi bi-arrow-down-up sort-icon"></i>
+                                            </th>
+                                            <th class="sortable" data-sort="currentPrice" style="white-space: nowrap; cursor: pointer;">
+                                                現在価格 <i class="bi bi-arrow-down-up sort-icon"></i>
+                                            </th>
+                                            <th class="sortable" data-sort="originalPrice" style="white-space: nowrap; cursor: pointer;">
+                                                元価格 <i class="bi bi-arrow-down-up sort-icon"></i>
+                                            </th>
+                                            <th class="sortable" data-sort="discountPercent" style="white-space: nowrap; cursor: pointer;">
+                                                割引率 <i class="bi bi-arrow-down-up sort-icon"></i>
+                                            </th>
+                                            <th class="sortable" data-sort="historicalLow" style="white-space: nowrap; cursor: pointer;">
+                                                歴代最安値 <i class="bi bi-arrow-down-up sort-icon"></i>
+                                            </th>
+                                            <th class="sortable" data-sort="isOnSale" style="white-space: nowrap; cursor: pointer;">
+                                                セール中 <i class="bi bi-arrow-down-up sort-icon"></i>
+                                            </th>
+                                            <th class="sortable" data-sort="lastUpdated" style="white-space: nowrap; cursor: pointer;">
+                                                最終更新 <i class="bi bi-arrow-down-up sort-icon"></i>
+                                            </th>
+                                            <th style="white-space: nowrap;">操作</th>
                                         </tr>
                                     </thead>
                                     <tbody id="gamesTableBody">
@@ -242,7 +256,7 @@
         <div class="container">
             <small class="text-muted">
                 SteamSentinel v1.0.0 - Steam価格監視システム<br>
-                <a href="https://github.com/your-repo/steam-sentinel" target="_blank" class="text-decoration-none">
+                <a href="https://github.com/yuu1111/SteamSentinel" target="_blank" class="text-decoration-none">
                     <i class="bi bi-github"></i> GitHub
                 </a>
             </small>

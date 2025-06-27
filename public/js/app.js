@@ -5,31 +5,52 @@ let currentView = 'dashboard';
 let gamesData = [];
 let dashboardData = null;
 let refreshInterval = null;
+let currentSort = { column: null, direction: 'asc' };
 
 // Initialize application when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM Content Loaded - Starting application initialization');
+    console.log('Current location:', window.location.href);
+    console.log('User Agent:', navigator.userAgent);
     initializeApp();
 });
 
 // Application initialization
 async function initializeApp() {
     try {
+        console.log('Starting application initialization...');
+        
         // Initialize dark mode
         initializeDarkMode();
+        console.log('Dark mode initialized');
         
         // Load initial data
+        console.log('Loading dashboard data...');
         await loadDashboardData();
+        console.log('Dashboard data loaded');
         
         // Setup auto-refresh
         setupAutoRefresh();
+        console.log('Auto-refresh setup complete');
         
         // Setup keyboard shortcuts
         setupKeyboardShortcuts();
+        console.log('Keyboard shortcuts setup complete');
+        
+        // Setup table sorting
+        setupTableSorting();
+        console.log('Table sorting setup complete');
         
         showSuccess('SteamSentinel が正常に起動しました');
+        console.log('Application initialization completed successfully');
     } catch (error) {
         console.error('Application initialization failed:', error);
-        showError('アプリケーションの初期化に失敗しました');
+        const errorDetails = `
+エラー種類: ${error.name || 'Unknown'}
+エラーメッセージ: ${error.message || 'No message'}
+スタックトレース: ${error.stack || 'No stack trace available'}
+        `;
+        showError('アプリケーションの初期化に失敗しました', 15000, errorDetails);
     }
 }
 
@@ -84,19 +105,106 @@ function showDashboard() {
 
 async function loadDashboardData() {
     try {
+        console.log('loadDashboardData: Starting...');
         showLoading();
+        
+        console.log('loadDashboardData: Making API call...');
         const response = await api.get('/games/dashboard');
+        console.log('loadDashboardData: API response received:', response);
         
         if (response.success) {
             dashboardData = response.data;
+            console.log('loadDashboardData: Updating statistics cards...');
             updateStatisticsCards(response.data.statistics);
+            
+            console.log('loadDashboardData: Updating games table...');
             updateGamesTable(response.data.games);
+            
+            // データ取得失敗したゲームの統計を表示
+            const failedGames = response.data.games.filter(game => !game.latestPrice);
+            if (failedGames.length > 0) {
+                console.info(`価格データ取得失敗: ${failedGames.length}ゲーム`, failedGames.map(g => g.name));
+                
+                // 失敗したゲームの詳細リストを作成
+                const failedGamesList = failedGames.map(game => 
+                    `<div class="mb-2">
+                        <strong>${game.name}</strong> (ID: ${game.steam_app_id})
+                        <br>
+                        <a href="https://store.steampowered.com/app/${game.steam_app_id}/" target="_blank" class="btn btn-sm btn-outline-primary mt-1">
+                            <i class="bi bi-box-arrow-up-right"></i> Steamページ
+                        </a>
+                    </div>`
+                ).join('');
+                
+                // コピー用のテキストリストを作成
+                const failedGamesText = failedGames.map(game => 
+                    `${game.name} (ID: ${game.steam_app_id}) - https://store.steampowered.com/app/${game.steam_app_id}/`
+                ).join('\n');
+                
+                const copyButtonId = 'copy-failed-games-' + Date.now();
+                
+                const detailsHTML = `
+                    <div class="failed-games-list">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="mb-0">データ取得に失敗したゲーム一覧:</h6>
+                            <button id="${copyButtonId}" class="btn btn-sm btn-outline-secondary" title="リストをコピー">
+                                <i class="bi bi-clipboard"></i> コピー
+                            </button>
+                        </div>
+                        ${failedGamesList}
+                        <hr class="my-3">
+                        <small class="text-muted">
+                            <strong>考えられる原因:</strong><br>
+                            • 無料ゲーム（価格情報なし）<br>
+                            • 地域制限ゲーム（日本で販売されていない）<br>
+                            • 販売終了・削除されたゲーム<br>
+                            • API一時的な障害
+                        </small>
+                    </div>
+                `;
+                
+                // 警告を表示した後にコピーボタンのイベントリスナーを追加
+                setTimeout(() => {
+                    const copyButton = document.getElementById(copyButtonId);
+                    if (copyButton) {
+                        copyButton.addEventListener('click', () => {
+                            copyToClipboard(failedGamesText).then(() => {
+                                // コピー成功時のボタン表示変更
+                                const originalHTML = copyButton.innerHTML;
+                                copyButton.innerHTML = '<i class="bi bi-check-lg"></i> コピー済み';
+                                copyButton.classList.remove('btn-outline-secondary');
+                                copyButton.classList.add('btn-success');
+                                
+                                setTimeout(() => {
+                                    copyButton.innerHTML = originalHTML;
+                                    copyButton.classList.remove('btn-success');
+                                    copyButton.classList.add('btn-outline-secondary');
+                                }, 2000);
+                            });
+                        });
+                    }
+                }, 100);
+                
+                showWarning(
+                    `${failedGames.length}ゲームの価格データ取得に失敗しています（無料ゲームや地域制限の可能性）`, 
+                    10000, 
+                    detailsHTML
+                );
+            }
+            console.log('loadDashboardData: Dashboard data loaded successfully');
         } else {
+            console.error('loadDashboardData: API returned success=false:', response);
             showError('ダッシュボードデータの読み込みに失敗しました');
         }
     } catch (error) {
-        console.error('Failed to load dashboard data:', error);
-        showError('ダッシュボードデータの読み込み中にエラーが発生しました');
+        console.error('loadDashboardData: Exception occurred:', error);
+        const errorDetails = `
+エラー種類: ${error.name || 'Unknown'}
+エラーメッセージ: ${error.message || 'No message'}
+APIエンドポイント: /api/games/dashboard
+スタックトレース: ${error.stack || 'No stack trace available'}
+        `;
+        showError('ダッシュボードデータの読み込み中にエラーが発生しました', 12000, errorDetails);
     } finally {
         hideLoading();
     }
@@ -173,31 +281,47 @@ function updateGamesTable(games) {
         const isOnSale = latestPrice ? latestPrice.is_on_sale : false;
         const lastUpdated = latestPrice ? new Date(latestPrice.recorded_at).toLocaleString('ja-JP') : '未取得';
         
-        const priceDisplay = currentPrice > 0 ? 
+        const priceDisplay = latestPrice && currentPrice > 0 ? 
             (isOnSale ? 
                 `<span class="price sale">¥${currentPrice.toLocaleString()}</span><br><small class="price old">¥${originalPrice.toLocaleString()}</small>` :
                 `<span class="price">¥${currentPrice.toLocaleString()}</span>`
             ) : 
             '<span class="text-muted">価格未取得</span>';
             
-        const originalPriceDisplay = originalPrice > 0 ? `¥${originalPrice.toLocaleString()}` : '-';
-        const historicalLowDisplay = historicalLow > 0 ? `¥${historicalLow.toLocaleString()}` : '-';
+        const originalPriceDisplay = latestPrice && originalPrice > 0 ? `<span class="price-display">¥${originalPrice.toLocaleString()}</span>` : 
+            (latestPrice ? '-' : '<span class="text-muted">未取得</span>');
+        const historicalLowDisplay = latestPrice && historicalLow > 0 ? `<span class="price-display">¥${historicalLow.toLocaleString()}</span>` : 
+            (latestPrice ? '-' : '<span class="text-muted">未取得</span>');
         
-        const discountBadge = discountPercent > 0 ? 
-            `<span class="discount-badge">${discountPercent}% OFF</span>` : 
-            '<span class="text-muted">-</span>';
+        const discountBadge = latestPrice && discountPercent > 0 ? 
+            `<span class="discount-badge">${discountPercent}%&nbsp;OFF</span>` : 
+            (latestPrice ? '<span class="text-muted">-</span>' : '<span class="text-muted">未取得</span>');
             
-        const saleStatus = isOnSale ? 
-            '<span class="badge bg-success"><i class="bi bi-check-circle"></i> セール中</span>' : 
-            '<span class="badge bg-secondary">通常価格</span>';
+        const saleStatus = latestPrice ? 
+            (latestPrice.source === 'steam_unreleased' ? 
+                '<span class="badge bg-info"><i class="bi bi-clock"></i> 未リリース</span>' :
+                isOnSale ? 
+                    '<span class="badge bg-success"><i class="bi bi-check-circle"></i> セール中</span>' : 
+                    '<span class="badge bg-secondary">通常価格</span>'
+            ) : 
+            '<span class="badge bg-warning"><i class="bi bi-exclamation-triangle"></i> データ取得失敗</span>';
         
         return `
             <tr class="game-item">
                 <td>
-                    <a href="https://store.steampowered.com/app/${game.steam_app_id}/" target="_blank" class="steam-link">
-                        <i class="bi bi-box-arrow-up-right me-1"></i>${game.name}
-                    </a>
-                    <br><small class="text-muted">ID: ${game.steam_app_id}</small>
+                    <div class="d-flex align-items-center">
+                        <img src="https://cdn.akamai.steamstatic.com/steam/apps/${game.steam_app_id}/header.jpg" 
+                             alt="${game.name}" 
+                             class="game-header-img me-3"
+                             onerror="this.style.display='none'"
+                             loading="lazy">
+                        <div>
+                            <a href="https://store.steampowered.com/app/${game.steam_app_id}/" target="_blank" class="steam-link">
+                                <i class="bi bi-box-arrow-up-right me-1"></i>${game.name}
+                            </a>
+                            <br><small class="text-muted">ID: ${game.steam_app_id}</small>
+                        </div>
+                    </div>
                 </td>
                 <td>${priceDisplay}</td>
                 <td>${originalPriceDisplay}</td>
@@ -206,18 +330,20 @@ function updateGamesTable(games) {
                 <td>${saleStatus}</td>
                 <td><small>${lastUpdated}</small></td>
                 <td>
-                    <button class="action-btn" onclick="showPriceChart(${game.steam_app_id}, '${game.name}')" title="価格推移">
-                        <i class="bi bi-graph-up"></i>
-                    </button>
-                    <button class="action-btn" onclick="editGame(${game.id})" title="編集">
-                        <i class="bi bi-pencil"></i>
-                    </button>
-                    <button class="action-btn" onclick="runSingleGameMonitoring(${game.steam_app_id})" title="手動更新">
-                        <i class="bi bi-arrow-clockwise"></i>
-                    </button>
-                    <button class="action-btn danger" onclick="deleteGame(${game.id}, '${game.name}')" title="削除">
-                        <i class="bi bi-trash"></i>
-                    </button>
+                    <div class="action-buttons">
+                        <button class="action-btn" onclick="showPriceChart(${game.steam_app_id}, '${game.name}')" title="価格推移">
+                            <i class="bi bi-graph-up"></i>
+                        </button>
+                        <button class="action-btn" onclick="editGame(${game.id})" title="編集">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="action-btn" onclick="runSingleGameMonitoring(${game.steam_app_id})" title="手動更新">
+                            <i class="bi bi-arrow-clockwise"></i>
+                        </button>
+                        <button class="action-btn danger" onclick="deleteGame(${game.id}, '${game.name}')" title="削除">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
                 </td>
             </tr>
         `;
@@ -410,6 +536,100 @@ function setupKeyboardShortcuts() {
             });
         }
     });
+}
+
+// Table sorting functionality
+function setupTableSorting() {
+    const sortableHeaders = document.querySelectorAll('.sortable');
+    sortableHeaders.forEach(header => {
+        header.addEventListener('click', () => {
+            const sortColumn = header.getAttribute('data-sort');
+            sortTable(sortColumn);
+        });
+    });
+}
+
+function sortTable(column) {
+    if (!gamesData || gamesData.length === 0) return;
+    
+    // 同じカラムをクリックした場合は方向を反転、異なる場合は昇順から開始
+    if (currentSort.column === column) {
+        currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+    } else {
+        currentSort.column = column;
+        currentSort.direction = 'asc';
+    }
+    
+    // データを並び替え
+    const sortedData = [...gamesData].sort((a, b) => {
+        let valueA, valueB;
+        
+        switch (column) {
+            case 'name':
+                valueA = a.name.toLowerCase();
+                valueB = b.name.toLowerCase();
+                break;
+            case 'currentPrice':
+                valueA = a.latestPrice?.current_price || 0;
+                valueB = b.latestPrice?.current_price || 0;
+                break;
+            case 'originalPrice':
+                valueA = a.latestPrice?.original_price || 0;
+                valueB = b.latestPrice?.original_price || 0;
+                break;
+            case 'discountPercent':
+                valueA = a.latestPrice?.discount_percent || 0;
+                valueB = b.latestPrice?.discount_percent || 0;
+                break;
+            case 'historicalLow':
+                valueA = a.latestPrice?.historical_low || 0;
+                valueB = b.latestPrice?.historical_low || 0;
+                break;
+            case 'isOnSale':
+                valueA = a.latestPrice?.is_on_sale ? 1 : 0;
+                valueB = b.latestPrice?.is_on_sale ? 1 : 0;
+                break;
+            case 'lastUpdated':
+                valueA = a.latestPrice?.recorded_at ? new Date(a.latestPrice.recorded_at).getTime() : 0;
+                valueB = b.latestPrice?.recorded_at ? new Date(b.latestPrice.recorded_at).getTime() : 0;
+                break;
+            default:
+                return 0;
+        }
+        
+        // 数値の場合は数値比較、文字列の場合は文字列比較
+        if (typeof valueA === 'number' && typeof valueB === 'number') {
+            return currentSort.direction === 'asc' ? valueA - valueB : valueB - valueA;
+        } else {
+            if (valueA < valueB) return currentSort.direction === 'asc' ? -1 : 1;
+            if (valueA > valueB) return currentSort.direction === 'asc' ? 1 : -1;
+            return 0;
+        }
+    });
+    
+    // ソートアイコンを更新
+    updateSortIcons(column, currentSort.direction);
+    
+    // テーブルを再描画
+    updateGamesTable(sortedData);
+}
+
+function updateSortIcons(activeColumn, direction) {
+    // 全てのソートアイコンをリセット
+    document.querySelectorAll('.sort-icon').forEach(icon => {
+        icon.className = 'bi bi-arrow-down-up sort-icon';
+    });
+    
+    // アクティブなカラムのアイコンを更新
+    const activeHeader = document.querySelector(`[data-sort="${activeColumn}"]`);
+    if (activeHeader) {
+        const icon = activeHeader.querySelector('.sort-icon');
+        if (icon) {
+            icon.className = direction === 'asc' ? 
+                'bi bi-arrow-up sort-icon text-primary' : 
+                'bi bi-arrow-down sort-icon text-primary';
+        }
+    }
 }
 
 // Cleanup on page unload
