@@ -94,6 +94,22 @@ body {
   font-weight: 600;
 }
 
+.card-header .card-title {
+  color: white !important;
+  font-weight: 600;
+  margin-bottom: 0;
+}
+
+.card-title {
+  color: var(--bs-body-color) !important;
+  font-weight: 600;
+}
+
+/* Dark mode card title */
+[data-bs-theme="dark"] .card-title {
+  color: var(--bs-body-color) !important;
+}
+
 /* Statistics Cards */
 .stats-card {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -773,13 +789,3 @@ footer {
   }
 }
 
-/* Body padding adjustment for fixed navbar */
-body {
-  padding-top: 76px; /* Default navbar height */
-}
-
-@media (max-width: 767.98px) {
-  body {
-    padding-top: 64px; /* Smaller navbar on mobile */
-  }
-}
