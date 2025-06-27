@@ -205,4 +205,41 @@ export class SteamStoreAPI extends BaseAPI {
       return false;
     }
   }
+
+  // ゲーム基本情報取得（レビュー・リリース日等）
+  async getGameInfo(appId: number): Promise<{
+    name?: string;
+    coming_soon?: boolean;
+    release_date?: string;
+    positive_reviews?: number;
+    negative_reviews?: number;
+  } | null> {
+    try {
+      const response = await this.get<any>('/api/appdetails', {
+        params: {
+          appids: appId,
+          cc: this.countryCode,
+          l: 'japanese',
+          filters: 'basic,release_date'
+        }
+      });
+
+      if (response?.[appId]?.success && response[appId].data) {
+        const data = response[appId].data;
+        
+        return {
+          name: data.name,
+          coming_soon: data.release_date?.coming_soon || false,
+          release_date: data.release_date?.date,
+          positive_reviews: undefined, // Steam API には含まれていない
+          negative_reviews: undefined
+        };
+      }
+
+      return null;
+    } catch (error) {
+      logger.error(`Failed to get game info for ${appId}:`, error);
+      return null;
+    }
+  }
 }
