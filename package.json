@@ -5,7 +5,8 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "nodemon --exec ts-node src/index.ts",
-    "build": "tsc",
+    "build": "tsc && npm run copy:components",
+    "copy:components": "mkdir -p public/js/components && cp dist/web/public/js/components/*.js public/js/components/",
     "start": "node dist/index.js",
     "db:init": "ts-node scripts/initDatabase.ts",
     "seed:games": "ts-node scripts/seedGames.ts",
