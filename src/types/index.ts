@@ -4,6 +4,8 @@ export interface Game {
   name: string;
   enabled: boolean;
   price_threshold?: number;
+  price_threshold_type: 'price' | 'discount' | 'any_sale';
+  discount_threshold_percent?: number;
   alert_enabled: boolean;
   created_at?: Date;
   updated_at?: Date;

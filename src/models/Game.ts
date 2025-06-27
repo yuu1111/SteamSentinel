@@ -47,8 +47,8 @@ export class GameModel {
     try {
       const db = database.getConnection();
       const stmt = db.prepare(`
-        INSERT INTO games (steam_app_id, name, enabled, price_threshold, alert_enabled)
-        VALUES (@steam_app_id, @name, @enabled, @price_threshold, @alert_enabled)
+        INSERT INTO games (steam_app_id, name, enabled, price_threshold, price_threshold_type, discount_threshold_percent, alert_enabled)
+        VALUES (@steam_app_id, @name, @enabled, @price_threshold, @price_threshold_type, @discount_threshold_percent, @alert_enabled)
       `);
       
       const info = stmt.run({
@@ -56,6 +56,8 @@ export class GameModel {
         name: game.name,
         enabled: game.enabled ? 1 : 0,
         price_threshold: game.price_threshold || null,
+        price_threshold_type: game.price_threshold_type || 'price',
+        discount_threshold_percent: game.discount_threshold_percent || null,
         alert_enabled: game.alert_enabled ? 1 : 0
       });
       
@@ -93,6 +95,16 @@ export class GameModel {
       if (updates.price_threshold !== undefined) {
         fields.push('price_threshold = @price_threshold');
         values.price_threshold = updates.price_threshold;
+      }
+      
+      if (updates.price_threshold_type !== undefined) {
+        fields.push('price_threshold_type = @price_threshold_type');
+        values.price_threshold_type = updates.price_threshold_type;
+      }
+      
+      if (updates.discount_threshold_percent !== undefined) {
+        fields.push('discount_threshold_percent = @discount_threshold_percent');
+        values.discount_threshold_percent = updates.discount_threshold_percent;
       }
       
       if (updates.alert_enabled !== undefined) {
@@ -145,8 +157,8 @@ export class GameModel {
     try {
       const db = database.getConnection();
       const stmt = db.prepare(`
-        INSERT OR IGNORE INTO games (steam_app_id, name, enabled, price_threshold, alert_enabled)
-        VALUES (@steam_app_id, @name, @enabled, @price_threshold, @alert_enabled)
+        INSERT OR IGNORE INTO games (steam_app_id, name, enabled, price_threshold, price_threshold_type, discount_threshold_percent, alert_enabled)
+        VALUES (@steam_app_id, @name, @enabled, @price_threshold, @price_threshold_type, @discount_threshold_percent, @alert_enabled)
       `);
       
       let inserted = 0;
@@ -157,6 +169,8 @@ export class GameModel {
             name: game.name,
             enabled: game.enabled ? 1 : 0,
             price_threshold: game.price_threshold || null,
+            price_threshold_type: game.price_threshold_type || 'price',
+            discount_threshold_percent: game.discount_threshold_percent || null,
             alert_enabled: game.alert_enabled ? 1 : 0
           });
           if (info.changes > 0) inserted++;

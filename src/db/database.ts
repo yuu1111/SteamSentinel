@@ -121,7 +121,63 @@ class DatabaseManager {
       END;
     `);
 
+    // マイグレーション実行
+    this.runMigrations();
+    
     logger.info('Database initialized successfully');
+  }
+
+  // データベースマイグレーション
+  private runMigrations(): void {
+    const db = this.getConnection();
+    
+    try {
+      // バージョン管理テーブルの作成
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS db_version (
+          version INTEGER PRIMARY KEY,
+          applied_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      // 現在のバージョンを取得
+      const currentVersion = this.getCurrentVersion();
+      
+      // v2: 閾値タイプと割引率閾値の追加
+      if (currentVersion < 2) {
+        logger.info('Running migration v2: Adding threshold type and discount threshold fields');
+        
+        // 新しいカラムを追加
+        db.exec(`
+          ALTER TABLE games ADD COLUMN price_threshold_type TEXT DEFAULT 'price' 
+          CHECK(price_threshold_type IN ('price', 'discount', 'any_sale'));
+        `);
+        
+        db.exec(`
+          ALTER TABLE games ADD COLUMN discount_threshold_percent INTEGER DEFAULT NULL;
+        `);
+        
+        // バージョンを記録
+        db.prepare('INSERT INTO db_version (version) VALUES (?)').run(2);
+        logger.info('Migration v2 completed successfully');
+      }
+      
+    } catch (error) {
+      logger.error('Migration failed:', error);
+      throw error;
+    }
+  }
+
+  // 現在のデータベースバージョンを取得
+  private getCurrentVersion(): number {
+    const db = this.getConnection();
+    try {
+      const result = db.prepare('SELECT MAX(version) as version FROM db_version').get() as any;
+      return result?.version || 1; // デフォルトはv1
+    } catch (error) {
+      // テーブルが存在しない場合はv1
+      return 1;
+    }
   }
 
   // データベースの整合性チェック
