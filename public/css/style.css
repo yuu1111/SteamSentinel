@@ -439,8 +439,25 @@ body {
 
 /* Footer */
 footer {
+  background-color: var(--bs-light);
   border-top: 1px solid rgba(0, 0, 0, 0.1);
   margin-top: auto;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Dark mode footer */
+[data-bs-theme="dark"] footer {
+  background-color: var(--bs-dark);
+  border-top-color: var(--bs-border-color);
+  color: var(--bs-light);
+}
+
+[data-bs-theme="dark"] footer a {
+  color: var(--bs-secondary);
+}
+
+[data-bs-theme="dark"] footer a:hover {
+  color: var(--bs-light);
 }
 
 /* Responsive Design */
