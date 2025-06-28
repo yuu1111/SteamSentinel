@@ -79,11 +79,11 @@ function loadConfigFile(): any {
     if (fs.existsSync(configPath)) {
       return JSON.parse(fs.readFileSync(configPath, 'utf-8'));
     } else if (fs.existsSync(exampleConfigPath)) {
-      console.warn('config.json not found, using config.example.json');
+      // Using config.example.json as fallback
       return JSON.parse(fs.readFileSync(exampleConfigPath, 'utf-8'));
     }
   } catch (error) {
-    console.error('Error loading config file:', error);
+    // Config file loading error handled silently
   }
   
   return {};

@@ -26,6 +26,31 @@ const Dashboard: React.FC = () => {
     loadDashboardData()
   }, [])
 
+  // Initialize Bootstrap tooltips when dashboard data changes
+  useEffect(() => {
+    if (dashboardData) {
+      // Small delay to ensure DOM is updated
+      const timer = setTimeout(() => {
+        const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+        const tooltipList = Array.from(tooltipTriggerList).map(tooltipTriggerEl => 
+          new (window as any).bootstrap.Tooltip(tooltipTriggerEl)
+        )
+        
+        // Store tooltips for cleanup
+        ;(window as any).__tooltips = tooltipList
+      }, 100)
+      
+      return () => {
+        clearTimeout(timer)
+        // Cleanup existing tooltips
+        if ((window as any).__tooltips) {
+          (window as any).__tooltips.forEach((tooltip: any) => tooltip.dispose())
+        }
+      }
+    }
+    return undefined
+  }, [dashboardData])
+
   const loadDashboardData = async () => {
     try {
       setLoading(true)
@@ -115,10 +140,11 @@ const Dashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="text-center py-5">
-        <div className="spinner-border" role="status">
+      <div className="text-center py-5 loading-immediate">
+        <div className="spinner-border text-primary spinner-border-fast" role="status" style={{ width: '3rem', height: '3rem' }}>
           <span className="visually-hidden">読み込み中...</span>
         </div>
+        <p className="mt-3 text-muted">ダッシュボードを読み込み中...</p>
       </div>
     )
   }
@@ -358,7 +384,9 @@ const GamesTable: React.FC<GamesTableProps> = ({
               onClick={() => onSort('historicalLow')}
             >
               歴代最安値 
-              <i className="bi bi-info-circle text-warning ms-1" title="過去6ヶ月間のデータのみ。詳細は制限事項ページを参照"></i>
+              <span className="position-relative d-inline-block">
+                <i className="bi bi-info-circle text-warning ms-1 info-icon-hover" data-bs-toggle="tooltip" data-bs-placement="top" title="過去6ヶ月間のデータのみ。詳細は制限事項ページを参照"></i>
+              </span>
               <i className={getSortIcon('historicalLow')}></i>
             </th>
             <th 

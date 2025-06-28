@@ -112,6 +112,26 @@ export class GameModel {
         values.alert_enabled = updates.alert_enabled ? 1 : 0;
       }
       
+      if (updates.manual_historical_low !== undefined) {
+        fields.push('manual_historical_low = @manual_historical_low');
+        values.manual_historical_low = updates.manual_historical_low;
+      }
+      
+      if (updates.is_purchased !== undefined) {
+        fields.push('is_purchased = @is_purchased');
+        values.is_purchased = updates.is_purchased ? 1 : 0;
+      }
+      
+      if (updates.purchase_price !== undefined) {
+        fields.push('purchase_price = @purchase_price');
+        values.purchase_price = updates.purchase_price;
+      }
+      
+      if (updates.purchase_date !== undefined) {
+        fields.push('purchase_date = @purchase_date');
+        values.purchase_date = updates.purchase_date;
+      }
+      
       if (fields.length === 0) {
         return game;
       }

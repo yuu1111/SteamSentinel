@@ -10,6 +10,7 @@ export const MonitoringProgress: React.FC<MonitoringProgressProps> = ({ onMonito
   const [progress, setProgress] = useState<MonitoringProgressType | null>(null)
   const [isVisible, setIsVisible] = useState(false)
   const [isChecking, setIsChecking] = useState(false)
+  const [hasChecked, setHasChecked] = useState(false)
 
   useEffect(() => {
     checkAndStartProgressMonitoring()
@@ -17,20 +18,33 @@ export const MonitoringProgress: React.FC<MonitoringProgressProps> = ({ onMonito
     return () => {
       // クリーンアップ時に監視を停止
       stopProgressMonitoring()
+      // チェック状態もクリア
+      setIsChecking(false)
     }
   }, [])
 
   const checkAndStartProgressMonitoring = async () => {
+    if (hasChecked) return // 既にチェック済みの場合は実行しない
+    
     try {
+      // API応答が200ms以上かかる場合のみローディング表示
+      const checkingTimeout = setTimeout(() => setIsChecking(true), 200)
+      
       const response = await api.get('/monitoring/progress')
+      clearTimeout(checkingTimeout)
+      setHasChecked(true)
+      
       if (response.success && response.data.isRunning) {
         console.log('監視が実行中です。進捗表示を開始します。')
-        setIsChecking(true)
         startProgressMonitoring()
+      } else {
+        // 監視が実行中でない場合はチェック状態を解除
+        setIsChecking(false)
       }
-      // 監視が実行中でない場合は何も表示しない
     } catch (error) {
       console.error('Failed to check monitoring progress:', error)
+      setIsChecking(false)
+      setHasChecked(true)
     }
   }
 
@@ -72,8 +86,21 @@ export const MonitoringProgress: React.FC<MonitoringProgressProps> = ({ onMonito
     setIsChecking(false)
   }
 
-  // 初期チェック中は何も表示しない
-  if (isChecking) return null
+  // 初期チェック中は軽量なローディング表示（API応答が遅い場合のみ）
+  if (isChecking) {
+    return (
+      <div className="row mb-4">
+        <div className="col-12">
+          <div className="text-center py-2">
+            <div className="spinner-border spinner-border-sm text-info" role="status">
+              <span className="visually-hidden">監視状況確認中...</span>
+            </div>
+            <small className="text-muted ms-2">監視状況を確認中...</small>
+          </div>
+        </div>
+      </div>
+    )
+  }
   
   // 監視中でない場合は何も表示しない
   if (!isVisible || !progress) return null
@@ -98,7 +125,7 @@ export const MonitoringProgress: React.FC<MonitoringProgressProps> = ({ onMonito
         <div className="card border-info">
           <div className="card-header bg-info text-white">
             <h6 className="mb-0">
-              <div className="spinner-grow spinner-grow-sm me-2" role="status">
+              <div className="spinner-grow spinner-grow-sm spinner-grow-fast me-2" role="status">
                 <span className="visually-hidden">Loading...</span>
               </div>
               ゲーム情報を取得中...
