@@ -9,6 +9,7 @@ interface MonitoringProgressProps {
 export const MonitoringProgress: React.FC<MonitoringProgressProps> = ({ onMonitoringComplete }) => {
   const [progress, setProgress] = useState<MonitoringProgressType | null>(null)
   const [isVisible, setIsVisible] = useState(false)
+  const [isChecking, setIsChecking] = useState(false)
 
   useEffect(() => {
     checkAndStartProgressMonitoring()
@@ -24,8 +25,10 @@ export const MonitoringProgress: React.FC<MonitoringProgressProps> = ({ onMonito
       const response = await api.get('/monitoring/progress')
       if (response.success && response.data.isRunning) {
         console.log('監視が実行中です。進捗表示を開始します。')
+        setIsChecking(true)
         startProgressMonitoring()
       }
+      // 監視が実行中でない場合は何も表示しない
     } catch (error) {
       console.error('Failed to check monitoring progress:', error)
     }
@@ -33,6 +36,7 @@ export const MonitoringProgress: React.FC<MonitoringProgressProps> = ({ onMonito
 
   const startProgressMonitoring = () => {
     setIsVisible(true)
+    setIsChecking(false)
     
     // 進捗をポーリング
     const interval = setInterval(async () => {
@@ -65,8 +69,13 @@ export const MonitoringProgress: React.FC<MonitoringProgressProps> = ({ onMonito
     }
     setIsVisible(false)
     setProgress(null)
+    setIsChecking(false)
   }
 
+  // 初期チェック中は何も表示しない
+  if (isChecking) return null
+  
+  // 監視中でない場合は何も表示しない
   if (!isVisible || !progress) return null
 
   const percentage = progress.totalGames > 0 ? 

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { ConfigProvider, theme } from 'antd'
 import Navigation from './components/Navigation'
 import Dashboard from './pages/Dashboard'
 import Games from './pages/Games'
@@ -81,40 +82,55 @@ function App() {
   }
 
   return (
-    <AlertProvider>
-      <div className={isDarkMode ? 'dark-mode' : ''}>
-        <Navigation 
-          currentView={currentView} 
-          onViewChange={setCurrentView}
-          isDarkMode={isDarkMode}
-          onToggleDarkMode={toggleDarkMode}
-        />
-        
-        <main className="container-fluid mt-4">
-          {renderCurrentView()}
-        </main>
+    <ConfigProvider
+      theme={{
+        algorithm: isDarkMode ? theme.darkAlgorithm : theme.defaultAlgorithm,
+        token: {
+          colorPrimary: '#007bff',
+          colorSuccess: '#28a745',
+          colorWarning: '#ffc107',
+          colorError: '#dc3545',
+          colorInfo: '#17a2b8',
+          fontSize: 14,
+          borderRadius: 6,
+        },
+      }}
+    >
+      <AlertProvider>
+        <div className={isDarkMode ? 'dark-mode' : ''}>
+          <Navigation 
+            currentView={currentView} 
+            onViewChange={setCurrentView}
+            isDarkMode={isDarkMode}
+            onToggleDarkMode={toggleDarkMode}
+          />
+          
+          <main className="container-fluid mt-4">
+            {renderCurrentView()}
+          </main>
 
-        <LoadingOverlay />
-        <AlertContainer />
+          <LoadingOverlay />
+          <AlertContainer />
 
-        <footer className="mt-5 py-4 text-center">
-          <div className="container">
-            <small className="text-muted">
-              SteamSentinel v1.0.0 - Steam価格監視システム<br />
-              <a href="#" onClick={(e) => { e.preventDefault(); setCurrentView('limitations') }} className="text-decoration-none me-3">
-                <i className="bi bi-exclamation-triangle"></i> 制限事項・注意点
-              </a>
-              <a href="#" onClick={(e) => { e.preventDefault(); setCurrentView('licenses') }} className="text-decoration-none me-3">
-                <i className="bi bi-file-text"></i> ライセンス情報
-              </a>
-              <a href="https://github.com/yuu1111/SteamSentinel" target="_blank" rel="noopener noreferrer" className="text-decoration-none">
-                <i className="bi bi-github"></i> GitHub
-              </a>
-            </small>
-          </div>
-        </footer>
-      </div>
-    </AlertProvider>
+          <footer className="mt-5 py-4 text-center">
+            <div className="container">
+              <small className="text-muted">
+                SteamSentinel v1.0.0 - Steam価格監視システム<br />
+                <a href="#" onClick={(e) => { e.preventDefault(); setCurrentView('limitations') }} className="text-decoration-none me-3">
+                  <i className="bi bi-exclamation-triangle"></i> 制限事項・注意点
+                </a>
+                <a href="#" onClick={(e) => { e.preventDefault(); setCurrentView('licenses') }} className="text-decoration-none me-3">
+                  <i className="bi bi-file-text"></i> ライセンス情報
+                </a>
+                <a href="https://github.com/yuu1111/SteamSentinel" target="_blank" rel="noopener noreferrer" className="text-decoration-none">
+                  <i className="bi bi-github"></i> GitHub
+                </a>
+              </small>
+            </div>
+          </footer>
+        </div>
+      </AlertProvider>
+    </ConfigProvider>
   )
 }
 

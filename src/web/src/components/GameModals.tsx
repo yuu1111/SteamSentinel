@@ -40,10 +40,16 @@ export const AddGameModal: React.FC<AddGameModalProps> = ({ show, onHide, onGame
     const steamAppId = parseInt(formData.steamAppId)
     const gameName = formData.gameName.trim()
     
-    if (!steamAppId || !gameName) {
-      showError('Steam App IDとゲーム名は必須です')
+    if (isNaN(steamAppId) || steamAppId <= 0) {
+      showError('有効なSteam App IDを入力してください')
       return
     }
+    
+    // ゲーム名は空でもOK（バックエンドでSteam APIから取得）
+    // if (!gameName) {
+    //   showError('ゲーム名は必須です')
+    //   return
+    // }
 
     if (formData.thresholdType === 'price' && formData.priceThreshold && parseFloat(formData.priceThreshold) <= 0) {
       showError('価格閾値は0より大きい値を入力してください')
@@ -123,15 +129,18 @@ export const AddGameModal: React.FC<AddGameModalProps> = ({ show, onHide, onGame
               </div>
 
               <div className="mb-3">
-                <label htmlFor="gameName" className="form-label">ゲーム名 *</label>
+                <label htmlFor="gameName" className="form-label">ゲーム名</label>
                 <input
                   type="text"
                   className="form-control"
                   id="gameName"
                   value={formData.gameName}
                   onChange={(e) => setFormData(prev => ({ ...prev, gameName: e.target.value }))}
-                  required
+                  placeholder="空欄の場合、Steamから自動取得されます"
                 />
+                <div className="form-text">
+                  空欄にすると、Steam APIからゲーム名を自動取得します
+                </div>
               </div>
 
               <div className="mb-3">

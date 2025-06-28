@@ -24,7 +24,7 @@ export interface PriceData {
   discount_percent: number
   is_on_sale: boolean
   historical_low: number
-  source: 'steam_api' | 'steam_free' | 'steam_unreleased' | 'steam_removed'
+  source: 'itad' | 'steam' | 'steam_free' | 'steam_unreleased' | 'steam_removed'
   release_date?: string
   recorded_at: string
 }

@@ -12,9 +12,6 @@ interface PriceChartModalProps {
 interface PriceHistoryData {
   date: string
   current_price: number
-  original_price: number
-  discount_percent: number
-  is_on_sale: boolean
 }
 
 export const PriceChartModal: React.FC<PriceChartModalProps> = ({ 
@@ -49,11 +46,23 @@ export const PriceChartModal: React.FC<PriceChartModalProps> = ({
       setLoading(true)
       const response = await api.get(`/games/${steamAppId}/price-history`)
       
-      if (response.success && response.data) {
-        setPriceHistory(response.data)
-        setTimeout(() => createChart(response.data), 100)
+      if (response.success && response.data && response.data.priceHistory) {
+        if (response.data.priceHistory.length === 0) {
+          console.warn('Price history array is empty')
+          setPriceHistory([])
+          return
+        }
+        
+        // priceHistoryにdate形式でAPIから取得した価格履歴を変換
+        const formattedData = response.data.priceHistory.map((item: any) => ({
+          date: new Date(item.recorded_at).toISOString().split('T')[0],
+          current_price: item.current_price
+        }))
+        setPriceHistory(formattedData)
+        setTimeout(() => createChart(formattedData), 100)
       } else {
-        showError('価格履歴の取得に失敗しました')
+        console.warn('No price history data available:', response)
+        showError('価格履歴データがありません')
       }
     } catch (error) {
       console.error('Failed to load price history:', error)
@@ -76,7 +85,6 @@ export const PriceChartModal: React.FC<PriceChartModalProps> = ({
 
     const labels = data.map(item => new Date(item.date).toLocaleDateString('ja-JP'))
     const currentPrices = data.map(item => item.current_price)
-    const originalPrices = data.map(item => item.original_price)
 
     chartInstanceRef.current = new ((window as any).Chart)(ctx, {
       type: 'line',
@@ -84,21 +92,16 @@ export const PriceChartModal: React.FC<PriceChartModalProps> = ({
         labels: labels,
         datasets: [
           {
-            label: '現在価格',
+            label: '価格',
             data: currentPrices,
             borderColor: 'rgb(54, 162, 235)',
             backgroundColor: 'rgba(54, 162, 235, 0.1)',
             tension: 0.1,
-            fill: false
-          },
-          {
-            label: '元価格',
-            data: originalPrices,
-            borderColor: 'rgb(255, 99, 132)',
-            backgroundColor: 'rgba(255, 99, 132, 0.1)',
-            tension: 0.1,
             fill: false,
-            borderDash: [5, 5]
+            pointBackgroundColor: 'rgb(54, 162, 235)',
+            pointBorderColor: 'rgb(54, 162, 235)',
+            pointRadius: 4,
+            pointHoverRadius: 6
           }
         ]
       },
@@ -111,8 +114,7 @@ export const PriceChartModal: React.FC<PriceChartModalProps> = ({
             text: `${gameName} - 価格推移`
           },
           legend: {
-            display: true,
-            position: 'top'
+            display: false
           }
         },
         scales: {
@@ -182,7 +184,7 @@ export const PriceChartModal: React.FC<PriceChartModalProps> = ({
               <div className="mt-3">
                 <small className="text-muted">
                   <i className="bi bi-info-circle me-1"></i>
-                  過去{priceHistory.length}回分の価格データを表示しています
+                  過去{priceHistory.length}回分の価格データを表示しています（セール価格含む）
                 </small>
               </div>
             )}

@@ -71,7 +71,7 @@ export const SpecialGameStatus: React.FC<SpecialGameStatusProps> = ({ games }) =
                   <small className="text-muted d-block">App ID: {game.steam_app_id}</small>
                   {game.latestPrice?.release_date && (
                     <small className="text-info d-block">
-                      リリース予定: {new Date(game.latestPrice.release_date).toLocaleDateString('ja-JP')}
+                      リリース予定: {game.latestPrice.release_date}
                     </small>
                   )}
                 </div>

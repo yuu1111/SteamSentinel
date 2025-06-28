@@ -139,34 +139,27 @@ const Limitations: React.FC = () => {
               </h3>
             </div>
             <div className="card-body">
-              <h5>監視対象外ゲーム</h5>
+              <h5>監視が困難なゲーム</h5>
               <div className="row">
-                <div className="col-md-3">
-                  <div className="text-center p-3 border rounded">
-                    <i className="bi bi-gift text-success" style={{ fontSize: '2rem' }}></i>
-                    <h6 className="mt-2">基本無料ゲーム</h6>
-                    <small className="text-muted">価格変動がないため</small>
-                  </div>
-                </div>
-                <div className="col-md-3">
-                  <div className="text-center p-3 border rounded">
-                    <i className="bi bi-clock text-info" style={{ fontSize: '2rem' }}></i>
-                    <h6 className="mt-2">未リリースゲーム</h6>
-                    <small className="text-muted">価格が確定していない</small>
-                  </div>
-                </div>
-                <div className="col-md-3">
+                <div className="col-md-4">
                   <div className="text-center p-3 border rounded">
                     <i className="bi bi-x-circle text-danger" style={{ fontSize: '2rem' }}></i>
                     <h6 className="mt-2">販売終了ゲーム</h6>
                     <small className="text-muted">購入不可能</small>
                   </div>
                 </div>
-                <div className="col-md-3">
+                <div className="col-md-4">
                   <div className="text-center p-3 border rounded">
                     <i className="bi bi-geo text-warning" style={{ fontSize: '2rem' }}></i>
                     <h6 className="mt-2">地域制限ゲーム</h6>
                     <small className="text-muted">日本で販売されていない</small>
+                  </div>
+                </div>
+                <div className="col-md-4">
+                  <div className="text-center p-3 border rounded">
+                    <i className="bi bi-puzzle text-info" style={{ fontSize: '2rem' }}></i>
+                    <h6 className="mt-2">特殊ゲームタイプ</h6>
+                    <small className="text-muted">DLCやソフトウェアなど</small>
                   </div>
                 </div>
               </div>

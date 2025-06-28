@@ -149,7 +149,7 @@ const Dashboard: React.FC = () => {
             <div className="card-header">
               <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2">
                 <h5 className="mb-0">
-                  <i className="bi bi-collection me-2"></i>監視中のゲーム
+                  <i className="bi bi-collection me-2"></i>監視中のゲーム ({dashboardData?.games?.length || 0}件)
                 </h5>
                 <div className="d-flex flex-wrap gap-2">
                   <button 
@@ -416,12 +416,24 @@ const GamesTable: React.FC<GamesTableProps> = ({
                       <br />
                       <small className="text-muted d-none d-sm-inline">
                         ID: {game.steam_app_id}
+                        {latestPrice?.source === 'steam_unreleased' && latestPrice?.release_date && (
+                          <span className="ms-2">
+                            <i className="bi bi-calendar text-warning me-1"></i>
+                            {latestPrice.release_date}
+                          </span>
+                        )}
                       </small>
                     </div>
                   </div>
                 </td>
                 <td className="d-none d-sm-table-cell">
-                  {currentPrice > 0 ? (
+                  {latestPrice?.source === 'steam_free' ? (
+                    <span className="badge bg-info">無料</span>
+                  ) : latestPrice?.source === 'steam_unreleased' ? (
+                    <span className="badge bg-warning">未発売</span>
+                  ) : latestPrice?.source === 'steam_removed' ? (
+                    <span className="badge bg-danger">販売終了</span>
+                  ) : currentPrice > 0 ? (
                     isOnSale ? (
                       <>
                         <span className="price sale">¥{currentPrice.toLocaleString()}</span>
@@ -436,7 +448,17 @@ const GamesTable: React.FC<GamesTableProps> = ({
                   )}
                 </td>
                 <td className="d-none d-lg-table-cell">
-                  {originalPrice > 0 ? `¥${originalPrice.toLocaleString()}` : '-'}
+                  {latestPrice?.source === 'steam_free' ? (
+                    <span className="badge bg-info">無料</span>
+                  ) : latestPrice?.source === 'steam_unreleased' ? (
+                    <span className="badge bg-warning">未発売</span>
+                  ) : latestPrice?.source === 'steam_removed' ? (
+                    <span className="badge bg-danger">販売終了</span>
+                  ) : originalPrice > 0 ? (
+                    `¥${originalPrice.toLocaleString()}`
+                  ) : (
+                    '-'
+                  )}
                 </td>
                 <td className="d-none d-md-table-cell">
                   {discountPercent > 0 ? (
@@ -449,7 +471,19 @@ const GamesTable: React.FC<GamesTableProps> = ({
                   {historicalLow > 0 ? `¥${historicalLow.toLocaleString()}` : '-'}
                 </td>
                 <td>
-                  {isOnSale ? (
+                  {latestPrice?.source === 'steam_free' ? (
+                    <span className="badge bg-info">
+                      <i className="bi bi-gift"></i> 基本無料
+                    </span>
+                  ) : latestPrice?.source === 'steam_unreleased' ? (
+                    <span className="badge bg-warning">
+                      <i className="bi bi-calendar-plus"></i> 未発売
+                    </span>
+                  ) : latestPrice?.source === 'steam_removed' ? (
+                    <span className="badge bg-danger">
+                      <i className="bi bi-x-circle"></i> 販売終了
+                    </span>
+                  ) : isOnSale ? (
                     <span className="badge bg-success">
                       <i className="bi bi-check-circle"></i> セール中
                     </span>

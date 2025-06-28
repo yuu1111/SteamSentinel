@@ -17,5 +17,12 @@ export default defineConfig({
         changeOrigin: true
       }
     }
+  },
+  css: {
+    preprocessorOptions: {
+      less: {
+        javascriptEnabled: true,
+      }
+    }
   }
 })
