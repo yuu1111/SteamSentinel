@@ -135,7 +135,7 @@ export const MonitoringProgress: React.FC<MonitoringProgressProps> = ({ onMonito
             <div className="d-flex justify-content-between align-items-center mb-2">
               <div className="text-truncate flex-grow-1 me-3">
                 <small className="text-muted">現在処理中:</small><br />
-                <span className="text-primary fw-bold">
+                <span className="current-game-name fw-bold">
                   {progress.currentGame || '待機中...'}
                 </span>
               </div>

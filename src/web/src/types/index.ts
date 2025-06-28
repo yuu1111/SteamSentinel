@@ -43,12 +43,18 @@ export interface Statistics {
 
 export interface AlertData {
   id: number
-  game_id: number
+  steam_app_id?: number
+  game_id?: number
   alert_type: string
-  message: string
-  price_data: any
+  message?: string
+  price_data?: any
   created_at: string
   game?: Game
+  game_name?: string
+  trigger_price?: number
+  previous_low?: number | null
+  discount_percent?: number
+  notified_discord?: boolean
 }
 
 export interface MonitoringProgress {

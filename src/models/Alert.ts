@@ -105,6 +105,58 @@ export class AlertModel {
     }
   }
 
+  // フィルタ付きアラート履歴を取得
+  static getHistoryFiltered(filter: string, limit: number = 50, offset: number = 0): Alert[] {
+    try {
+      const db = database.getConnection();
+      let query = `
+        SELECT a.*, g.name as game_name
+        FROM alerts a
+        JOIN games g ON a.steam_app_id = g.steam_app_id
+      `;
+      let params: any[] = [];
+
+      if (filter !== 'all') {
+        query += ' WHERE a.alert_type = ?';
+        params.push(filter);
+      }
+
+      query += ' ORDER BY a.created_at DESC LIMIT ? OFFSET ?';
+      params.push(limit, offset);
+
+      const records = db.prepare(query).all(...params) as any[];
+      
+      return records.map(record => ({
+        ...record,
+        notified_discord: record.notified_discord === 1,
+        created_at: new Date(record.created_at)
+      }));
+    } catch (error) {
+      logger.error('Failed to fetch filtered alert history:', error);
+      throw error;
+    }
+  }
+
+  // フィルタ付きアラート総数を取得
+  static getFilteredCount(filter: string): number {
+    try {
+      const db = database.getConnection();
+      let query = 'SELECT COUNT(*) as count FROM alerts';
+      let params: any[] = [];
+
+      if (filter !== 'all') {
+        query += ' WHERE alert_type = ?';
+        params.push(filter);
+      }
+
+      const result = db.prepare(query).get(...params) as { count: number };
+      return result.count;
+    } catch (error) {
+      logger.error('Failed to get filtered alert count:', error);
+      throw error;
+    }
+  }
+
   // ゲーム別のアラート履歴を取得
   static getByGameId(steamAppId: number, limit: number = 20): Alert[] {
     try {

@@ -3,6 +3,7 @@ import { GameController } from '../controllers/GameController';
 import { MonitoringController } from '../controllers/MonitoringController';
 import { validateSteamAppId, apiLimiter } from '../middleware/security';
 import discordService from '../services/DiscordService';
+import logger from '../utils/logger';
 
 const router = Router();
 
@@ -417,26 +418,16 @@ alertRoutes.get('/', async (req, res) => {
     // AlertModelを動的インポート
     const { AlertModel } = await import('../models/Alert');
     
-    let alerts;
-    if (filter === 'all') {
-      alerts = AlertModel.getHistory(limit, offset);
-    } else {
-      // フィルタリング実装（alert_type別など）
-      alerts = AlertModel.getHistory(limit, offset);
-    }
-    
-    // 総件数を取得（ページネーション用）
-    const db = (await import('../db/database')).default.getConnection();
-    const totalCount = db.prepare('SELECT COUNT(*) as count FROM alerts').get() as { count: number };
+    const alerts = AlertModel.getHistoryFiltered(filter, limit, offset);
+    const totalCount = AlertModel.getFilteredCount(filter);
     
     res.json({
       success: true,
-      data: alerts,
-      pagination: {
-        page,
-        limit,
-        total: totalCount.count,
-        totalPages: Math.ceil(totalCount.count / limit)
+      data: {
+        alerts: alerts,
+        totalPages: Math.ceil(totalCount / limit),
+        totalCount: totalCount,
+        currentPage: page
       }
     });
   } catch (error) {
@@ -482,6 +473,30 @@ alertRoutes.get('/recent', async (req, res) => {
     res.status(500).json({
       success: false,
       error: '最新アラートの取得に失敗しました'
+    });
+  }
+});
+
+// アラート全削除
+alertRoutes.delete('/', async (_req, res) => {
+  try {
+    const db = (await import('../db/database')).default.getConnection();
+    
+    // 全てのアラートを削除
+    const result = db.prepare('DELETE FROM alerts').run();
+    
+    logger.info(`All alerts cleared. ${result.changes} alerts deleted.`);
+    
+    res.json({
+      success: true,
+      message: `${result.changes}件のアラートを削除しました`,
+      deletedCount: result.changes
+    });
+  } catch (error) {
+    logger.error('Failed to clear all alerts:', error);
+    res.status(500).json({
+      success: false,
+      error: 'アラート履歴の削除に失敗しました'
     });
   }
 });

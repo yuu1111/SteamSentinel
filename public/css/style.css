@@ -9,6 +9,7 @@
   --bs-warning: #f0ad4e;
   --bs-danger: #d9534f;
   --bs-info: #5bc0de;
+  --current-game-color: #1b2838;
 }
 
 /* Dark mode variables */
@@ -17,6 +18,7 @@
   --bs-body-color: #ffffff;
   --bs-card-bg: #2d2d2d;
   --bs-border-color: #404040;
+  --current-game-color: #87ceeb;
 }
 
 /* General Layout */
@@ -672,6 +674,19 @@ footer {
 .spinner-border-fast,
 .spinner-grow-fast {
   animation-duration: 0.5s;
+}
+
+/* Current Game Name Styling */
+.current-game-name {
+  color: var(--bs-primary);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  transition: color 0.3s ease;
+}
+
+/* Dark mode specific styling for current game name */
+[data-bs-theme="dark"] .current-game-name {
+  color: var(--current-game-color);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 /* ===== Responsive Design Improvements ===== */

@@ -9,7 +9,7 @@ const Alerts: React.FC = () => {
   const [filter, setFilter] = useState('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
-  const { showError } = useAlert()
+  const { showError, showSuccess } = useAlert()
 
   useEffect(() => {
     loadAlerts()
@@ -53,6 +53,7 @@ const Alerts: React.FC = () => {
         setAlerts([])
         setCurrentPage(1)
         setTotalPages(1)
+        showSuccess(response.message || 'アラート履歴を削除しました')
       } else {
         showError('アラート履歴の削除に失敗しました')
       }
@@ -223,7 +224,7 @@ const Alerts: React.FC = () => {
                             <span className="badge bg-secondary me-2">
                               {getAlertTypeLabel(alert.alert_type)}
                             </span>
-                            <strong>{alert.game?.name || 'ゲーム名不明'}</strong>
+                            <strong>{alert.game_name || alert.game?.name || 'ゲーム名不明'}</strong>
                           </div>
                           <p className="mb-1">{alert.message}</p>
                           {alert.price_data && (
@@ -241,10 +242,10 @@ const Alerts: React.FC = () => {
                           <small className="text-muted">
                             {formatDate(alert.created_at)}
                           </small>
-                          {alert.game && (
+                          {(alert.steam_app_id || alert.game?.steam_app_id) && (
                             <div className="mt-1">
                               <a
-                                href={`https://store.steampowered.com/app/${alert.game.steam_app_id}/`}
+                                href={`https://store.steampowered.com/app/${alert.steam_app_id || alert.game?.steam_app_id}/`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="btn btn-outline-primary btn-sm"
