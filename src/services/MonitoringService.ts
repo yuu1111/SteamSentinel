@@ -6,6 +6,7 @@ import discordService from './DiscordService';
 import { Game, PriceHistory, Alert, MonitoringResult } from '../types';
 import { config } from '../config';
 import logger from '../utils/logger';
+import database from '../db/database';
 
 export interface MonitoringProgress {
   isRunning: boolean;
@@ -144,12 +145,16 @@ export class MonitoringService {
       this.lastRunTime = new Date();
       const duration = Date.now() - startTime;
       
+      // 最後のフェッチ時間をデータベースに保存
+      database.updateLastFetchTime(this.lastRunTime);
+      
       // 結果の集計
       const successful = results.filter(r => r.currentPrice && !r.error).length;
       const alerts = results.filter(r => r.alert).length;
       const errors = results.filter(r => r.error).length;
 
       logger.info(`Monitoring cycle completed in ${duration}ms: ${successful} successful, ${alerts} alerts, ${errors} errors`);
+      logger.info(`Next fetch scheduled for: ${database.getNextFetchTime().toISOString()}`);
       
       return results;
 
@@ -181,13 +186,21 @@ export class MonitoringService {
     }
 
     try {
-      // APIから取得したゲーム名でゲーム情報を更新
+      // APIから取得したゲーム名でゲーム情報を更新（元の名前が一般的でない場合のみ）
       if (newPriceHistory.gameName && newPriceHistory.gameName !== game.name) {
-        logger.info(`Updating game name: "${game.name}" → "${newPriceHistory.gameName}" (${game.steam_app_id})`);
-        const updatedGame = GameModel.update(game.id!, { name: newPriceHistory.gameName });
-        // ゲームオブジェクトを更新
-        if (updatedGame) {
-          game.name = updatedGame.name;
+        // 元の名前が英語名で、新しい名前が日本語名の場合は上書きしない
+        const isOriginalEnglish = /^[a-zA-Z0-9\s\-:'.!&]+$/.test(game.name);
+        const isNewJapanese = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(newPriceHistory.gameName);
+        
+        if (!(isOriginalEnglish && isNewJapanese)) {
+          logger.info(`Updating game name: "${game.name}" → "${newPriceHistory.gameName}" (${game.steam_app_id})`);
+          const updatedGame = GameModel.update(game.id!, { name: newPriceHistory.gameName });
+          // ゲームオブジェクトを更新
+          if (updatedGame) {
+            game.name = updatedGame.name;
+          }
+        } else {
+          logger.debug(`Keeping original English name "${game.name}" instead of Japanese name "${newPriceHistory.gameName}"`);
         }
       }
 

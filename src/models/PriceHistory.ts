@@ -10,10 +10,10 @@ export class PriceHistoryModel {
       const stmt = db.prepare(`
         INSERT INTO price_history (
           steam_app_id, current_price, original_price, 
-          discount_percent, historical_low, is_on_sale, source
+          discount_percent, historical_low, is_on_sale, source, release_date
         ) VALUES (
           @steam_app_id, @current_price, @original_price,
-          @discount_percent, @historical_low, @is_on_sale, @source
+          @discount_percent, @historical_low, @is_on_sale, @source, @release_date
         )
       `);
       
@@ -24,7 +24,8 @@ export class PriceHistoryModel {
         discount_percent: priceData.discount_percent,
         historical_low: priceData.historical_low,
         is_on_sale: priceData.is_on_sale ? 1 : 0,
-        source: priceData.source
+        source: priceData.source,
+        release_date: priceData.release_date || null
       });
       
       return this.getById(info.lastInsertRowid as number)!;
@@ -252,6 +253,18 @@ export class PriceHistoryModel {
       return records.map(record => record.steam_app_id);
     } catch (error) {
       logger.error('Failed to fetch unreleased games:', error);
+      throw error;
+    }
+  }
+
+  // ゲームの価格履歴を削除
+  static deleteByGameId(steamAppId: number): boolean {
+    try {
+      const db = database.getConnection();
+      const info = db.prepare('DELETE FROM price_history WHERE steam_app_id = ?').run(steamAppId);
+      return info.changes > 0;
+    } catch (error) {
+      logger.error(`Failed to delete price history for game ${steamAppId}:`, error);
       throw error;
     }
   }

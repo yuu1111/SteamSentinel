@@ -102,10 +102,10 @@ export class GameController {
       } = req.body;
 
       // 入力検証
-      if (!steam_app_id || !name) {
+      if (!steam_app_id) {
         return res.status(400).json({
           success: false,
-          error: 'Steam App ID and name are required'
+          error: 'Steam App ID is required'
         });
       }
 
@@ -118,9 +118,36 @@ export class GameController {
         });
       }
 
+      // ゲーム名が空の場合、Steam APIから取得
+      let finalGameName = name;
+      if (!name || name.trim() === '') {
+        logger.info(`Game name is empty for Steam App ID ${steam_app_id}, fetching from Steam API...`);
+        
+        try {
+          const steamAPI = new (await import('../api/SteamStoreAPI')).SteamStoreAPI();
+          const steamDetails = await steamAPI.getAppDetails(steam_app_id);
+          
+          if (steamDetails?.data?.name) {
+            finalGameName = steamDetails.data.name;
+            logger.info(`Got game name from Steam API: ${finalGameName} (${steam_app_id})`);
+          } else {
+            return res.status(400).json({
+              success: false,
+              error: 'Could not retrieve game name from Steam API and no name was provided'
+            });
+          }
+        } catch (error) {
+          logger.error(`Failed to fetch game name from Steam API for ${steam_app_id}:`, error);
+          return res.status(400).json({
+            success: false,
+            error: 'Could not retrieve game name from Steam API and no name was provided'
+          });
+        }
+      }
+
       const game = GameModel.create({
         steam_app_id,
-        name,
+        name: finalGameName,
         enabled,
         price_threshold,
         price_threshold_type,
@@ -128,11 +155,11 @@ export class GameController {
         alert_enabled
       });
 
-      logger.info(`Game added: ${name} (${steam_app_id})`);
+      logger.info(`Game added: ${finalGameName} (${steam_app_id})`);
 
       // 初回価格データを取得（非同期・エラーでも処理続行）
       try {
-        logger.info(`Fetching initial price data for newly added game: ${name} (${steam_app_id})`);
+        logger.info(`Fetching initial price data for newly added game: ${finalGameName} (${steam_app_id})`);
         const monitoringService = new MonitoringService();
         await monitoringService.initialize();
         
@@ -140,19 +167,19 @@ export class GameController {
         const monitoringResult = await monitoringService.monitorSingleGame(steam_app_id);
         
         if (monitoringResult.error) {
-          logger.warn(`Failed to fetch initial price data for ${name}: ${monitoringResult.error.message}`);
+          logger.warn(`Failed to fetch initial price data for ${finalGameName}: ${monitoringResult.error.message}`);
         } else {
-          logger.info(`Successfully fetched initial price data for ${name}`);
+          logger.info(`Successfully fetched initial price data for ${finalGameName}`);
         }
       } catch (priceError) {
         // 価格取得失敗はログのみで、ゲーム追加は成功扱い
-        logger.warn(`Initial price data fetch failed for ${name} (${steam_app_id}):`, priceError);
+        logger.warn(`Initial price data fetch failed for ${finalGameName} (${steam_app_id}):`, priceError);
       }
 
       return res.status(201).json({
         success: true,
         data: game,
-        message: `${name} を追加しました。価格データを取得中です...`
+        message: `${finalGameName} を追加しました。価格データを取得中です...`
       });
     } catch (error) {
       logger.error('Failed to add game:', error);
@@ -290,6 +317,127 @@ export class GameController {
       return res.status(500).json({
         success: false,
         error: 'Failed to retrieve dashboard data'
+      });
+    }
+  }
+
+  // 重複チェック用API
+  static async checkGameExists(req: Request, res: Response): Promise<Response> {
+    try {
+      const steamAppId = parseInt(req.params.appId, 10);
+      
+      if (isNaN(steamAppId)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid Steam App ID'
+        });
+      }
+
+      const existingGame = GameModel.getBySteamAppId(steamAppId);
+      
+      return res.json({
+        success: true,
+        data: {
+          exists: !!existingGame,
+          game: existingGame || null
+        }
+      });
+    } catch (error) {
+      logger.error('Failed to check game existence:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to check game existence'
+      });
+    }
+  }
+
+  // テスト用特別状況ゲーム追加（開発用）
+  static async addTestSpecialGames(_req: Request, res: Response): Promise<Response> {
+    try {
+      // 既存のテストゲームを削除
+      const testGameIds = [999901, 999902, 999903];
+      testGameIds.forEach(steamAppId => {
+        PriceHistoryModel.deleteByGameId(steamAppId);
+        const game = GameModel.getBySteamAppId(steamAppId);
+        if (game) {
+          GameModel.delete(game.id!);
+        }
+      });
+
+      // 基本無料ゲーム
+      const freeGame = GameModel.create({
+        steam_app_id: 999901,
+        name: 'Test Free Game',
+        enabled: true,
+        alert_enabled: true
+      });
+
+      PriceHistoryModel.create({
+        steam_app_id: 999901,
+        current_price: 0,
+        original_price: 0,
+        discount_percent: 0,
+        historical_low: 0,
+        is_on_sale: false,
+        source: 'steam_free',
+        recorded_at: new Date()
+      });
+
+      // 未リリースゲーム
+      const unreleasedGame = GameModel.create({
+        steam_app_id: 999902,
+        name: 'Test Unreleased Game',
+        enabled: true,
+        alert_enabled: true
+      });
+
+      PriceHistoryModel.create({
+        steam_app_id: 999902,
+        current_price: 0,
+        original_price: 2980,
+        discount_percent: 0,
+        historical_low: 0,
+        is_on_sale: false,
+        source: 'steam_unreleased',
+        release_date: '2025-12-31',
+        recorded_at: new Date()
+      });
+
+      // 販売終了ゲーム
+      const removedGame = GameModel.create({
+        steam_app_id: 999903,
+        name: 'Test Removed Game',
+        enabled: true,
+        alert_enabled: true
+      });
+
+      PriceHistoryModel.create({
+        steam_app_id: 999903,
+        current_price: 0,
+        original_price: 0,
+        discount_percent: 0,
+        historical_low: 1980,
+        is_on_sale: false,
+        source: 'steam_removed',
+        recorded_at: new Date()
+      });
+
+      logger.info('Test special games added successfully');
+
+      return res.json({
+        success: true,
+        message: 'Test special games added successfully',
+        data: {
+          freeGame: { id: freeGame.id, name: freeGame.name },
+          unreleasedGame: { id: unreleasedGame.id, name: unreleasedGame.name },
+          removedGame: { id: removedGame.id, name: removedGame.name }
+        }
+      });
+    } catch (error) {
+      logger.error('Failed to add test special games:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to add test special games'
       });
     }
   }

@@ -35,6 +35,12 @@ gameRoutes.put('/:id/mark-purchased', (req, res) => GameController.markAsPurchas
 gameRoutes.put('/:id/unmark-purchased', (req, res) => GameController.unmarkAsPurchased(req, res));
 gameRoutes.get('/purchased', (req, res) => GameController.getPurchasedGames(req, res));
 
+// 重複チェック用API
+gameRoutes.get('/check/:appId', validateSteamAppId, (req, res) => GameController.checkGameExists(req, res));
+
+// 開発用：テスト特別状況ゲーム追加
+gameRoutes.post('/test/add-special-games', (req, res) => GameController.addTestSpecialGames(req, res));
+
 router.use('/games', gameRoutes);
 
 // 監視関連のルート

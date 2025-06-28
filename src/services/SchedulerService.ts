@@ -192,20 +192,34 @@ export class SchedulerService {
   // 起動時の初回監視実行
   private async runInitialMonitoring(): Promise<void> {
     try {
-      logger.info('Running initial price monitoring');
+      const lastFetch = database.getLastFetchTime();
+      const nextFetch = database.getNextFetchTime();
+      const shouldFetch = database.shouldFetch();
       
-      // 5秒後に実行（起動処理完了を待つ）
-      setTimeout(async () => {
-        try {
-          await this.monitoringService.runMonitoring();
-          logger.info('Initial monitoring completed');
-        } catch (error) {
-          logger.error('Initial monitoring failed:', error);
-        }
-      }, 5000);
+      logger.info(`Last fetch: ${lastFetch.toISOString()}`);
+      logger.info(`Next fetch scheduled: ${nextFetch.toISOString()}`);
+      logger.info(`Should fetch now: ${shouldFetch}`);
+      
+      if (shouldFetch) {
+        logger.info('Interval has passed, running initial monitoring');
+        
+        // 5秒後に実行（起動処理完了を待つ）
+        setTimeout(async () => {
+          try {
+            await this.monitoringService.runMonitoring();
+            logger.info('Initial monitoring completed');
+          } catch (error) {
+            logger.error('Initial monitoring failed:', error);
+          }
+        }, 5000);
+      } else {
+        const timeToNext = nextFetch.getTime() - Date.now();
+        const hoursToNext = (timeToNext / (1000 * 60 * 60)).toFixed(1);
+        logger.info(`Skipping initial fetch - next scheduled in ${hoursToNext} hours`);
+      }
       
     } catch (error) {
-      logger.error('Failed to schedule initial monitoring:', error);
+      logger.error('Failed to check initial monitoring schedule:', error);
     }
   }
 

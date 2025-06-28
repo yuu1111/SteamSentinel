@@ -190,6 +190,57 @@ class DatabaseManager {
         db.prepare('INSERT INTO db_version (version) VALUES (?)').run(3);
         logger.info('Migration v3 completed successfully');
       }
+
+      // v4: 最後のフェッチ時間管理の追加
+      if (currentVersion < 4) {
+        logger.info('Running migration v4: Adding last fetch time tracking');
+        
+        // システム設定テーブルを作成
+        db.exec(`
+          CREATE TABLE IF NOT EXISTS system_settings (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
+        
+        // 最後のフェッチ時間を初期化
+        db.prepare(`
+          INSERT OR IGNORE INTO system_settings (key, value) 
+          VALUES ('last_fetch_time', '1970-01-01T00:00:00.000Z')
+        `).run();
+        
+        // バージョンを記録
+        db.prepare('INSERT INTO db_version (version) VALUES (?)').run(4);
+        logger.info('Migration v4 completed successfully');
+      }
+
+      // v5: price_historyテーブルにrelease_dateカラムを追加
+      if (currentVersion < 5) {
+        logger.info('Running migration v5: Adding release_date column to price_history table');
+        
+        try {
+          // カラムが存在するかチェック
+          const columnExists = db.prepare(`
+            SELECT COUNT(*) as count FROM pragma_table_info('price_history') 
+            WHERE name = 'release_date'
+          `).get() as any;
+          
+          if (columnExists.count === 0) {
+            db.exec(`
+              ALTER TABLE price_history 
+              ADD COLUMN release_date TEXT DEFAULT NULL
+            `);
+            logger.info('Added release_date column to price_history table');
+          }
+        } catch (error) {
+          logger.warn('Release_date column may already exist:', error);
+        }
+        
+        // バージョンを記録
+        db.prepare('INSERT INTO db_version (version) VALUES (?)').run(5);
+        logger.info('Migration v5 completed successfully');
+      }
       
     } catch (error) {
       logger.error('Migration failed:', error);
@@ -248,6 +299,44 @@ class DatabaseManager {
   transaction<T>(fn: (db: Database.Database) => T): T {
     const db = this.getConnection();
     return db.transaction(fn)(db);
+  }
+
+  // 最後のフェッチ時間を取得
+  getLastFetchTime(): Date {
+    const db = this.getConnection();
+    try {
+      const result = db.prepare('SELECT value FROM system_settings WHERE key = ?').get('last_fetch_time') as any;
+      return result ? new Date(result.value) : new Date(0);
+    } catch (error) {
+      logger.error('Failed to get last fetch time:', error);
+      return new Date(0);
+    }
+  }
+
+  // 最後のフェッチ時間を更新
+  updateLastFetchTime(fetchTime: Date): void {
+    const db = this.getConnection();
+    try {
+      db.prepare(`
+        INSERT OR REPLACE INTO system_settings (key, value, updated_at) 
+        VALUES ('last_fetch_time', ?, CURRENT_TIMESTAMP)
+      `).run(fetchTime.toISOString());
+    } catch (error) {
+      logger.error('Failed to update last fetch time:', error);
+    }
+  }
+
+  // 次のフェッチ予定時間を計算
+  getNextFetchTime(): Date {
+    const lastFetch = this.getLastFetchTime();
+    const intervalMs = config.monitoringIntervalHours * 60 * 60 * 1000;
+    return new Date(lastFetch.getTime() + intervalMs);
+  }
+
+  // フェッチが必要かチェック
+  shouldFetch(): boolean {
+    const nextFetch = this.getNextFetchTime();
+    return new Date() >= nextFetch;
   }
 }
 
