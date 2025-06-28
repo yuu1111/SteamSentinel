@@ -9,22 +9,28 @@
 * **ログ管理**: Winston。
 * **セキュリティ**: Helmet.js。
 
-## フロントエンド (SPA化完了)
+## フロントエンド (React SPA 実装完了)
 
-### 現行実装 (レガシーSPA)
-* **言語/フレームワーク**: HTML/CSS/TypeScript。
-* **ルーティング**: SPARouter (TypeScript製、約400行のクライアントサイドルーティング)。
-* **ナビゲーション**: NavigationBar (TypeScript製、約280行の統一ナビゲーション)。
-* **グラフ**: Chart.js (価格推移グラフ)。
-* **UIフレームワーク**: Bootstrap 5 (レスポンシブUI)。
+### 現行実装 (React SPA) ✅ 実装完了
+* **フレームワーク**: React 19.1.0 + TypeScript 5.3+ (30ファイル完全対応)。
+* **UI ライブラリ**: Ant Design 5.26.2 + Bootstrap 5 (ハイブリッド構成)。
+* **ビルドツール**: Vite 7.0.0 (高速ビルド・HMR対応)。
+* **状態管理**: React Context API + カスタムフック。
+* **ルーティング**: React Router 6+ (クライアントサイドルーティング)。
+* **型安全性**: TypeScript 完全対応、strict モード有効。
+* **スタイリング**: Bootstrap 5 + カスタムCSS + ダークモード対応。
+* **グラフ**: Chart.js (価格推移グラフ、詳細モーダル対応)。
 
-### 次世代実装 (React SPA)
-* **フレームワーク**: React 18+ + Next.js 14+ (App Router対応)。
-* **UI ライブラリ**: Ant Design 5+ (企業レベルUIコンポーネント)。
-* **状態管理**: Zustand または Redux Toolkit。
-* **スタイリング**: CSS Modules + Ant Design テーマカスタマイズ。
-* **型安全性**: TypeScript 5.3+ 完全対応。
-* **ビルドツール**: Next.js内蔵 Turbopack/Webpack。
+### レガシー実装 (廃止済み)
+* ~~**言語/フレームワーク**: HTML/CSS/TypeScript SPA~~
+* ~~**ルーティング**: SPARouter (TypeScript製)~~
+* ~~**ナビゲーション**: NavigationBar (TypeScript製)~~
+
+### 技術スタック詳細
+* **依存関係管理**: npm (package.json による厳密管理)
+* **開発環境**: Vite Dev Server + TypeScript コンパイル
+* **プロダクション**: React Production Build + Express.js 統合
+* **コンポーネント**: 20+ モジュラーコンポーネント (モーダル、テーブル、フォーム)
 
 ## アーキテクチャパターン (企業レベル実装)
 

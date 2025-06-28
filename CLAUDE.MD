@@ -54,6 +54,12 @@ SteamSentinelは、Steamゲームの価格を監視し、セール時の最安�
 
 -----
 
-## 9 Claude Code 実装指示
+## 9 API エンドポイント仕様
+
+@include claude-includes/api-endpoints.md
+
+-----
+
+## 10 Claude Code 実装指示
 
 @include claude-includes/claude-instructions.md

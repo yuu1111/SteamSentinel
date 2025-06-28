@@ -12,6 +12,10 @@
 | `price_threshold_type`   | TEXT          | DEFAULT 'price' CHECK(...)              | 閾値タイプ ('price', 'discount', 'any_sale') |
 | `discount_threshold_percent` | INTEGER   | DEFAULT NULL                            | 割引率閾値 (%)                           |
 | `alert_enabled`          | BOOLEAN       | DEFAULT 1                               | アラート通知有効/無効                    |
+| `manual_historical_low`  | REAL          | DEFAULT NULL                            | **手動設定最安値** (ユーザー指定値)      |
+| `is_purchased`           | BOOLEAN       | DEFAULT 0                               | **購入済みフラグ**                       |
+| `purchase_price`         | REAL          | DEFAULT NULL                            | **購入価格**                             |
+| `purchase_date`          | TEXT          | DEFAULT NULL                            | **購入日** (ISO 8601形式)                |
 | `created_at`             | DATETIME      | DEFAULT CURRENT_TIMESTAMP               | 作成日時                                 |
 | `updated_at`             | DATETIME      | DEFAULT CURRENT_TIMESTAMP               | 更新日時                                 |
 
@@ -36,10 +40,14 @@
 | :------------------- | :------------ | :------------------------- | :----------------------------------- |
 | `id`                 | INTEGER       | PRIMARY KEY                |                                      |
 | `steam_app_id`       | INTEGER       |                            | SteamアプリケーションID              |
-| `alert_type`         | TEXT          |                            | アラートタイプ ('new_low', 'sale_start', 'release') |
+| `game_id`            | INTEGER       |                            | **ゲームテーブルへの外部キー**       |
+| `alert_type`         | TEXT          |                            | アラートタイプ ('new_low', 'sale_start', 'threshold_met', 'free_game') |
+| `message`            | TEXT          |                            | **アラートメッセージ**               |
 | `trigger_price`      | REAL          |                            | アラートがトリガーされた価格         |
 | `previous_low`       | REAL          |                            | 以前の最安値                         |
 | `discount_percent`   | INTEGER       |                            | 割引率 (%)                           |
+| `price_data`         | JSON          |                            | **価格情報の詳細データ** (JSON形式)  |
+| `game_name`          | TEXT          |                            | **ゲーム名** (検索・表示用)          |
 | `notified_discord`   | BOOLEAN       | DEFAULT false              | Discordに通知されたか否か            |
 | `created_at`         | TIMESTAMP     |                            | 作成日時                             |
 | `release_date`       | TEXT          |                            | リリース通知の場合のリリース日       |
