@@ -12,11 +12,11 @@
 ## フロントエンド (React SPA + 出費追跡システム 実装完了)
 
 ### 現行実装 (React SPA + Enhanced Dashboard) ✅ 実装完了
-* **フレームワーク**: React 19.1.0 + TypeScript 5.3+ (39ファイル完全対応)。
+* **フレームワーク**: React 19.1.0 + TypeScript 5.3+ (32ファイル完全対応)。
 * **UI ライブラリ**: Ant Design 5.26.2 + Bootstrap 5 (ハイブリッド構成)。
 * **ビルドツール**: Vite 7.0.0 (高速ビルド・HMR対応)。
 * **状態管理**: React Context API + カスタムフック。
-* **ルーティング**: React Router 6+ (クライアントサイドルーティング)。
+* **ルーティング**: SPA内タブ切り替え・モーダルナビゲーション。
 * **型安全性**: TypeScript 完全対応、strict モード有効（15個の新規型定義）。
 * **スタイリング**: Bootstrap 5 + カスタムCSS + ダークモード対応。
 * **可視化**: Chart.js (価格推移) + Canvas API (高度分析チャート)。
@@ -34,7 +34,7 @@
 * **依存関係管理**: npm (package.json による厳密管理)
 * **開発環境**: Vite Dev Server + TypeScript コンパイル
 * **プロダクション**: React Production Build + Express.js 統合
-* **コンポーネント**: 29+ モジュラーコンポーネント (9個新規追加)
+* **コンポーネント**: 32 TypeScript/TSXファイル (18コンポーネント + 7ページ + 3カスタムフック)
 * **パフォーマンス**: 449.92 kB最適化ビルド (gzip: 124.44 kB)
 
 ## アーキテクチャパターン
