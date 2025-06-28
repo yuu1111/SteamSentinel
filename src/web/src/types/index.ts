@@ -39,6 +39,43 @@ export interface Statistics {
   gamesOnSale: number
   totalAlerts: number
   averageDiscount: number
+  // 出費統計
+  totalExpenses?: number
+  totalSavings?: number
+  gamesOwned?: number
+  averagePurchasePrice?: number
+}
+
+export interface ExpenseData {
+  period: string
+  summary: {
+    totalExpenses: number
+    totalSavings: number
+    totalGames: number
+    averagePrice: number
+    savingsRate: number
+  }
+  recentPurchases: Array<{
+    game_name: string
+    steam_app_id: number
+    trigger_price: number
+    discount_percent: number
+    created_at: string
+  }>
+  monthlyTrends: {
+    expenses: Array<{ month: string; amount: number }>
+    savings: Array<{ month: string; amount: number }>
+  }
+  categories: {
+    bargain: { count: number; total: number; label: string }
+    moderate: { count: number; total: number; label: string }
+    small: { count: number; total: number; label: string }
+    full_price: { count: number; total: number; label: string }
+  }
+}
+
+export interface TabDashboardData extends DashboardData {
+  expenseData?: ExpenseData
 }
 
 export interface AlertData {
@@ -73,4 +110,166 @@ export interface ApiResponse<T = any> {
   message?: string
 }
 
-export type ViewType = 'dashboard' | 'games' | 'alerts' | 'monitoring' | 'settings' | 'limitations' | 'licenses'
+export type ViewType = 'dashboard' | 'enhanced-dashboard' | 'games' | 'alerts' | 'monitoring' | 'settings' | 'limitations' | 'licenses'
+
+// Budget Management Types
+export interface BudgetData {
+  id: string
+  name: string
+  type: 'monthly' | 'yearly' | 'custom'
+  amount: number
+  period: string // YYYY-MM for monthly, YYYY for yearly, custom range for custom
+  spent: number
+  remaining: number
+  categories?: BudgetCategory[]
+  alerts: BudgetAlert[]
+  created_at: string
+  updated_at: string
+}
+
+export interface BudgetCategory {
+  id: string
+  name: string
+  budgetId: string
+  allocated: number
+  spent: number
+  color: string
+}
+
+export interface BudgetAlert {
+  id: string
+  budgetId: string
+  type: 'threshold' | 'exceeded' | 'milestone'
+  threshold: number // percentage or amount
+  message: string
+  isActive: boolean
+  triggeredAt?: string
+}
+
+export interface SpendingAlert {
+  id: string
+  type: 'unusual_spending' | 'budget_warning' | 'budget_exceeded' | 'savings_milestone'
+  title: string
+  message: string
+  severity: 'info' | 'warning' | 'danger' | 'success'
+  data?: any
+  isRead: boolean
+  created_at: string
+}
+
+export interface BudgetSummary {
+  totalBudgets: number
+  activeBudgets: number
+  totalAllocated: number
+  totalSpent: number
+  totalRemaining: number
+  overBudgetCount: number
+  averageUtilization: number
+}
+
+// Dashboard Customization Types
+export interface DashboardWidget {
+  id: string
+  type: 'statistics' | 'charts' | 'roi' | 'budget' | 'alerts' | 'purchases' | 'trends'
+  title: string
+  size: 'small' | 'medium' | 'large' | 'full'
+  position: { x: number; y: number; w: number; h: number }
+  isVisible: boolean
+  config?: Record<string, any>
+}
+
+export interface DashboardLayout {
+  id: string
+  name: string
+  description?: string
+  widgets: DashboardWidget[]
+  theme: 'light' | 'dark' | 'auto'
+  colorScheme: string
+  isDefault: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface DashboardTheme {
+  id: string
+  name: string
+  colors: {
+    primary: string
+    secondary: string
+    success: string
+    warning: string
+    danger: string
+    info: string
+    background: string
+    surface: string
+    text: string
+  }
+  gradients?: Record<string, string>
+}
+
+export interface ReportConfig {
+  id: string
+  name: string
+  type: 'monthly' | 'yearly' | 'custom' | 'summary'
+  format: 'pdf' | 'csv' | 'json'
+  sections: ReportSection[]
+  schedule?: {
+    enabled: boolean
+    frequency: 'daily' | 'weekly' | 'monthly'
+    time: string
+    recipients: string[]
+  }
+  created_at: string
+  updated_at: string
+}
+
+export interface ReportSection {
+  id: string
+  type: 'summary' | 'charts' | 'table' | 'roi' | 'budget' | 'trends'
+  title: string
+  isEnabled: boolean
+  config?: Record<string, any>
+  order: number
+}
+
+export interface DataBackup {
+  id: string
+  name: string
+  type: 'full' | 'settings' | 'expense_data' | 'budgets'
+  data: Record<string, any>
+  size: number
+  created_at: string
+  checksum: string
+}
+
+export interface UserPreferences {
+  id: string
+  userId: string
+  dashboard: {
+    defaultView: 'overview' | 'monitoring' | 'expenses'
+    autoRefresh: boolean
+    refreshInterval: number
+    compactMode: boolean
+  }
+  notifications: {
+    budget_alerts: boolean
+    spending_alerts: boolean
+    milestone_alerts: boolean
+    email_notifications: boolean
+    sound_enabled: boolean
+  }
+  display: {
+    theme: 'light' | 'dark' | 'auto'
+    language: string
+    currency: string
+    dateFormat: string
+    numberFormat: string
+  }
+  privacy: {
+    analytics_enabled: boolean
+    crash_reporting: boolean
+    usage_statistics: boolean
+  }
+  created_at: string
+  updated_at: string
+}

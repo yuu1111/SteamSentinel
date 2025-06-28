@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "Steam価格監視システム - セール時の過去最安値更新を検知し、WebサイトとDiscord通知で情報提供",
   "main": "dist/index.js",
-  "type": "module",
   "scripts": {
     "dev": "nodemon --exec ts-node src/index.ts",
     "dev:web": "vite",

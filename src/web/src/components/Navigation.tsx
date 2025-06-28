@@ -16,6 +16,7 @@ const Navigation: React.FC<NavigationProps> = ({
 }) => {
   const navItems = [
     { id: 'dashboard' as ViewType, label: 'ダッシュボード', icon: 'house-door' },
+    { id: 'enhanced-dashboard' as ViewType, label: '拡張ダッシュボード', icon: 'graph-up-arrow', badge: 'NEW' },
     { id: 'games' as ViewType, label: 'ゲーム管理', icon: 'collection' },
     { id: 'alerts' as ViewType, label: 'アラート履歴', icon: 'bell' },
     { id: 'monitoring' as ViewType, label: '監視状況', icon: 'activity' },
@@ -57,6 +58,9 @@ const Navigation: React.FC<NavigationProps> = ({
                   <i className={`bi bi-${item.icon} me-1`}></i>
                   <span className="d-lg-inline d-none">{item.label}</span>
                   <span className="d-lg-none">{item.label.split('')[0]}</span>
+                  {(item as any).badge && (
+                    <span className="badge bg-warning text-dark ms-1">{(item as any).badge}</span>
+                  )}
                 </a>
               </li>
             ))}
