@@ -1,5 +1,34 @@
 # データ構造
 
+## TypeScript型定義システム
+
+### 基本データ型
+- **Game**: ゲーム情報とアラート設定
+- **PriceData**: 価格履歴と割引情報
+- **Statistics**: 監視統計と出費指標
+- **ExpenseData**: 出費分析データ
+- **TabDashboardData**: 統合ダッシュボードデータ
+
+### 出費追跡・予算管理型
+- **BudgetData**: 予算情報（月間/年間/カスタム）
+- **BudgetCategory**: カテゴリ別予算配分
+- **BudgetAlert**: 予算アラート設定
+- **SpendingAlert**: 支出パターン異常検知
+- **BudgetSummary**: 予算統計サマリー
+
+### ダッシュボードカスタマイゼーション型
+- **DashboardWidget**: ウィジェット設定
+- **DashboardLayout**: レイアウト構成
+- **DashboardTheme**: テーマ定義
+- **UserPreferences**: ユーザー設定
+
+### レポート・データ管理型
+- **ReportConfig**: レポート設定
+- **ReportSection**: レポートセクション
+- **DataBackup**: バックアップデータ
+
+## データベース構造
+
 ## ゲーム情報テーブル (`games`)
 
 | カラム名                 | 型            | 制約                                    | 説明                                     |

@@ -52,6 +52,66 @@ GET /api/games/dashboard
   success: true,
   data: {
     games: Game[],
+    statistics: Statistics
+  }
+}
+```
+
+### 出費データ取得 (実装予定)
+```
+GET /api/games/expenses
+```
+
+**レスポンス:**
+```typescript
+{
+  success: true,
+  data: ExpenseData
+}
+```
+
+**ExpenseData構造:**
+```typescript
+interface ExpenseData {
+  period: string
+  summary: {
+    totalExpenses: number
+    totalSavings: number
+    totalGames: number
+    averagePrice: number
+    savingsRate: number
+  }
+  recentPurchases: Array<{
+    game_name: string
+    steam_app_id: number
+    trigger_price: number
+    discount_percent: number
+    created_at: string
+  }>
+  monthlyTrends: {
+    expenses: Array<{ month: string; amount: number }>
+    savings: Array<{ month: string; amount: number }>
+  }
+  categories: {
+    bargain: { count: number; total: number; label: string }
+    moderate: { count: number; total: number; label: string }
+    small: { count: number; total: number; label: string }
+    full_price: { count: number; total: number; label: string }
+  }
+}
+```
+
+### 拡張ダッシュボードデータ取得
+```
+GET /api/games/dashboard
+```
+
+**レスポンス:**
+```typescript
+{
+  success: true,
+  data: {
+    games: Game[],
     statistics: {
       gamesTracked: number,
       gamesOnSale: number,
