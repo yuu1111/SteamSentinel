@@ -4,6 +4,7 @@ import { api } from '../utils/api'
 import { useAlert } from '../contexts/AlertContext'
 import { AddGameModal, EditGameModal } from '../components/GameModals'
 import { ImportGamesModal, useExportGames } from '../components/ImportExportModals'
+import { useTableSort } from '../hooks/useTableSort'
 
 const Games: React.FC = () => {
   const [games, setGames] = useState<Game[]>([])
@@ -14,6 +15,7 @@ const Games: React.FC = () => {
   const [editingGame, setEditingGame] = useState<Game | null>(null)
   const { showError, showSuccess } = useAlert()
   const { exportGames, loading: exportLoading } = useExportGames()
+  const { sortedGames, handleSort, getSortIcon } = useTableSort(games)
 
   useEffect(() => {
     loadAllGames()
@@ -60,6 +62,32 @@ const Games: React.FC = () => {
   const handleEditGame = (game: Game) => {
     setEditingGame(game)
     setShowEditModal(true)
+  }
+
+  const openSteamDB = (steamAppId: number) => {
+    const url = `https://steamdb.info/app/${steamAppId}/`
+    window.open(url, '_blank', 'noopener,noreferrer')
+  }
+
+  const handleShowChart = (steamAppId: number, gameName: string) => {
+    // Price chart functionality - could be implemented later
+    alert(`価格チャート機能は今後実装予定です。\nゲーム: ${gameName}\nSteam App ID: ${steamAppId}`)
+  }
+
+  const runSingleMonitoring = async (steamAppId: number) => {
+    try {
+      const response = await api.post(`/games/${steamAppId}/update-price`)
+      
+      if (response.success) {
+        showSuccess('価格情報を更新しました')
+        await loadAllGames()
+      } else {
+        showError('価格更新に失敗しました: ' + response.error)
+      }
+    } catch (error) {
+      console.error('Single game monitoring failed:', error)
+      showError('価格更新中にエラーが発生しました')
+    }
   }
 
   if (loading) {
@@ -122,16 +150,26 @@ const Games: React.FC = () => {
                   <table className="table table-hover">
                     <thead>
                       <tr>
-                        <th style={{ whiteSpace: 'nowrap' }}>ゲーム名</th>
-                        <th style={{ whiteSpace: 'nowrap' }}>監視状態</th>
-                        <th style={{ whiteSpace: 'nowrap' }}>アラート条件</th>
-                        <th style={{ whiteSpace: 'nowrap' }}>アラート</th>
-                        <th style={{ whiteSpace: 'nowrap' }}>購入状況</th>
+                        <th className="sortable" style={{ whiteSpace: 'nowrap' }} onClick={() => handleSort('name')}>
+                          ゲーム名 <i className={getSortIcon('name')}></i>
+                        </th>
+                        <th className="sortable" style={{ whiteSpace: 'nowrap' }} onClick={() => handleSort('enabled')}>
+                          監視状態 <i className={getSortIcon('enabled')}></i>
+                        </th>
+                        <th className="sortable" style={{ whiteSpace: 'nowrap' }} onClick={() => handleSort('alertCondition')}>
+                          アラート条件 <i className={getSortIcon('alertCondition')}></i>
+                        </th>
+                        <th className="sortable" style={{ whiteSpace: 'nowrap' }} onClick={() => handleSort('alertEnabled')}>
+                          アラート <i className={getSortIcon('alertEnabled')}></i>
+                        </th>
+                        <th className="sortable" style={{ whiteSpace: 'nowrap' }} onClick={() => handleSort('purchased')}>
+                          購入状況 <i className={getSortIcon('purchased')}></i>
+                        </th>
                         <th style={{ whiteSpace: 'nowrap' }}>操作</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {games.map(game => {
+                      {sortedGames.map(game => {
                         // 監視状態
                         const monitoringStatus = game.enabled ? 
                           <span className="badge bg-success">有効</span> : 
@@ -187,16 +225,37 @@ const Games: React.FC = () => {
                             <td>{alertStatus}</td>
                             <td>{purchaseStatus}</td>
                             <td>
-                              <div className="btn-group btn-group-sm">
+                              <div className="action-buttons">
                                 <button 
-                                  className="btn btn-outline-primary"
+                                  className="action-btn"
+                                  onClick={() => handleShowChart(game.steam_app_id, game.name)}
+                                  title="価格推移"
+                                >
+                                  <i className="bi bi-graph-up"></i>
+                                </button>
+                                <button 
+                                  className="action-btn d-none d-md-inline-block"
+                                  onClick={() => openSteamDB(game.steam_app_id)}
+                                  title="SteamDB"
+                                >
+                                  <i className="bi bi-database"></i>
+                                </button>
+                                <button 
+                                  className="action-btn"
                                   onClick={() => handleEditGame(game)}
                                   title="編集"
                                 >
                                   <i className="bi bi-pencil"></i>
                                 </button>
                                 <button 
-                                  className="btn btn-outline-danger"
+                                  className="action-btn d-none d-sm-inline-block"
+                                  onClick={() => runSingleMonitoring(game.steam_app_id)}
+                                  title="手動更新"
+                                >
+                                  <i className="bi bi-arrow-clockwise"></i>
+                                </button>
+                                <button 
+                                  className="action-btn danger"
                                   onClick={() => deleteGame(game.id, game.name)}
                                   title="削除"
                                 >

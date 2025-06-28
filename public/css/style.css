@@ -312,7 +312,7 @@ body {
 .action-buttons {
   white-space: nowrap;
   display: flex;
-  gap: 0.25rem;
+  gap: 0.5rem;
   justify-content: center;
   align-items: center;
 }
@@ -581,6 +581,24 @@ footer {
   background-color: var(--bs-card-bg);
   box-shadow: 0 2px 8px rgba(255, 255, 255, 0.1);
 }
+
+/* Dark mode button styles for better visibility */
+[data-bs-theme="dark"] .btn-outline-primary {
+  border-color: var(--bs-secondary);
+  color: var(--bs-secondary);
+}
+
+[data-bs-theme="dark"] .btn-outline-primary:hover {
+  background-color: var(--bs-secondary);
+  border-color: var(--bs-secondary);
+  color: var(--bs-dark);
+}
+
+[data-bs-theme="dark"] .btn-outline-primary:focus,
+[data-bs-theme="dark"] .btn-outline-primary:active {
+  box-shadow: 0 0 0 0.25rem rgba(102, 192, 244, 0.5);
+}
+
 
 [data-bs-theme="dark"] .table tbody tr:hover {
   background-color: rgba(255, 255, 255, 0.05);

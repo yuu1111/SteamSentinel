@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { Game } from '../types'
 
 type SortDirection = 'asc' | 'desc'
-type SortColumn = 'name' | 'currentPrice' | 'originalPrice' | 'discountPercent' | 'historicalLow' | 'isOnSale' | 'lastUpdated'
+type SortColumn = 'name' | 'currentPrice' | 'originalPrice' | 'discountPercent' | 'historicalLow' | 'isOnSale' | 'lastUpdated' | 'enabled' | 'alertEnabled' | 'alertCondition' | 'purchased' | 'steamAppId'
 
 interface SortConfig {
   column: SortColumn | null
@@ -96,6 +96,41 @@ export const useTableSort = (games: Game[]) => {
         case 'lastUpdated':
           valueA = a.latestPrice?.recorded_at ? new Date(a.latestPrice.recorded_at).getTime() : 0
           valueB = b.latestPrice?.recorded_at ? new Date(b.latestPrice.recorded_at).getTime() : 0
+          break
+          
+        case 'enabled':
+          valueA = a.enabled ? 1 : 0
+          valueB = b.enabled ? 1 : 0
+          break
+          
+        case 'alertEnabled':
+          valueA = a.alert_enabled ? 1 : 0
+          valueB = b.alert_enabled ? 1 : 0
+          break
+          
+        case 'alertCondition':
+          // アラート条件のソート順序: price < discount < any_sale
+          const getAlertConditionValue = (game: Game) => {
+            if (!game.price_threshold_type) return 3
+            switch (game.price_threshold_type) {
+              case 'price': return 0
+              case 'discount': return 1
+              case 'any_sale': return 2
+              default: return 3
+            }
+          }
+          valueA = getAlertConditionValue(a)
+          valueB = getAlertConditionValue(b)
+          break
+          
+        case 'purchased':
+          valueA = a.is_purchased ? 1 : 0
+          valueB = b.is_purchased ? 1 : 0
+          break
+          
+        case 'steamAppId':
+          valueA = a.steam_app_id
+          valueB = b.steam_app_id
           break
           
         default:
