@@ -413,7 +413,7 @@ interface AlertData {
   id: number
   steam_app_id?: number
   game_id?: number
-  alert_type: 'new_low' | 'sale_start' | 'threshold_met' | 'free_game'
+  alert_type: 'new_low' | 'sale_start' | 'threshold_met' | 'free_game' | 'game_released'
   message?: string
   price_data?: any
   created_at: string

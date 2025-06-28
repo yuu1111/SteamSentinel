@@ -45,6 +45,8 @@
 | `is_purchased`           | BOOLEAN       | DEFAULT 0                               | **購入済みフラグ**                       |
 | `purchase_price`         | REAL          | DEFAULT NULL                            | **購入価格**                             |
 | `purchase_date`          | TEXT          | DEFAULT NULL                            | **購入日** (ISO 8601形式)                |
+| `was_unreleased`         | BOOLEAN       | DEFAULT 0                               | **未リリース状態フラグ** (リリース追跡用) |
+| `last_known_release_date`| TEXT          | DEFAULT NULL                            | **最後の既知リリース日** (ISO 8601形式)   |
 | `created_at`             | DATETIME      | DEFAULT CURRENT_TIMESTAMP               | 作成日時                                 |
 | `updated_at`             | DATETIME      | DEFAULT CURRENT_TIMESTAMP               | 更新日時                                 |
 
@@ -70,7 +72,7 @@
 | `id`                 | INTEGER       | PRIMARY KEY                |                                      |
 | `steam_app_id`       | INTEGER       |                            | SteamアプリケーションID              |
 | `game_id`            | INTEGER       |                            | **ゲームテーブルへの外部キー**       |
-| `alert_type`         | TEXT          |                            | アラートタイプ ('new_low', 'sale_start', 'threshold_met', 'free_game') |
+| `alert_type`         | TEXT          |                            | アラートタイプ ('new_low', 'sale_start', 'threshold_met', 'free_game', 'game_released') |
 | `message`            | TEXT          |                            | **アラートメッセージ**               |
 | `trigger_price`      | REAL          |                            | アラートがトリガーされた価格         |
 | `previous_low`       | REAL          |                            | 以前の最安値                         |
