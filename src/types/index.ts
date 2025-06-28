@@ -11,6 +11,8 @@ export interface Game {
   is_purchased?: boolean;
   purchase_price?: number;
   purchase_date?: string;
+  was_unreleased?: boolean;
+  last_known_release_date?: string;
   created_at?: Date;
   updated_at?: Date;
 }
@@ -31,10 +33,14 @@ export interface PriceHistory {
 export interface Alert {
   id?: number;
   steam_app_id: number;
-  alert_type: 'new_low' | 'sale_start' | 'release';
-  trigger_price: number;
+  game_id?: number;
+  alert_type: 'new_low' | 'sale_start' | 'threshold_met' | 'free_game' | 'game_released';
+  message?: string;
+  trigger_price?: number;
   previous_low?: number;
-  discount_percent: number;
+  discount_percent?: number;
+  price_data?: any;
+  game_name?: string;
   notified_discord: boolean;
   created_at: Date;
   release_date?: string; // リリース通知の場合のリリース日

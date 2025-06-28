@@ -241,6 +241,86 @@ class DatabaseManager {
         db.prepare('INSERT INTO db_version (version) VALUES (?)').run(5);
         logger.info('Migration v5 completed successfully');
       }
+
+      // v6: リリース通知機能の追加
+      if (currentVersion < 6) {
+        logger.info('Running migration v6: Adding release notification support');
+        
+        // ゲームテーブルにリリース追跡フィールドを追加
+        db.exec(`
+          ALTER TABLE games ADD COLUMN was_unreleased BOOLEAN DEFAULT 0;
+          ALTER TABLE games ADD COLUMN last_known_release_date TEXT DEFAULT NULL;
+        `);
+        
+        // アラートテーブルを更新（新しいアラートタイプとフィールドを追加）
+        db.exec(`
+          CREATE TABLE IF NOT EXISTS alerts_new (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            steam_app_id INTEGER NOT NULL,
+            game_id INTEGER,
+            alert_type TEXT NOT NULL CHECK(alert_type IN ('new_low', 'sale_start', 'threshold_met', 'free_game', 'game_released')),
+            message TEXT,
+            trigger_price REAL,
+            previous_low REAL,
+            discount_percent INTEGER,
+            price_data TEXT, -- JSON形式の価格データ
+            game_name TEXT,
+            notified_discord BOOLEAN DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            release_date TEXT, -- リリース通知の場合のリリース日
+            FOREIGN KEY (steam_app_id) REFERENCES games(steam_app_id),
+            FOREIGN KEY (game_id) REFERENCES games(id)
+          );
+        `);
+        
+        // 既存データを移行
+        db.exec(`
+          INSERT INTO alerts_new (steam_app_id, alert_type, trigger_price, previous_low, discount_percent, notified_discord, created_at)
+          SELECT steam_app_id, 
+                 CASE alert_type 
+                   WHEN 'release' THEN 'game_released' 
+                   ELSE 'threshold_met' 
+                 END,
+                 trigger_price, 
+                 previous_low, 
+                 discount_percent, 
+                 notified_discord, 
+                 created_at
+          FROM alerts;
+        `);
+        
+        // 古いテーブルを削除して新しいテーブルをリネーム
+        db.exec(`
+          DROP TABLE alerts;
+          ALTER TABLE alerts_new RENAME TO alerts;
+          
+          -- インデックスを再作成
+          CREATE INDEX idx_alerts_app_id ON alerts(steam_app_id);
+          CREATE INDEX idx_alerts_created_at ON alerts(created_at);
+          CREATE INDEX idx_alerts_game_id ON alerts(game_id);
+        `);
+        
+        // 既存の未リリースゲームを特定してフラグを設定
+        db.exec(`
+          UPDATE games 
+          SET was_unreleased = 1 
+          WHERE steam_app_id IN (
+            SELECT DISTINCT g.steam_app_id 
+            FROM games g 
+            JOIN price_history ph ON g.steam_app_id = ph.steam_app_id 
+            WHERE ph.source = 'steam_unreleased' 
+              AND ph.recorded_at = (
+                SELECT MAX(recorded_at) 
+                FROM price_history 
+                WHERE steam_app_id = g.steam_app_id
+              )
+          );
+        `);
+        
+        // バージョンを記録
+        db.prepare('INSERT INTO db_version (version) VALUES (?)').run(6);
+        logger.info('Migration v6 completed successfully');
+      }
       
     } catch (error) {
       logger.error('Migration failed:', error);

@@ -11,6 +11,8 @@ export interface Game {
   is_purchased?: boolean
   purchase_price?: number
   purchase_date?: string
+  was_unreleased?: boolean
+  last_known_release_date?: string
   created_at: string
   updated_at: string
   latestPrice?: PriceData
@@ -82,10 +84,11 @@ export interface AlertData {
   id: number
   steam_app_id?: number
   game_id?: number
-  alert_type: string
+  alert_type: 'new_low' | 'sale_start' | 'threshold_met' | 'free_game' | 'game_released'
   message?: string
   price_data?: any
   created_at: string
+  release_date?: string
   game?: Game
   game_name?: string
   trigger_price?: number
@@ -110,7 +113,7 @@ export interface ApiResponse<T = any> {
   message?: string
 }
 
-export type ViewType = 'dashboard' | 'enhanced-dashboard' | 'games' | 'alerts' | 'monitoring' | 'settings' | 'limitations' | 'licenses'
+export type ViewType = 'dashboard' | 'games' | 'alerts' | 'monitoring' | 'settings' | 'limitations' | 'licenses'
 
 // Budget Management Types
 export interface BudgetData {

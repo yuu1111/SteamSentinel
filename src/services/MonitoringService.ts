@@ -211,6 +211,20 @@ export class MonitoringService {
       if (lastPrice?.source === 'steam_unreleased' && newPriceHistory.source !== 'steam_unreleased') {
         logger.info(`🎉 Game released detected: ${game.name} (${game.steam_app_id})`);
         await this.createReleaseAlert(game, newPriceHistory);
+        
+        // ゲームの未リリースフラグを更新
+        GameModel.update(game.id!, { 
+          was_unreleased: false,
+          last_known_release_date: new Date().toISOString()
+        });
+      }
+      
+      // 新規ゲームが未リリースの場合、フラグを設定
+      if (!lastPrice && newPriceHistory.source === 'steam_unreleased') {
+        GameModel.update(game.id!, { 
+          was_unreleased: true,
+          last_known_release_date: newPriceHistory.release_date || undefined
+        });
       }
 
       // gameName プロパティを除いて価格履歴を保存
@@ -399,11 +413,16 @@ export class MonitoringService {
   private async createReleaseAlert(game: Game, priceHistory: PriceHistory): Promise<Alert> {
     const releaseAlert: Omit<Alert, 'id' | 'created_at'> = {
       steam_app_id: game.steam_app_id,
-      alert_type: 'release',
+      game_id: game.id,
+      alert_type: 'game_released',
+      message: `${game.name} がリリースされました！`,
       trigger_price: priceHistory.current_price,
       previous_low: undefined,
       discount_percent: priceHistory.discount_percent,
-      notified_discord: false
+      price_data: JSON.stringify(priceHistory),
+      game_name: game.name,
+      notified_discord: false,
+      release_date: new Date().toISOString()
     };
 
     const alert = AlertModel.create(releaseAlert);
@@ -413,7 +432,7 @@ export class MonitoringService {
     try {
       const notificationSent = await discordService.sendPriceAlert(
         game,
-        'release',
+        'game_released',
         priceHistory.current_price,
         priceHistory.original_price,
         priceHistory.discount_percent

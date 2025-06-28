@@ -42,7 +42,7 @@ export class DiscordService {
   // 価格アラート通知
   async sendPriceAlert(
     game: Game,
-    alertType: 'new_low' | 'sale_start' | 'release',
+    alertType: 'new_low' | 'sale_start' | 'release' | 'game_released',
     currentPrice: number,
     originalPrice?: number,
     discountPercent?: number,
@@ -194,7 +194,7 @@ export class DiscordService {
   // 価格アラート用Embed作成
   private createPriceAlertEmbed(
     game: Game,
-    alertType: 'new_low' | 'sale_start' | 'release',
+    alertType: 'new_low' | 'sale_start' | 'release' | 'game_released',
     currentPrice: number,
     originalPrice?: number,
     discountPercent?: number,
@@ -219,6 +219,7 @@ export class DiscordService {
         description = `**${game.name}** がセールを開始しました！`;
         break;
       case 'release':
+      case 'game_released':
         title = '🚀 ゲームリリース！';
         color = 0x4444FF; // 青
         description = `**${game.name}** がリリースされました！`;

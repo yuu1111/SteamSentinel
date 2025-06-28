@@ -9,21 +9,28 @@ export class AlertModel {
       const db = database.getConnection();
       const stmt = db.prepare(`
         INSERT INTO alerts (
-          steam_app_id, alert_type, trigger_price, 
-          previous_low, discount_percent, notified_discord
+          steam_app_id, game_id, alert_type, message, trigger_price, 
+          previous_low, discount_percent, price_data, game_name, 
+          notified_discord, release_date
         ) VALUES (
-          @steam_app_id, @alert_type, @trigger_price,
-          @previous_low, @discount_percent, @notified_discord
+          @steam_app_id, @game_id, @alert_type, @message, @trigger_price,
+          @previous_low, @discount_percent, @price_data, @game_name,
+          @notified_discord, @release_date
         )
       `);
       
       const info = stmt.run({
         steam_app_id: alertData.steam_app_id,
+        game_id: alertData.game_id || null,
         alert_type: alertData.alert_type,
-        trigger_price: alertData.trigger_price,
+        message: alertData.message || null,
+        trigger_price: alertData.trigger_price || null,
         previous_low: alertData.previous_low || null,
-        discount_percent: alertData.discount_percent,
-        notified_discord: alertData.notified_discord ? 1 : 0
+        discount_percent: alertData.discount_percent || null,
+        price_data: alertData.price_data || null,
+        game_name: alertData.game_name || null,
+        notified_discord: alertData.notified_discord ? 1 : 0,
+        release_date: alertData.release_date || null
       });
       
       logger.info(`Alert created: ${alertData.alert_type} for game ${alertData.steam_app_id}`);
@@ -54,7 +61,7 @@ export class AlertModel {
   }
 
   // ゲームの最新アラートを取得
-  static getLatestByGameId(steamAppId: number, alertType?: 'new_low' | 'sale_start'): Alert | null {
+  static getLatestByGameId(steamAppId: number, alertType?: 'new_low' | 'sale_start' | 'threshold_met' | 'free_game' | 'game_released'): Alert | null {
     try {
       const db = database.getConnection();
       let query = 'SELECT * FROM alerts WHERE steam_app_id = ?';
@@ -180,7 +187,7 @@ export class AlertModel {
   }
 
   // クールダウンチェック（同じアラートの連続送信を防ぐ）
-  static isInCooldown(steamAppId: number, alertType: 'new_low' | 'sale_start', cooldownHours: number): boolean {
+  static isInCooldown(steamAppId: number, alertType: 'new_low' | 'sale_start' | 'threshold_met' | 'free_game' | 'game_released', cooldownHours: number): boolean {
     try {
       const db = database.getConnection();
       const cutoffTime = new Date();
@@ -256,7 +263,7 @@ export class AlertModel {
     id: number;
     steam_app_id: number;
     game_name: string;
-    alert_type: 'new_low' | 'sale_start';
+    alert_type: 'new_low' | 'sale_start' | 'threshold_met' | 'free_game' | 'game_released';
     trigger_price: number;
     discount_percent: number;
     created_at: Date;

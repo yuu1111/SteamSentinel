@@ -47,8 +47,8 @@ export class GameModel {
     try {
       const db = database.getConnection();
       const stmt = db.prepare(`
-        INSERT INTO games (steam_app_id, name, enabled, price_threshold, price_threshold_type, discount_threshold_percent, alert_enabled)
-        VALUES (@steam_app_id, @name, @enabled, @price_threshold, @price_threshold_type, @discount_threshold_percent, @alert_enabled)
+        INSERT INTO games (steam_app_id, name, enabled, price_threshold, price_threshold_type, discount_threshold_percent, alert_enabled, was_unreleased, last_known_release_date)
+        VALUES (@steam_app_id, @name, @enabled, @price_threshold, @price_threshold_type, @discount_threshold_percent, @alert_enabled, @was_unreleased, @last_known_release_date)
       `);
       
       const info = stmt.run({
@@ -58,7 +58,9 @@ export class GameModel {
         price_threshold: game.price_threshold || null,
         price_threshold_type: game.price_threshold_type || 'price',
         discount_threshold_percent: game.discount_threshold_percent || null,
-        alert_enabled: game.alert_enabled ? 1 : 0
+        alert_enabled: game.alert_enabled ? 1 : 0,
+        was_unreleased: game.was_unreleased ? 1 : 0,
+        last_known_release_date: game.last_known_release_date || null
       });
       
       logger.info(`Game added: ${game.name} (${game.steam_app_id})`);
@@ -132,6 +134,16 @@ export class GameModel {
         values.purchase_date = updates.purchase_date;
       }
       
+      if (updates.was_unreleased !== undefined) {
+        fields.push('was_unreleased = @was_unreleased');
+        values.was_unreleased = updates.was_unreleased ? 1 : 0;
+      }
+      
+      if (updates.last_known_release_date !== undefined) {
+        fields.push('last_known_release_date = @last_known_release_date');
+        values.last_known_release_date = updates.last_known_release_date;
+      }
+      
       if (fields.length === 0) {
         return game;
       }
@@ -177,8 +189,8 @@ export class GameModel {
     try {
       const db = database.getConnection();
       const stmt = db.prepare(`
-        INSERT OR IGNORE INTO games (steam_app_id, name, enabled, price_threshold, price_threshold_type, discount_threshold_percent, alert_enabled)
-        VALUES (@steam_app_id, @name, @enabled, @price_threshold, @price_threshold_type, @discount_threshold_percent, @alert_enabled)
+        INSERT OR IGNORE INTO games (steam_app_id, name, enabled, price_threshold, price_threshold_type, discount_threshold_percent, alert_enabled, was_unreleased, last_known_release_date)
+        VALUES (@steam_app_id, @name, @enabled, @price_threshold, @price_threshold_type, @discount_threshold_percent, @alert_enabled, @was_unreleased, @last_known_release_date)
       `);
       
       let inserted = 0;
@@ -191,7 +203,9 @@ export class GameModel {
             price_threshold: game.price_threshold || null,
             price_threshold_type: game.price_threshold_type || 'price',
             discount_threshold_percent: game.discount_threshold_percent || null,
-            alert_enabled: game.alert_enabled ? 1 : 0
+            alert_enabled: game.alert_enabled ? 1 : 0,
+            was_unreleased: game.was_unreleased ? 1 : 0,
+            last_known_release_date: game.last_known_release_date || null
           });
           if (info.changes > 0) {inserted++;}
         }

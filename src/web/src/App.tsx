@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { ConfigProvider, theme } from 'antd'
 import Navigation from './components/Navigation'
 import Dashboard from './pages/Dashboard'
-import EnhancedDashboard from './pages/EnhancedDashboard'
 import Games from './pages/Games'
 import Alerts from './pages/Alerts'
 import Monitoring from './pages/Monitoring'
@@ -15,7 +14,7 @@ import { useDarkMode } from './hooks/useDarkMode'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { AlertProvider } from './contexts/AlertContext'
 
-type ViewType = 'dashboard' | 'enhanced-dashboard' | 'games' | 'alerts' | 'monitoring' | 'settings' | 'limitations' | 'licenses'
+type ViewType = 'dashboard' | 'games' | 'alerts' | 'monitoring' | 'settings' | 'limitations' | 'licenses'
 
 function App() {
   const [currentView, setCurrentView] = useState<ViewType>('dashboard')
@@ -65,8 +64,6 @@ function App() {
     switch (currentView) {
       case 'dashboard':
         return <Dashboard />
-      case 'enhanced-dashboard':
-        return <EnhancedDashboard />
       case 'games':
         return <Games />
       case 'alerts':

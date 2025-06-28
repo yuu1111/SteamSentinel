@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react'
-import { TabDashboardData, Statistics, ExpenseData } from '../types'
+import { TabDashboardData, Statistics, ExpenseData, Game } from '../types'
 import { api } from '../utils/api'
 import { useAlert } from '../contexts/AlertContext'
 import { ExpenseAnalyticsCharts } from './ExpenseAnalyticsCharts'
 import { ROIAnalyzer } from './ROIAnalyzer'
 import { BudgetManager } from './BudgetManager'
 import { SpendingAlerts } from './SpendingAlerts'
+import { SpecialGameStatus } from './SpecialGameStatus'
+import { MonitoringProgress } from './MonitoringProgress'
 
 interface TabbedDashboardProps {
   dashboardData: TabDashboardData | null
@@ -16,7 +18,7 @@ export const TabbedDashboard: React.FC<TabbedDashboardProps> = ({
   dashboardData,
   loading
 }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'monitoring' | 'expenses'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'expenses'>('overview')
   const [expenseData, setExpenseData] = useState<ExpenseData | null>(null)
   const [expenseLoading, setExpenseLoading] = useState(false)
   const { showError } = useAlert()
@@ -75,16 +77,6 @@ export const TabbedDashboard: React.FC<TabbedDashboardProps> = ({
         </li>
         <li className="nav-item" role="presentation">
           <button
-            className={getTabClass('monitoring')}
-            onClick={() => setActiveTab('monitoring')}
-            type="button"
-            role="tab"
-          >
-            <i className="bi bi-activity me-2"></i>監視統計
-          </button>
-        </li>
-        <li className="nav-item" role="presentation">
-          <button
             className={getTabClass('expenses')}
             onClick={() => setActiveTab('expenses')}
             type="button"
@@ -105,12 +97,6 @@ export const TabbedDashboard: React.FC<TabbedDashboardProps> = ({
           />
         )}
 
-        {/* Monitoring Tab */}
-        {activeTab === 'monitoring' && (
-          <MonitoringDashboard 
-            dashboardData={dashboardData}
-          />
-        )}
 
         {/* Expenses Tab */}
         {activeTab === 'expenses' && (
@@ -134,6 +120,20 @@ const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
   dashboardData,
   expenseData
 }) => {
+  // Filter games for special status display
+  const specialGames = dashboardData?.games?.filter(game => {
+    const latestPrice = game.latestPrice
+    const isOnSale = latestPrice?.is_on_sale || false
+    const isFreeGame = latestPrice?.source === 'steam_free'
+    const isUnreleased = latestPrice?.source === 'steam_unreleased'
+    const hasAlert = game.alert_enabled && (
+      (game.price_threshold_type === 'any_sale' && isOnSale) ||
+      (game.price_threshold_type === 'price' && game.price_threshold && latestPrice?.current_price && latestPrice.current_price <= game.price_threshold) ||
+      (game.price_threshold_type === 'discount' && game.discount_threshold_percent && latestPrice?.discount_percent && latestPrice.discount_percent >= game.discount_threshold_percent)
+    )
+    return isOnSale || isFreeGame || isUnreleased || hasAlert
+  }) || []
+
   return (
     <div className="row">
       {/* Integrated Statistics Cards */}
@@ -141,6 +141,13 @@ const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
         statistics={dashboardData?.statistics}
         expenseData={expenseData}
       />
+      
+      {/* Special Game Status Alert */}
+      {dashboardData?.games && specialGames.length > 0 && (
+        <div className="col-12 mb-4">
+          <SpecialGameStatus games={specialGames} />
+        </div>
+      )}
       
       {/* Quick Summary Section */}
       <div className="col-12 mb-4">
@@ -177,25 +184,30 @@ const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
           </div>
         </div>
       </div>
-    </div>
-  )
-}
-
-// Monitoring Dashboard Component
-interface MonitoringDashboardProps {
-  dashboardData: TabDashboardData | null
-}
-
-const MonitoringDashboard: React.FC<MonitoringDashboardProps> = ({
-  dashboardData
-}) => {
-  return (
-    <div className="row">
-      {/* Monitoring-specific Statistics */}
-      <MonitoringStatisticsCards statistics={dashboardData?.statistics} />
       
-      {/* Monitoring specific content will be added here */}
-      <div className="col-12">
+      {/* Alert Target Games Section */}
+      <div className="col-12 mb-4">
+        <div className="card">
+          <div className="card-header">
+            <h5 className="mb-0">
+              <i className="bi bi-check-circle-fill me-2"></i>セール・条件達成ゲーム
+            </h5>
+          </div>
+          <div className="card-body">
+            {dashboardData?.games && (
+              <AlertTargetGames games={dashboardData.games} />
+            )}
+          </div>
+        </div>
+      </div>
+      
+      {/* Monitoring Progress Section */}
+      <div className="col-12 mb-4">
+        <MonitoringProgress onMonitoringComplete={() => window.location.reload()} />
+      </div>
+      
+      {/* Monitoring Details Section */}
+      <div className="col-12 mb-4">
         <div className="card">
           <div className="card-header">
             <h5 className="mb-0">
@@ -203,13 +215,14 @@ const MonitoringDashboard: React.FC<MonitoringDashboardProps> = ({
             </h5>
           </div>
           <div className="card-body">
-            <p className="text-muted">監視特化の詳細ダッシュボードは今後実装予定です。</p>
+            <MonitoringDetails games={dashboardData?.games} />
           </div>
         </div>
       </div>
     </div>
   )
 }
+
 
 // Expenses Dashboard Component
 interface ExpensesDashboardProps {
@@ -340,7 +353,7 @@ const IntegratedStatisticsCards: React.FC<IntegratedStatisticsCardsProps> = ({
         <div className="card stats-card primary">
           <div className="card-body text-center">
             <i className="bi bi-cart-check display-4 mb-2"></i>
-            <h3 className="display-4">{expenseData?.summary.totalGames || 0}</h3>
+            <h3 className="h4" style={{ fontSize: 'clamp(1rem, 2vw, 1.5rem)', lineHeight: '1.1', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{expenseData?.summary.totalGames || 0}</h3>
             <p className="mb-0">購入ゲーム数</p>
           </div>
         </div>
@@ -349,7 +362,7 @@ const IntegratedStatisticsCards: React.FC<IntegratedStatisticsCardsProps> = ({
         <div className="card stats-card danger">
           <div className="card-body text-center">
             <i className="bi bi-wallet2 display-4 mb-2"></i>
-            <h3 className="display-4">¥{(expenseData?.summary.totalExpenses || 0).toLocaleString()}</h3>
+            <h3 className="h4" style={{ fontSize: 'clamp(1rem, 2vw, 1.5rem)', lineHeight: '1.1', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>¥{(expenseData?.summary.totalExpenses || 0).toLocaleString()}</h3>
             <p className="mb-0">総支出額</p>
           </div>
         </div>
@@ -378,7 +391,7 @@ const IntegratedStatisticsCards: React.FC<IntegratedStatisticsCardsProps> = ({
         <div className="card stats-card info">
           <div className="card-body text-center">
             <i className="bi bi-currency-yen display-4 mb-2"></i>
-            <h3 className="display-4">¥{(expenseData?.summary.averagePrice || 0).toLocaleString()}</h3>
+            <h3 className="h4" style={{ fontSize: 'clamp(1rem, 2vw, 1.5rem)', lineHeight: '1.1', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>¥{(expenseData?.summary.averagePrice || 0).toLocaleString()}</h3>
             <p className="mb-0">平均購入価格</p>
           </div>
         </div>
@@ -387,7 +400,7 @@ const IntegratedStatisticsCards: React.FC<IntegratedStatisticsCardsProps> = ({
         <div className="card stats-card success">
           <div className="card-body text-center">
             <i className="bi bi-piggy-bank display-4 mb-2"></i>
-            <h3 className="display-4">¥{(expenseData?.summary.totalSavings || 0).toLocaleString()}</h3>
+            <h3 className="h4" style={{ fontSize: 'clamp(1rem, 2vw, 1.5rem)', lineHeight: '1.1', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>¥{(expenseData?.summary.totalSavings || 0).toLocaleString()}</h3>
             <p className="mb-0">節約額</p>
           </div>
         </div>
@@ -396,55 +409,6 @@ const IntegratedStatisticsCards: React.FC<IntegratedStatisticsCardsProps> = ({
   )
 }
 
-// Monitoring-specific Statistics Cards
-interface MonitoringStatisticsCardsProps {
-  statistics?: Statistics
-}
-
-const MonitoringStatisticsCards: React.FC<MonitoringStatisticsCardsProps> = ({
-  statistics
-}) => {
-  return (
-    <>
-      <div className="col-lg-3 col-md-6 mb-3">
-        <div className="card stats-card info">
-          <div className="card-body text-center">
-            <i className="bi bi-collection display-4 mb-2"></i>
-            <h3 className="display-4">{statistics?.gamesTracked || 0}</h3>
-            <p className="mb-0">監視中のゲーム</p>
-          </div>
-        </div>
-      </div>
-      <div className="col-lg-3 col-md-6 mb-3">
-        <div className="card stats-card success">
-          <div className="card-body text-center">
-            <i className="bi bi-tag display-4 mb-2"></i>
-            <h3 className="display-4">{statistics?.gamesOnSale || 0}</h3>
-            <p className="mb-0">セール中</p>
-          </div>
-        </div>
-      </div>
-      <div className="col-lg-3 col-md-6 mb-3">
-        <div className="card stats-card warning">
-          <div className="card-body text-center">
-            <i className="bi bi-bell display-4 mb-2"></i>
-            <h3 className="display-4">{statistics?.totalAlerts || 0}</h3>
-            <p className="mb-0">総アラート数</p>
-          </div>
-        </div>
-      </div>
-      <div className="col-lg-3 col-md-6 mb-3">
-        <div className="card stats-card">
-          <div className="card-body text-center">
-            <i className="bi bi-percent display-4 mb-2"></i>
-            <h3 className="display-4">{statistics?.averageDiscount || 0}%</h3>
-            <p className="mb-0">平均割引率</p>
-          </div>
-        </div>
-      </div>
-    </>
-  )
-}
 
 // Expense-specific Statistics Cards
 interface ExpenseStatisticsCardsProps {
@@ -460,7 +424,7 @@ const ExpenseStatisticsCards: React.FC<ExpenseStatisticsCardsProps> = ({
         <div className="card stats-card primary">
           <div className="card-body text-center">
             <i className="bi bi-cart-check display-4 mb-2"></i>
-            <h3 className="display-4">{expenseData?.summary.totalGames || 0}</h3>
+            <h3 className="h4" style={{ fontSize: 'clamp(1rem, 2vw, 1.5rem)', lineHeight: '1.1', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{expenseData?.summary.totalGames || 0}</h3>
             <p className="mb-0">購入ゲーム数</p>
           </div>
         </div>
@@ -469,7 +433,7 @@ const ExpenseStatisticsCards: React.FC<ExpenseStatisticsCardsProps> = ({
         <div className="card stats-card danger">
           <div className="card-body text-center">
             <i className="bi bi-wallet2 display-4 mb-2"></i>
-            <h3 className="display-4">¥{(expenseData?.summary.totalExpenses || 0).toLocaleString()}</h3>
+            <h3 className="h4" style={{ fontSize: 'clamp(1rem, 2vw, 1.5rem)', lineHeight: '1.1', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>¥{(expenseData?.summary.totalExpenses || 0).toLocaleString()}</h3>
             <p className="mb-0">総支出額</p>
           </div>
         </div>
@@ -478,7 +442,7 @@ const ExpenseStatisticsCards: React.FC<ExpenseStatisticsCardsProps> = ({
         <div className="card stats-card info">
           <div className="card-body text-center">
             <i className="bi bi-currency-yen display-4 mb-2"></i>
-            <h3 className="display-4">¥{(expenseData?.summary.averagePrice || 0).toLocaleString()}</h3>
+            <h3 className="h4" style={{ fontSize: 'clamp(1rem, 2vw, 1.5rem)', lineHeight: '1.1', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>¥{(expenseData?.summary.averagePrice || 0).toLocaleString()}</h3>
             <p className="mb-0">平均購入価格</p>
           </div>
         </div>
@@ -487,7 +451,7 @@ const ExpenseStatisticsCards: React.FC<ExpenseStatisticsCardsProps> = ({
         <div className="card stats-card success">
           <div className="card-body text-center">
             <i className="bi bi-piggy-bank display-4 mb-2"></i>
-            <h3 className="display-4">¥{(expenseData?.summary.totalSavings || 0).toLocaleString()}</h3>
+            <h3 className="h4" style={{ fontSize: 'clamp(1rem, 2vw, 1.5rem)', lineHeight: '1.1', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>¥{(expenseData?.summary.totalSavings || 0).toLocaleString()}</h3>
             <p className="mb-0">節約額</p>
           </div>
         </div>
@@ -513,5 +477,163 @@ const ExpenseStatisticsCards: React.FC<ExpenseStatisticsCardsProps> = ({
         </div>
       </div>
     </>
+  )
+}
+
+// Alert Target Games Component
+interface AlertTargetGamesProps {
+  games: Game[]
+}
+
+const AlertTargetGames: React.FC<AlertTargetGamesProps> = ({ games }) => {
+  const alertTargetGames = games.filter(game => {
+    if (!game.alert_enabled) {
+      return false
+    }
+    
+    const latestPrice = game.latestPrice
+    if (!latestPrice) {
+      return false
+    }
+    
+    // Check if game was marked as unreleased and is now released
+    if (game.was_unreleased && latestPrice.source !== 'steam_unreleased' && latestPrice.current_price > 0) {
+      return true
+    }
+    
+    switch (game.price_threshold_type) {
+      case 'any_sale':
+        return latestPrice.is_on_sale
+      case 'price':
+        return game.price_threshold && latestPrice.current_price <= game.price_threshold
+      case 'discount':
+        return game.discount_threshold_percent && latestPrice.discount_percent >= game.discount_threshold_percent
+      default:
+        return false
+    }
+  })
+
+  if (alertTargetGames.length === 0) {
+    return <p className="text-muted">現在、設定した条件を満たしているゲームはありません。</p>
+  }
+
+  return (
+    <div className="row">
+      {alertTargetGames.map(game => {
+        const latestPrice = game.latestPrice!
+        return (
+          <div key={game.id} className="col-md-6 col-lg-4 mb-3">
+            <div className="card h-100 border-warning">
+              <div className="card-body">
+                <h6 className="card-title">
+                  <a 
+                    href={`https://store.steampowered.com/app/${game.steam_app_id}/`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-decoration-none"
+                  >
+                    {game.name}
+                  </a>
+                </h6>
+                <p className="card-text">
+                  <span className="badge bg-success me-2">
+                    <i className="bi bi-check-circle-fill"></i> 条件達成
+                  </span>
+                  {!!game.was_unreleased && latestPrice.source !== 'steam_unreleased' && (
+                    <span className="badge bg-info me-2">
+                      <i className="bi bi-stars"></i> 新規リリース
+                    </span>
+                  )}
+                  {latestPrice.is_on_sale && latestPrice.discount_percent && latestPrice.discount_percent > 0 && (
+                    <span className="badge bg-success me-2">
+                      {latestPrice.discount_percent}% OFF
+                    </span>
+                  )}
+                </p>
+                <p className="card-text">
+                  <small className="text-muted">
+                    現在: ¥{latestPrice.current_price.toLocaleString()}
+                    {latestPrice.original_price > 0 && latestPrice.original_price !== latestPrice.current_price && (
+                      <> (元価格: ¥{latestPrice.original_price.toLocaleString()})</>
+                    )}
+                    <br />
+                    {game.price_threshold_type === 'price' && game.price_threshold && (
+                      <>閾値: ¥{game.price_threshold.toLocaleString()}</>
+                    )}
+                    {game.price_threshold_type === 'discount' && game.discount_threshold_percent && (
+                      <>閾値: {game.discount_threshold_percent}% OFF</>
+                    )}
+                    {game.price_threshold_type === 'any_sale' && (
+                      <>閾値: セール中</>
+                    )}
+                  </small>
+                </p>
+              </div>
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// Monitoring Details Component
+interface MonitoringDetailsProps {
+  games?: Game[]
+}
+
+const MonitoringDetails: React.FC<MonitoringDetailsProps> = ({ games }) => {
+  if (!games || games.length === 0) {
+    return <p className="text-muted">監視中のゲームがありません。</p>
+  }
+
+  const enabledGames = games.filter(g => g.enabled)
+  const disabledGames = games.filter(g => !g.enabled)
+  const alertEnabledGames = games.filter(g => g.alert_enabled)
+  const recentlyUpdated = games
+    .filter(g => g.latestPrice)
+    .sort((a, b) => {
+      const dateA = new Date(a.latestPrice!.recorded_at).getTime()
+      const dateB = new Date(b.latestPrice!.recorded_at).getTime()
+      return dateB - dateA
+    })
+    .slice(0, 5)
+
+  return (
+    <div className="row">
+      <div className="col-md-6">
+        <h6>監視ステータス</h6>
+        <ul className="list-unstyled">
+          <li>
+            <i className="bi bi-check-circle text-success me-2"></i>
+            有効: {enabledGames.length}ゲーム
+          </li>
+          <li>
+            <i className="bi bi-x-circle text-danger me-2"></i>
+            無効: {disabledGames.length}ゲーム
+          </li>
+          <li>
+            <i className="bi bi-bell text-warning me-2"></i>
+            アラート有効: {alertEnabledGames.length}ゲーム
+          </li>
+        </ul>
+      </div>
+      <div className="col-md-6">
+        <h6>最近更新されたゲーム</h6>
+        {recentlyUpdated.length > 0 ? (
+          <ul className="list-unstyled">
+            {recentlyUpdated.map(game => (
+              <li key={game.id} className="mb-1">
+                <small>
+                  {game.name} - {new Date(game.latestPrice!.recorded_at).toLocaleString('ja-JP')}
+                </small>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-muted">まだ更新されたゲームがありません。</p>
+        )}
+      </div>
+    </div>
   )
 }
