@@ -149,7 +149,7 @@ export const DataManager: React.FC<DataManagerProps> = ({ onClose }) => {
   }
 
   const importBackup = (file: File) => {
-    if (!file) return
+    if (!file) {return}
 
     setImporting(true)
     const reader = new FileReader()
@@ -254,7 +254,7 @@ export const DataManager: React.FC<DataManagerProps> = ({ onClose }) => {
   }
 
   const verifyChecksum = (backup: DataBackup): boolean => {
-    if (!backup.checksum) return true // 古いバックアップ用
+    if (!backup.checksum) {return true} // 古いバックアップ用
     return generateChecksum(backup.data) === backup.checksum
   }
 
@@ -279,7 +279,7 @@ export const DataManager: React.FC<DataManagerProps> = ({ onClose }) => {
   }
 
   const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 B'
+    if (bytes === 0) {return '0 B'}
     const k = 1024
     const sizes = ['B', 'KB', 'MB', 'GB']
     const i = Math.floor(Math.log(bytes) / Math.log(k))
@@ -531,7 +531,7 @@ export const DataManager: React.FC<DataManagerProps> = ({ onClose }) => {
                     accept=".json"
                     onChange={(e) => {
                       const file = e.target.files?.[0]
-                      if (file) importBackup(file)
+                      if (file) {importBackup(file)}
                     }}
                     disabled={importing}
                   />

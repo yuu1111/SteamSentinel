@@ -5,7 +5,6 @@ import fs from 'fs';
 import { config } from './config';
 import { securityHeaders, generalLimiter, errorHandler, jsonSizeLimit } from './middleware/security';
 import apiRoutes from './routes/api';
-// import logger from './utils/logger'; // May be used for future logging needs
 
 const app = express();
 

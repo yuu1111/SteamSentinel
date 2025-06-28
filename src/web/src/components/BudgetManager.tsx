@@ -110,9 +110,9 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({ expenseData }) => 
 
   const getBudgetColor = (budget: BudgetData) => {
     const progress = getBudgetProgress(budget)
-    if (progress >= 100) return 'danger'
-    if (progress >= 80) return 'warning'
-    if (progress >= 60) return 'info'
+    if (progress >= 100) {return 'danger'}
+    if (progress >= 80) {return 'warning'}
+    if (progress >= 60) {return 'info'}
     return 'success'
   }
 

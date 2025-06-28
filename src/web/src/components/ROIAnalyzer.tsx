@@ -50,7 +50,7 @@ export const ROIAnalyzer: React.FC<ROIAnalyzerProps> = ({ expenseData }) => {
 
   const calculateValueScore = () => {
     const purchases = expenseData.recentPurchases
-    if (!purchases.length) return 0
+    if (!purchases.length) {return 0}
     
     // 各購入の価値スコアを計算
     const valueScores = purchases.map(purchase => {
@@ -65,14 +65,14 @@ export const ROIAnalyzer: React.FC<ROIAnalyzerProps> = ({ expenseData }) => {
   }
 
   const getROIColor = (roi: number) => {
-    if (roi >= 50) return 'success'
-    if (roi >= 25) return 'warning'
+    if (roi >= 50) {return 'success'}
+    if (roi >= 25) {return 'warning'}
     return 'danger'
   }
 
   const getValueScoreColor = (score: number) => {
-    if (score >= 70) return 'success'
-    if (score >= 50) return 'warning'
+    if (score >= 70) {return 'success'}
+    if (score >= 50) {return 'warning'}
     return 'danger'
   }
 

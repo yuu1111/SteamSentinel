@@ -55,8 +55,7 @@ function App() {
       window.location.reload()
     },
     onShowAddModal: () => {
-      // TODO: Dashboard内のモーダル表示機能を実装
-      // キーボードショートカットでのモーダル表示は将来実装予定
+      // Modal functionality disabled for current implementation
     }
   })
 

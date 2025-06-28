@@ -22,7 +22,7 @@ export const SpendingAlerts: React.FC<SpendingAlertsProps> = ({
   const generateSpendingAlerts = () => {
     const newAlerts: SpendingAlert[] = []
 
-    if (!expenseData) return
+    if (!expenseData) {return}
 
     // 1. 異常支出パターン検知
     const recentPurchases = expenseData.recentPurchases.slice(0, 5)

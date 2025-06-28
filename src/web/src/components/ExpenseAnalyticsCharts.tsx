@@ -32,7 +32,7 @@ export const ExpenseAnalyticsCharts: React.FC<ExpenseAnalyticsChartsProps> = ({
 
   const drawMonthlyTrendChart = (canvas: HTMLCanvasElement, data: ExpenseData) => {
     const ctx = canvas.getContext('2d')
-    if (!ctx) return
+    if (!ctx) {return}
 
     // Canvas setup
     canvas.width = canvas.offsetWidth * window.devicePixelRatio
@@ -125,7 +125,7 @@ export const ExpenseAnalyticsCharts: React.FC<ExpenseAnalyticsChartsProps> = ({
 
   const drawCategoryPieChart = (canvas: HTMLCanvasElement, data: ExpenseData) => {
     const ctx = canvas.getContext('2d')
-    if (!ctx) return
+    if (!ctx) {return}
 
     // Canvas setup
     canvas.width = canvas.offsetWidth * window.devicePixelRatio
@@ -198,7 +198,7 @@ export const ExpenseAnalyticsCharts: React.FC<ExpenseAnalyticsChartsProps> = ({
 
   const drawDiscountScatterChart = (canvas: HTMLCanvasElement, data: ExpenseData) => {
     const ctx = canvas.getContext('2d')
-    if (!ctx) return
+    if (!ctx) {return}
 
     // Canvas setup
     canvas.width = canvas.offsetWidth * window.devicePixelRatio

@@ -198,7 +198,7 @@ testRoutes.post('/price-alert', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Price alert test error:', error);
+    logger.error('Price alert test error:', error);
     return res.status(500).json({
       success: false,
       error: '価格アラートテスト実行中にエラーが発生しました'
@@ -394,7 +394,7 @@ systemRoutes.post('/test-price-alert', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Price alert test error:', error);
+    logger.error('Price alert test error:', error);
     return res.status(500).json({
       success: false,
       error: '価格アラートテスト実行中にエラーが発生しました'
@@ -431,7 +431,7 @@ alertRoutes.get('/', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Failed to fetch alerts:', error);
+    logger.error('Failed to fetch alerts:', error);
     res.status(500).json({
       success: false,
       error: 'アラート履歴の取得に失敗しました'
@@ -449,7 +449,7 @@ alertRoutes.get('/statistics', async (_req, res) => {
       data: stats
     });
   } catch (error) {
-    console.error('Failed to fetch alert statistics:', error);
+    logger.error('Failed to fetch alert statistics:', error);
     res.status(500).json({
       success: false,
       error: 'アラート統計の取得に失敗しました'
@@ -469,7 +469,7 @@ alertRoutes.get('/recent', async (req, res) => {
       data: recentAlerts
     });
   } catch (error) {
-    console.error('Failed to fetch recent alerts:', error);
+    logger.error('Failed to fetch recent alerts:', error);
     res.status(500).json({
       success: false,
       error: '最新アラートの取得に失敗しました'

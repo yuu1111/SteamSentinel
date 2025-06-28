@@ -136,13 +136,14 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({
           preview += '\n'
           break
           
-        case 'roi':
+        case 'roi': {
           const roi = expenseData.summary.totalExpenses > 0 
             ? (expenseData.summary.totalSavings / expenseData.summary.totalExpenses) * 100 
             : 0
           preview += `- ROI: ${roi.toFixed(1)}%\n`
           preview += `- 投資効率: ${(expenseData.summary.totalSavings / Math.max(expenseData.summary.totalGames, 1)).toFixed(0)}円/ゲーム\n\n`
           break
+        }
           
         case 'budget':
           if (budgets.length > 0) {
@@ -194,7 +195,7 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({
   }
 
   const generateCSV = () => {
-    if (!expenseData) return
+    if (!expenseData) {return}
 
     const csvContent = [
       ['ゲーム名', '購入価格', '割引率', '購入日'],
