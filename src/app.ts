@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
+import fs from 'fs';
 import { config } from './config';
 import { securityHeaders, generalLimiter, errorHandler, jsonSizeLimit } from './middleware/security';
 import apiRoutes from './routes/api';
@@ -40,7 +41,7 @@ app.get('*', (req, res) => {
     const publicIndexPath = path.join(config.publicPath, 'index.html');
     
     try {
-      require('fs').accessSync(reactIndexPath);
+      fs.accessSync(reactIndexPath);
       res.sendFile(reactIndexPath);
     } catch {
       res.sendFile(publicIndexPath);

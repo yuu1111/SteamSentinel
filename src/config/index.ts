@@ -82,7 +82,7 @@ function loadConfigFile(): any {
       // Using config.example.json as fallback
       return JSON.parse(fs.readFileSync(exampleConfigPath, 'utf-8'));
     }
-  } catch (error) {
+  } catch {
     // Config file loading error handled silently
   }
   

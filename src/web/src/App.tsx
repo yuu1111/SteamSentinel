@@ -56,7 +56,7 @@ function App() {
     },
     onShowAddModal: () => {
       // TODO: Dashboard内のモーダル表示機能を実装
-      console.log('Show add modal shortcut triggered')
+      // キーボードショートカットでのモーダル表示は将来実装予定
     }
   })
 

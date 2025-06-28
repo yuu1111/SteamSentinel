@@ -102,21 +102,7 @@ export const useKeyboardShortcuts = ({
 }
 
 const showKeyboardShortcutsHelp = () => {
-  // 簡単なアラートでキーボードショートカットを表示
-  const shortcuts = `
-キーボードショートカット:
-
-Ctrl/Cmd + R : ページ更新
-Ctrl/Cmd + A : ゲーム追加
-Ctrl/Cmd + D : ダークモード切り替え
-Ctrl/Cmd + 1 : ダッシュボード
-Ctrl/Cmd + 2 : ゲーム管理
-Ctrl/Cmd + 3 : アラート履歴
-Ctrl/Cmd + 4 : 監視状況
-Ctrl/Cmd + 5 : 設定・テスト
-Esc : モーダルを閉じる
-? : このヘルプを表示
-  `.trim()
-
-  alert(shortcuts)
+  // TODO: 将来的にはモーダルでキーボードショートカットを表示
+  // 現在は機能を無効化
+  // Keyboard shortcuts help requested - feature will be implemented with modal UI
 }

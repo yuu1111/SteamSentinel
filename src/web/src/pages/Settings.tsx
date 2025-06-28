@@ -68,8 +68,7 @@ const Settings: React.FC = () => {
       if (gamesResponse.success) {
         setGames(gamesResponse.data || [])
       }
-    } catch (error) {
-      console.error('Failed to load settings data:', error)
+    } catch {
       showError('設定データの読み込みに失敗しました')
     } finally {
       setLoading(false)
@@ -87,8 +86,7 @@ const Settings: React.FC = () => {
       } else {
         showError('Discordテストに失敗しました: ' + response.error)
       }
-    } catch (error) {
-      console.error('Discord test failed:', error)
+    } catch {
       showError('Discordテスト中にエラーが発生しました')
     }
   }
@@ -116,8 +114,7 @@ const Settings: React.FC = () => {
       } else {
         showError('価格アラートテストに失敗しました: ' + response.error)
       }
-    } catch (error) {
-      console.error('Price alert test failed:', error)
+    } catch {
       showError('価格アラートテスト中にエラーが発生しました')
     }
   }
@@ -242,8 +239,7 @@ const Settings: React.FC = () => {
                         } else {
                           showError('手動監視に失敗しました: ' + response.error)
                         }
-                      } catch (error) {
-                        console.error('Manual monitoring failed:', error)
+                      } catch {
                         showError('手動監視中にエラーが発生しました')
                       }
                     }}

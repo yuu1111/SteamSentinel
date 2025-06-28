@@ -112,7 +112,7 @@ export class ReleaseDateManagementService {
 
   // リリース日文字列を解析
   private parseReleaseDate(releaseDateStr?: string): Date | null {
-    if (!releaseDateStr) return null;
+    if (!releaseDateStr) {return null;}
 
     try {
       // Steam APIの日付形式を解析

@@ -17,7 +17,7 @@ const LoadingOverlay: React.FC = () => {
     }
   }, [])
 
-  if (!isVisible) return null
+  if (!isVisible) {return null}
 
   return (
     <div className="loading-overlay">

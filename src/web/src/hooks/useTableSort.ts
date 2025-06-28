@@ -16,7 +16,7 @@ export const useTableSort = (games: Game[]) => {
   })
 
   const sortedGames = useMemo(() => {
-    if (!sortConfig.column) return games
+    if (!sortConfig.column) {return games}
 
     const sorted = [...games].sort((a, b) => {
       let valueA: any, valueB: any
@@ -27,9 +27,9 @@ export const useTableSort = (games: Game[]) => {
           valueB = b.name.toLowerCase()
           break
           
-        case 'currentPrice':
+        case 'currentPrice': {
           const getCurrentPriceValue = (game: Game) => {
-            if (!game.latestPrice) return 0
+            if (!game.latestPrice) {return 0}
             if (['steam_free', 'steam_unreleased', 'steam_removed'].includes(game.latestPrice.source)) {
               return 0
             }
@@ -38,10 +38,11 @@ export const useTableSort = (games: Game[]) => {
           valueA = getCurrentPriceValue(a)
           valueB = getCurrentPriceValue(b)
           break
+        }
           
-        case 'originalPrice':
+        case 'originalPrice': {
           const getOriginalPriceValue = (game: Game) => {
-            if (!game.latestPrice) return 0
+            if (!game.latestPrice) {return 0}
             if (['steam_free', 'steam_unreleased', 'steam_removed'].includes(game.latestPrice.source)) {
               return 0
             }
@@ -50,10 +51,11 @@ export const useTableSort = (games: Game[]) => {
           valueA = getOriginalPriceValue(a)
           valueB = getOriginalPriceValue(b)
           break
+        }
           
-        case 'discountPercent':
+        case 'discountPercent': {
           const getDiscountValue = (game: Game) => {
-            if (!game.latestPrice) return 0
+            if (!game.latestPrice) {return 0}
             if (['steam_free', 'steam_unreleased', 'steam_removed'].includes(game.latestPrice.source)) {
               return 0
             }
@@ -62,10 +64,11 @@ export const useTableSort = (games: Game[]) => {
           valueA = getDiscountValue(a)
           valueB = getDiscountValue(b)
           break
+        }
           
-        case 'historicalLow':
+        case 'historicalLow': {
           const getHistoricalLowValue = (game: Game) => {
-            if (!game.latestPrice) return 0
+            if (!game.latestPrice) {return 0}
             if (['steam_free', 'steam_unreleased', 'steam_removed'].includes(game.latestPrice.source)) {
               return 0
             }
@@ -74,12 +77,13 @@ export const useTableSort = (games: Game[]) => {
           valueA = getHistoricalLowValue(a)
           valueB = getHistoricalLowValue(b)
           break
+        }
           
-        case 'isOnSale':
+        case 'isOnSale': {
           // セール状態のソート順序を定義
           // 1: セール中, 2: 通常価格, 3: 基本無料, 4: 未リリース, 5: 販売終了, 6: データなし
           const getSaleStatusValue = (game: Game) => {
-            if (!game.latestPrice) return 6
+            if (!game.latestPrice) {return 6}
             
             switch (game.latestPrice.source) {
               case 'steam_free': return 3
@@ -92,6 +96,7 @@ export const useTableSort = (games: Game[]) => {
           valueA = getSaleStatusValue(a)
           valueB = getSaleStatusValue(b)
           break
+        }
           
         case 'lastUpdated':
           valueA = a.latestPrice?.recorded_at ? new Date(a.latestPrice.recorded_at).getTime() : 0
@@ -108,10 +113,10 @@ export const useTableSort = (games: Game[]) => {
           valueB = b.alert_enabled ? 1 : 0
           break
           
-        case 'alertCondition':
+        case 'alertCondition': {
           // アラート条件のソート順序: price < discount < any_sale
           const getAlertConditionValue = (game: Game) => {
-            if (!game.price_threshold_type) return 3
+            if (!game.price_threshold_type) {return 3}
             switch (game.price_threshold_type) {
               case 'price': return 0
               case 'discount': return 1
@@ -122,6 +127,7 @@ export const useTableSort = (games: Game[]) => {
           valueA = getAlertConditionValue(a)
           valueB = getAlertConditionValue(b)
           break
+        }
           
         case 'purchased':
           valueA = a.is_purchased ? 1 : 0
@@ -141,8 +147,8 @@ export const useTableSort = (games: Game[]) => {
       if (typeof valueA === 'number' && typeof valueB === 'number') {
         return sortConfig.direction === 'asc' ? valueA - valueB : valueB - valueA
       } else {
-        if (valueA < valueB) return sortConfig.direction === 'asc' ? -1 : 1
-        if (valueA > valueB) return sortConfig.direction === 'asc' ? 1 : -1
+        if (valueA < valueB) {return sortConfig.direction === 'asc' ? -1 : 1}
+        if (valueA > valueB) {return sortConfig.direction === 'asc' ? 1 : -1}
         return 0
       }
     })

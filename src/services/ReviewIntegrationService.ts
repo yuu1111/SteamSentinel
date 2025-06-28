@@ -230,7 +230,7 @@ export class ReviewIntegrationService {
 
   // 統合スコアを計算
   private calculateAggregateScore(reviews: ReviewScore[]): number {
-    if (reviews.length === 0) return 0;
+    if (reviews.length === 0) {return 0;}
 
     // 重み付けスコア計算
     let totalWeightedScore = 0;

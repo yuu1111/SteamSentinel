@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
+import logger from '../utils/logger';
 
 // レート制限の設定
 export const createRateLimiter = (windowMs: number = 15 * 60 * 1000, max: number = 100) => {
@@ -67,7 +68,7 @@ export const jsonSizeLimit = '10mb';
 
 // エラーハンドリングミドルウェア
 export const errorHandler = (error: any, _req: Request, res: Response, _next: NextFunction): void => {
-  console.error('Error:', error);
+  logger.error('Error:', error);
   
   if (error.type === 'entity.parse.failed') {
     res.status(400).json({

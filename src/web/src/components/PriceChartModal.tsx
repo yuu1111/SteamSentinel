@@ -40,7 +40,7 @@ export const PriceChartModal: React.FC<PriceChartModalProps> = ({
   }, [show, steamAppId])
 
   const loadPriceHistory = async () => {
-    if (!steamAppId) return
+    if (!steamAppId) {return}
 
     try {
       setLoading(true)
@@ -48,7 +48,6 @@ export const PriceChartModal: React.FC<PriceChartModalProps> = ({
       
       if (response.success && response.data && response.data.priceHistory) {
         if (response.data.priceHistory.length === 0) {
-          console.warn('Price history array is empty')
           setPriceHistory([])
           return
         }
@@ -61,11 +60,9 @@ export const PriceChartModal: React.FC<PriceChartModalProps> = ({
         setPriceHistory(formattedData)
         setTimeout(() => createChart(formattedData), 100)
       } else {
-        console.warn('No price history data available:', response)
         showError('価格履歴データがありません')
       }
-    } catch (error) {
-      console.error('Failed to load price history:', error)
+    } catch {
       showError('価格履歴の読み込み中にエラーが発生しました')
     } finally {
       setLoading(false)
@@ -73,7 +70,7 @@ export const PriceChartModal: React.FC<PriceChartModalProps> = ({
   }
 
   const createChart = (data: PriceHistoryData[]) => {
-    if (!chartRef.current || !(window as any).Chart) return
+    if (!chartRef.current || !(window as any).Chart) {return}
 
     // 既存のチャートを破棄
     if (chartInstanceRef.current) {
@@ -81,7 +78,7 @@ export const PriceChartModal: React.FC<PriceChartModalProps> = ({
     }
 
     const ctx = chartRef.current.getContext('2d')
-    if (!ctx) return
+    if (!ctx) {return}
 
     const labels = data.map(item => new Date(item.date).toLocaleDateString('ja-JP'))
     const currentPrices = data.map(item => item.current_price)
@@ -151,7 +148,7 @@ export const PriceChartModal: React.FC<PriceChartModalProps> = ({
     })
   }
 
-  if (!show) return null
+  if (!show) {return null}
 
   return (
     <div className="modal fade show d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>

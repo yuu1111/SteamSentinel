@@ -193,7 +193,7 @@ export class GameModel {
             discount_threshold_percent: game.discount_threshold_percent || null,
             alert_enabled: game.alert_enabled ? 1 : 0
           });
-          if (info.changes > 0) inserted++;
+          if (info.changes > 0) {inserted++;}
         }
       })();
       

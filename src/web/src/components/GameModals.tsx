@@ -86,8 +86,7 @@ export const AddGameModal: React.FC<AddGameModalProps> = ({ show, onHide, onGame
       } else {
         showError('ゲームの追加に失敗しました: ' + response.error)
       }
-    } catch (error) {
-      console.error('Failed to add game:', error)
+    } catch {
       showError('ゲームの追加中にエラーが発生しました')
     } finally {
       setLoading(false)
@@ -100,7 +99,7 @@ export const AddGameModal: React.FC<AddGameModalProps> = ({ show, onHide, onGame
     }
   }, [show])
 
-  if (!show) return null
+  if (!show) {return null}
 
   return (
     <div className="modal fade show d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
@@ -305,7 +304,7 @@ export const EditGameModal: React.FC<EditGameModalProps> = ({ show, game, onHide
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!game) return
+    if (!game) {return}
 
     const gameName = formData.gameName.trim()
     
@@ -350,15 +349,14 @@ export const EditGameModal: React.FC<EditGameModalProps> = ({ show, game, onHide
       } else {
         showError('ゲーム設定の更新に失敗しました: ' + response.error)
       }
-    } catch (error) {
-      console.error('Failed to save game edit:', error)
+    } catch {
       showError('ゲーム設定の保存中にエラーが発生しました')
     } finally {
       setLoading(false)
     }
   }
 
-  if (!show || !game) return null
+  if (!show || !game) {return null}
 
   return (
     <div className="modal fade show d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>

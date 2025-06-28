@@ -254,7 +254,7 @@ class DatabaseManager {
     try {
       const result = db.prepare('SELECT MAX(version) as version FROM db_version').get() as any;
       return result?.version || 1; // デフォルトはv1
-    } catch (error) {
+    } catch {
       // テーブルが存在しない場合はv1
       return 1;
     }

@@ -41,7 +41,7 @@ export class PriceHistoryModel {
       const db = database.getConnection();
       const record = db.prepare('SELECT * FROM price_history WHERE id = ?').get(id) as any;
       
-      if (!record) return null;
+      if (!record) {return null;}
       
       return {
         ...record,
@@ -65,7 +65,7 @@ export class PriceHistoryModel {
         LIMIT 1
       `).get(steamAppId) as any;
       
-      if (!record) return null;
+      if (!record) {return null;}
       
       return {
         ...record,

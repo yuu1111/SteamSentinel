@@ -182,7 +182,7 @@ async function main() {
 // プロセスがメインモジュールとして実行された場合のみ開始
 if (require.main === module) {
   main().catch((error) => {
-    console.error('Failed to start application:', error);
+    logger.error('Failed to start application:', error);
     process.exit(1);
   });
 }

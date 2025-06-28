@@ -24,7 +24,7 @@ export const MonitoringProgress: React.FC<MonitoringProgressProps> = ({ onMonito
   }, [])
 
   const checkAndStartProgressMonitoring = async () => {
-    if (hasChecked) return // 既にチェック済みの場合は実行しない
+    if (hasChecked) {return} // 既にチェック済みの場合は実行しない
     
     try {
       // API応答が200ms以上かかる場合のみローディング表示
@@ -35,14 +35,12 @@ export const MonitoringProgress: React.FC<MonitoringProgressProps> = ({ onMonito
       setHasChecked(true)
       
       if (response.success && response.data.isRunning) {
-        console.log('監視が実行中です。進捗表示を開始します。')
         startProgressMonitoring()
       } else {
         // 監視が実行中でない場合はチェック状態を解除
         setIsChecking(false)
       }
-    } catch (error) {
-      console.error('Failed to check monitoring progress:', error)
+    } catch {
       setIsChecking(false)
       setHasChecked(true)
     }
@@ -67,8 +65,8 @@ export const MonitoringProgress: React.FC<MonitoringProgressProps> = ({ onMonito
             }
           }
         }
-      } catch (error) {
-        console.error('Failed to get monitoring progress:', error)
+      } catch {
+        // エラーを静かに処理し、ポーリングを継続
       }
     }, 1000) // 1秒間隔でポーリング
 
@@ -103,13 +101,13 @@ export const MonitoringProgress: React.FC<MonitoringProgressProps> = ({ onMonito
   }
   
   // 監視中でない場合は何も表示しない
-  if (!isVisible || !progress) return null
+  if (!isVisible || !progress) {return null}
 
   const percentage = progress.totalGames > 0 ? 
     Math.round((progress.completedGames / progress.totalGames) * 100) : 0
 
   const formatTimeRemaining = (seconds: number | undefined) => {
-    if (!seconds || seconds <= 0) return '計算中...'
+    if (!seconds || seconds <= 0) {return '計算中...'}
     
     const minutes = Math.floor(seconds / 60)
     const remainingSeconds = seconds % 60

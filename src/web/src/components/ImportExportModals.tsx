@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { api } from '../utils/api'
 import { useAlert } from '../contexts/AlertContext'
+import { ConfirmationModal } from './ConfirmationModal'
 
 interface ImportGamesModalProps {
   show: boolean
@@ -16,6 +17,9 @@ export const ImportGamesModal: React.FC<ImportGamesModalProps> = ({
   const [file, setFile] = useState<File | null>(null)
   const [importMode, setImportMode] = useState<'merge' | 'skip' | 'replace'>('merge')
   const [loading, setLoading] = useState(false)
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [confirmAction, setConfirmAction] = useState<(() => void) | null>(null)
+  const [confirmMessage, setConfirmMessage] = useState('')
   const { showError, showSuccess, showWarning } = useAlert()
 
   const resetForm = () => {
@@ -47,7 +51,7 @@ export const ImportGamesModal: React.FC<ImportGamesModalProps> = ({
 
       try {
         importData = JSON.parse(fileContent)
-      } catch (e) {
+      } catch {
         showError('無効なJSONファイルです')
         return
       }
@@ -58,36 +62,52 @@ export const ImportGamesModal: React.FC<ImportGamesModalProps> = ({
         return
       }
 
-      // 確認ダイアログ
-      const confirmMessage = importMode === 'replace' ? 
+      // 確認ダイアログを表示
+      const message = importMode === 'replace' ? 
         `既存のゲーム・履歴データをすべて削除して、${importData.gameCount}件のゲームをインポートします。よろしいですか？` :
         `${importData.gameCount}件のゲームをインポートします。よろしいですか？`
         
-      if (!confirm(confirmMessage)) {
-        return
-      }
-
-      // インポート実行
-      importData.mode = importMode
-      const response = await api.post('/games/import', importData)
+      setConfirmMessage(message)
+      setConfirmAction(() => async () => {
+        // インポート実行
+        importData.mode = importMode
+        const response = await api.post('/games/import', importData)
 
       if (response.success) {
         showSuccess(response.message || 'インポートが完了しました')
         
         // エラーがある場合は警告表示
         if (response.data && response.data.errors && response.data.errors.length > 0) {
-          console.warn('Import errors:', response.data.errors)
           showWarning(`インポート完了（${response.data.errors.length}件のエラーあり）`)
         }
         
         resetForm()
         onHide()
         onImportCompleted()
-      } else {
-        showError('インポートに失敗しました: ' + response.error)
-      }
-    } catch (error) {
-      console.error('Failed to import games:', error)
+        } else {
+          showError('インポートに失敗しました: ' + response.error)
+        }
+      })
+      setShowConfirmModal(true)
+    } catch {
+      showError('ゲームリストのインポート中にエラーが発生しました')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const executeImport = async () => {
+    if (!confirmAction) {
+      return
+    }
+    
+    try {
+      setLoading(true)
+      await confirmAction()
+      resetForm()
+      onHide()
+      onImportCompleted()
+    } catch {
       showError('ゲームリストのインポート中にエラーが発生しました')
     } finally {
       setLoading(false)
@@ -99,7 +119,7 @@ export const ImportGamesModal: React.FC<ImportGamesModalProps> = ({
     setFile(selectedFile || null)
   }
 
-  if (!show) return null
+  if (!show) {return null}
 
   return (
     <div className="modal fade show d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
@@ -193,6 +213,19 @@ export const ImportGamesModal: React.FC<ImportGamesModalProps> = ({
           </div>
         </div>
       </div>
+      
+      <ConfirmationModal
+        show={showConfirmModal}
+        title="インポートの確認"
+        message={confirmMessage}
+        confirmText="インポート"
+        onConfirm={executeImport}
+        onCancel={() => {
+          setShowConfirmModal(false)
+          setConfirmAction(null)
+        }}
+        variant="warning"
+      />
     </div>
   )
 }
@@ -236,8 +269,7 @@ export const useExportGames = ({ onExportCompleted }: ExportGamesProps = {}) => 
           onExportCompleted()
         }
       }
-    } catch (error) {
-      console.error('Failed to export games:', error)
+    } catch {
       showError('ゲームリストのエクスポートに失敗しました')
     } finally {
       setLoading(false)

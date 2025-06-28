@@ -5,6 +5,7 @@ import { useAlert } from '../contexts/AlertContext'
 import { AddGameModal, EditGameModal } from '../components/GameModals'
 import { ImportGamesModal, useExportGames } from '../components/ImportExportModals'
 import { useTableSort } from '../hooks/useTableSort'
+import { ConfirmationModal } from '../components/ConfirmationModal'
 
 const Games: React.FC = () => {
   const [games, setGames] = useState<Game[]>([])
@@ -13,6 +14,8 @@ const Games: React.FC = () => {
   const [showEditModal, setShowEditModal] = useState(false)
   const [showImportModal, setShowImportModal] = useState(false)
   const [editingGame, setEditingGame] = useState<Game | null>(null)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [gameToDelete, setGameToDelete] = useState<{id: number, name: string} | null>(null)
   const { showError, showSuccess } = useAlert()
   const { exportGames, loading: exportLoading } = useExportGames()
   const { sortedGames, handleSort, getSortIcon } = useTableSort(games)
@@ -31,30 +34,33 @@ const Games: React.FC = () => {
       } else {
         showError('ゲーム一覧の取得に失敗しました')
       }
-    } catch (error) {
-      console.error('Failed to load games:', error)
+    } catch {
       showError('ゲーム一覧の読み込み中にエラーが発生しました')
     } finally {
       setLoading(false)
     }
   }
 
-  const deleteGame = async (gameId: number, gameName: string) => {
-    if (!confirm(`"${gameName}" を削除してもよろしいですか？\n\nこの操作により、価格履歴とアラート履歴も削除されます。`)) {
+  const handleDeleteGame = (gameId: number, gameName: string) => {
+    setGameToDelete({ id: gameId, name: gameName })
+    setShowDeleteModal(true)
+  }
+
+  const deleteGame = async () => {
+    if (!gameToDelete) {
       return
     }
     
     try {
-      const response = await api.delete(`/games/${gameId}`)
+      const response = await api.delete(`/games/${gameToDelete.id}`)
       
       if (response.success) {
-        showSuccess(`${gameName} を削除しました`)
+        showSuccess(`${gameToDelete.name} を削除しました`)
         await loadAllGames()
       } else {
         showError('ゲームの削除に失敗しました: ' + response.error)
       }
-    } catch (error) {
-      console.error('Failed to delete game:', error)
+    } catch {
       showError('ゲームの削除中にエラーが発生しました')
     }
   }
@@ -70,8 +76,8 @@ const Games: React.FC = () => {
   }
 
   const handleShowChart = (steamAppId: number, gameName: string) => {
-    // Price chart functionality - could be implemented later
-    alert(`価格チャート機能は今後実装予定です。\nゲーム: ${gameName}\nSteam App ID: ${steamAppId}`)
+    // TODO: Price chart functionality - could be implemented later
+    showError(`価格チャート機能は今後実装予定です。\nゲーム: ${gameName}\nSteam App ID: ${steamAppId}`)
   }
 
   const runSingleMonitoring = async (steamAppId: number) => {
@@ -84,8 +90,7 @@ const Games: React.FC = () => {
       } else {
         showError('価格更新に失敗しました: ' + response.error)
       }
-    } catch (error) {
-      console.error('Single game monitoring failed:', error)
+    } catch {
       showError('価格更新中にエラーが発生しました')
     }
   }
@@ -256,7 +261,7 @@ const Games: React.FC = () => {
                                 </button>
                                 <button 
                                   className="action-btn danger"
-                                  onClick={() => deleteGame(game.id, game.name)}
+                                  onClick={() => handleDeleteGame(game.id, game.name)}
                                   title="削除"
                                 >
                                   <i className="bi bi-trash"></i>
@@ -308,6 +313,19 @@ const Games: React.FC = () => {
         show={showImportModal}
         onHide={() => setShowImportModal(false)}
         onImportCompleted={loadAllGames}
+      />
+
+      <ConfirmationModal
+        show={showDeleteModal}
+        title="ゲームを削除"
+        message={`"${gameToDelete?.name}" を削除してもよろしいですか？\n\nこの操作により、価格履歴とアラート履歴も削除されます。`}
+        confirmText="削除"
+        onConfirm={deleteGame}
+        onCancel={() => {
+          setShowDeleteModal(false)
+          setGameToDelete(null)
+        }}
+        variant="danger"
       />
     </>
   )

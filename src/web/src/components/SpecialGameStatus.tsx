@@ -44,7 +44,7 @@ export const SpecialGameStatus: React.FC<SpecialGameStatusProps> = ({ games }) =
   const totalSpecialGames = gameCategories.failed.length + gameCategories.freeToPlay.length + 
                            gameCategories.unreleased.length + gameCategories.removed.length
 
-  if (totalSpecialGames === 0) return null
+  if (totalSpecialGames === 0) {return null}
 
   const CategoryCard: React.FC<{ title: string; games: Game[]; bgColor: string; icon: string }> = ({
     title,
@@ -52,7 +52,7 @@ export const SpecialGameStatus: React.FC<SpecialGameStatusProps> = ({ games }) =
     bgColor,
     icon
   }) => {
-    if (games.length === 0) return null
+    if (games.length === 0) {return null}
 
     return (
       <div className="col-md-6 mb-3">

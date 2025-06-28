@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { api } from '../utils/api'
 import { useAlert } from '../contexts/AlertContext'
 import { AlertData } from '../types'
+import { ConfirmationModal } from '../components/ConfirmationModal'
 
 const Alerts: React.FC = () => {
   const [alerts, setAlerts] = useState<AlertData[]>([])
@@ -9,6 +10,7 @@ const Alerts: React.FC = () => {
   const [filter, setFilter] = useState('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
   const { showError, showSuccess } = useAlert()
 
   useEffect(() => {
@@ -33,18 +35,18 @@ const Alerts: React.FC = () => {
       } else {
         showError('アラート履歴の取得に失敗しました')
       }
-    } catch (error) {
-      console.error('Failed to load alerts:', error)
+    } catch {
       showError('アラート履歴の読み込み中にエラーが発生しました')
     } finally {
       setLoading(false)
     }
   }
 
+  const handleClearAllAlerts = () => {
+    setShowConfirmModal(true)
+  }
+
   const clearAllAlerts = async () => {
-    if (!confirm('すべてのアラート履歴を削除してもよろしいですか？\nこの操作は元に戻せません。')) {
-      return
-    }
     
     try {
       const response = await api.delete('/alerts')
@@ -57,8 +59,7 @@ const Alerts: React.FC = () => {
       } else {
         showError('アラート履歴の削除に失敗しました')
       }
-    } catch (error) {
-      console.error('Failed to clear alerts:', error)
+    } catch {
       showError('アラート履歴の削除中にエラーが発生しました')
     }
   }
@@ -98,12 +99,12 @@ const Alerts: React.FC = () => {
   }
 
   const renderPagination = () => {
-    if (totalPages <= 1) return null
+    if (totalPages <= 1) {return null}
 
     const pages = []
     const maxVisiblePages = 5
     let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2))
-    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1)
+    const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1)
 
     if (endPage - startPage + 1 < maxVisiblePages) {
       startPage = Math.max(1, endPage - maxVisiblePages + 1)
@@ -196,7 +197,7 @@ const Alerts: React.FC = () => {
                 </select>
                 <button 
                   className="btn btn-danger btn-sm"
-                  onClick={clearAllAlerts}
+                  onClick={handleClearAllAlerts}
                   disabled={alerts.length === 0}
                 >
                   <i className="bi bi-trash"></i> すべて削除
@@ -279,6 +280,16 @@ const Alerts: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <ConfirmationModal
+        show={showConfirmModal}
+        title="アラート履歴を削除"
+        message="すべてのアラート履歴を削除してもよろしいですか？\nこの操作は元に戻せません。"
+        confirmText="削除"
+        onConfirm={clearAllAlerts}
+        onCancel={() => setShowConfirmModal(false)}
+        variant="danger"
+      />
     </div>
   )
 }

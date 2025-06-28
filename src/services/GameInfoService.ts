@@ -254,9 +254,9 @@ export class GameInfoService {
 
   // HowLongToBeatの時間を読みやすい形式に変換
   formatPlayTime(hours: number | null): string {
-    if (!hours) return '不明';
-    if (hours < 1) return '1時間未満';
-    if (hours < 100) return `${hours}時間`;
+    if (!hours) {return '不明';}
+    if (hours < 1) {return '1時間未満';}
+    if (hours < 100) {return `${hours}時間`;}
     return `${Math.round(hours / 10) * 10}時間+`;
   }
 

@@ -4,7 +4,7 @@ import { useAlert } from '../contexts/AlertContext'
 const AlertContainer: React.FC = () => {
   const { alerts, removeAlert } = useAlert()
 
-  if (alerts.length === 0) return null
+  if (alerts.length === 0) {return null}
 
   return (
     <div className="alert-container position-fixed" style={{ 

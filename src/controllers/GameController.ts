@@ -617,7 +617,7 @@ export class GameController {
 
       for (const alert of alerts) {
         const game = GameModel.getBySteamAppId(alert.steam_app_id);
-        if (!game) continue;
+        if (!game) {continue;}
 
         const purchasePrice = alert.trigger_price || 0;
         const originalPrice = alert.previous_low || purchasePrice;

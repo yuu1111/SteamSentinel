@@ -40,7 +40,7 @@ export class AlertModel {
       const db = database.getConnection();
       const record = db.prepare('SELECT * FROM alerts WHERE id = ?').get(id) as any;
       
-      if (!record) return null;
+      if (!record) {return null;}
       
       return {
         ...record,
@@ -69,7 +69,7 @@ export class AlertModel {
       
       const record = db.prepare(query).get(...params) as any;
       
-      if (!record) return null;
+      if (!record) {return null;}
       
       return {
         ...record,
@@ -114,7 +114,7 @@ export class AlertModel {
         FROM alerts a
         JOIN games g ON a.steam_app_id = g.steam_app_id
       `;
-      let params: any[] = [];
+      const params: any[] = [];
 
       if (filter !== 'all') {
         query += ' WHERE a.alert_type = ?';
@@ -142,7 +142,7 @@ export class AlertModel {
     try {
       const db = database.getConnection();
       let query = 'SELECT COUNT(*) as count FROM alerts';
-      let params: any[] = [];
+      const params: any[] = [];
 
       if (filter !== 'all') {
         query += ' WHERE alert_type = ?';

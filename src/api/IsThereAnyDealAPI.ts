@@ -382,7 +382,7 @@ export class IsThereAnyDealAPI extends BaseAPI {
           if (deal.shop?.id === 61 && deal.plain) {
             // Steam App IDを抽出（app/123456形式から）
             const appIdMatch = deal.plain.match(/app\/(\d+)/);
-            if (!appIdMatch) continue;
+            if (!appIdMatch) {continue;}
 
             const steamAppId = parseInt(appIdMatch[1], 10);
             
