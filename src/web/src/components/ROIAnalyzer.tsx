@@ -1,5 +1,9 @@
 import React from 'react'
+import { Col, Card, Typography, Progress, Row, Alert, Statistic, Space } from 'antd'
+import { CalculatorOutlined, StarOutlined, DashboardOutlined, TrophyOutlined } from '@ant-design/icons'
 import { ExpenseData } from '../types'
+
+const { Title, Text } = Typography
 
 interface ROIAnalyzerProps {
   expenseData: ExpenseData | null
@@ -8,14 +12,14 @@ interface ROIAnalyzerProps {
 export const ROIAnalyzer: React.FC<ROIAnalyzerProps> = ({ expenseData }) => {
   if (!expenseData) {
     return (
-      <div className="row">
-        <div className="col-12">
-          <div className="alert alert-info">
-            <i className="bi bi-info-circle me-2"></i>
-            ROI分析データを読み込み中...
-          </div>
-        </div>
-      </div>
+      <Col span={24}>
+        <Alert
+          message="ROI分析"
+          description="ROI分析データを読み込み中..."
+          type="info"
+          showIcon
+        />
+      </Col>
     )
   }
 
@@ -50,7 +54,7 @@ export const ROIAnalyzer: React.FC<ROIAnalyzerProps> = ({ expenseData }) => {
 
   const calculateValueScore = () => {
     const purchases = expenseData.recentPurchases
-    if (!purchases.length) {return 0}
+    if (!purchases.length) return 0
     
     // 各購入の価値スコアを計算
     const valueScores = purchases.map(purchase => {
@@ -64,224 +68,213 @@ export const ROIAnalyzer: React.FC<ROIAnalyzerProps> = ({ expenseData }) => {
     return valueScores.reduce((sum, score) => sum + score, 0) / valueScores.length
   }
 
-  const getROIColor = (roi: number) => {
-    if (roi >= 50) {return 'success'}
-    if (roi >= 25) {return 'warning'}
-    return 'danger'
+  const getROIStatus = (roi: number) => {
+    if (roi >= 50) return { status: 'success', color: '#52c41a' }
+    if (roi >= 25) return { status: 'normal', color: '#faad14' }
+    return { status: 'exception', color: '#f5222d' }
   }
 
-  const getValueScoreColor = (score: number) => {
-    if (score >= 70) {return 'success'}
-    if (score >= 50) {return 'warning'}
-    return 'danger'
+  const getValueScoreStatus = (score: number) => {
+    if (score >= 70) return { color: '#52c41a', text: '優秀な購入判断' }
+    if (score >= 50) return { color: '#faad14', text: '良好な購入判断' }
+    return { color: '#f5222d', text: '改善の余地あり' }
   }
 
   const analysis = calculateROI()
+  const roiStatus = getROIStatus(analysis.roi)
+  const valueScoreStatus = getValueScoreStatus(analysis.valueScore)
 
   return (
-    <div className="row">
-      <div className="col-12 mb-4">
-        <h4>
-          <i className="bi bi-graph-up-arrow me-2"></i>ROI・価値分析
-        </h4>
-      </div>
+    <>
+      <Col span={24}>
+        <Title level={4}>
+          <TrophyOutlined /> ROI・価値分析
+        </Title>
+      </Col>
       
       {/* ROI概要カード */}
-      <div className="col-lg-4 mb-4">
-        <div className="card h-100">
-          <div className="card-header">
-            <h6 className="mb-0">
-              <i className="bi bi-calculator me-2"></i>ROI分析
-            </h6>
-          </div>
-          <div className="card-body">
-            <div className="text-center mb-3">
-              <h2 className={`text-${getROIColor(analysis.roi)}`}>
-                {analysis.roi.toFixed(1)}%
-              </h2>
-              <p className="text-muted mb-0">投資収益率</p>
-            </div>
-            <div className="row text-center">
-              <div className="col-6">
-                <small className="text-muted">支出額</small>
-                <div className="fw-bold">¥{analysis.totalSpent.toLocaleString()}</div>
-              </div>
-              <div className="col-6">
-                <small className="text-muted">節約額</small>
-                <div className="fw-bold text-success">¥{analysis.totalSaved.toLocaleString()}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <Col xs={24} lg={8}>
+        <Card>
+          <Space direction="vertical" style={{ width: '100%' }} align="center">
+            <CalculatorOutlined style={{ fontSize: '24px' }} />
+            <Title level={5}>ROI分析</Title>
+            <Statistic
+              title="投資収益率"
+              value={analysis.roi}
+              precision={1}
+              suffix="%"
+              valueStyle={{ color: roiStatus.color, fontSize: '32px' }}
+            />
+            <Row gutter={16} style={{ width: '100%' }}>
+              <Col span={12}>
+                <Statistic
+                  title="支出額"
+                  value={analysis.totalSpent}
+                  prefix="¥"
+                  precision={0}
+                />
+              </Col>
+              <Col span={12}>
+                <Statistic
+                  title="節約額"
+                  value={analysis.totalSaved}
+                  prefix="¥"
+                  precision={0}
+                  valueStyle={{ color: '#52c41a' }}
+                />
+              </Col>
+            </Row>
+          </Space>
+        </Card>
+      </Col>
 
       {/* 価値スコア */}
-      <div className="col-lg-4 mb-4">
-        <div className="card h-100">
-          <div className="card-header">
-            <h6 className="mb-0">
-              <i className="bi bi-star me-2"></i>購入価値スコア
-            </h6>
-          </div>
-          <div className="card-body">
-            <div className="text-center mb-3">
-              <h2 className={`text-${getValueScoreColor(analysis.valueScore)}`}>
-                {analysis.valueScore.toFixed(0)}
-              </h2>
-              <p className="text-muted mb-0">総合評価</p>
-            </div>
-            <div className="progress mb-2">
-              <div 
-                className={`progress-bar bg-${getValueScoreColor(analysis.valueScore)}`}
-                style={{ width: `${Math.min(analysis.valueScore, 100)}%` }}
-              />
-            </div>
-            <small className="text-muted">
-              {analysis.valueScore >= 70 ? '優秀な購入判断' : 
-               analysis.valueScore >= 50 ? '良好な購入判断' : '改善の余地あり'}
-            </small>
-          </div>
-        </div>
-      </div>
+      <Col xs={24} lg={8}>
+        <Card>
+          <Space direction="vertical" style={{ width: '100%' }} align="center">
+            <StarOutlined style={{ fontSize: '24px' }} />
+            <Title level={5}>購入価値スコア</Title>
+            <Statistic
+              title="総合評価"
+              value={analysis.valueScore}
+              precision={0}
+              valueStyle={{ color: valueScoreStatus.color, fontSize: '32px' }}
+            />
+            <Progress
+              percent={Math.min(analysis.valueScore, 100)}
+              strokeColor={valueScoreStatus.color}
+              showInfo={false}
+            />
+            <Text type="secondary">{valueScoreStatus.text}</Text>
+          </Space>
+        </Card>
+      </Col>
 
       {/* 効率性指標 */}
-      <div className="col-lg-4 mb-4">
-        <div className="card h-100">
-          <div className="card-header">
-            <h6 className="mb-0">
-              <i className="bi bi-speedometer2 me-2"></i>購入効率
-            </h6>
-          </div>
-          <div className="card-body">
-            <div className="mb-3">
-              <div className="d-flex justify-content-between">
-                <small className="text-muted">平均購入価格</small>
-                <strong>¥{Math.round(analysis.averageSpentPerGame).toLocaleString()}</strong>
-              </div>
-            </div>
-            <div className="mb-3">
-              <div className="d-flex justify-content-between">
-                <small className="text-muted">平均節約額</small>
-                <strong className="text-success">¥{Math.round(analysis.averageSavingsPerGame).toLocaleString()}</strong>
-              </div>
-            </div>
-            <div className="mb-3">
-              <div className="d-flex justify-content-between">
-                <small className="text-muted">平均定価</small>
-                <strong>¥{Math.round(analysis.averageFullPrice).toLocaleString()}</strong>
-              </div>
-            </div>
-            <div>
-              <div className="d-flex justify-content-between">
-                <small className="text-muted">購入効率</small>
-                <strong>{(analysis.averageSavingsPerGame / analysis.averageSpentPerGame * 100).toFixed(1)}%</strong>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <Col xs={24} lg={8}>
+        <Card>
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <Space>
+              <DashboardOutlined style={{ fontSize: '24px' }} />
+              <Title level={5}>購入効率</Title>
+            </Space>
+            <Row gutter={[16, 16]}>
+              <Col span={24}>
+                <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+                  <Text type="secondary">平均購入価格</Text>
+                  <Text strong>¥{Math.round(analysis.averageSpentPerGame).toLocaleString()}</Text>
+                </Space>
+              </Col>
+              <Col span={24}>
+                <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+                  <Text type="secondary">平均節約額</Text>
+                  <Text strong style={{ color: '#52c41a' }}>¥{Math.round(analysis.averageSavingsPerGame).toLocaleString()}</Text>
+                </Space>
+              </Col>
+              <Col span={24}>
+                <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+                  <Text type="secondary">平均定価</Text>
+                  <Text strong>¥{Math.round(analysis.averageFullPrice).toLocaleString()}</Text>
+                </Space>
+              </Col>
+              <Col span={24}>
+                <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+                  <Text type="secondary">購入効率</Text>
+                  <Text strong>{(analysis.averageSavingsPerGame / analysis.averageSpentPerGame * 100).toFixed(1)}%</Text>
+                </Space>
+              </Col>
+            </Row>
+          </Space>
+        </Card>
+      </Col>
 
       {/* 詳細分析 */}
-      <div className="col-12 mb-4">
-        <div className="card">
-          <div className="card-header">
-            <h6 className="mb-0">
-              <i className="bi bi-clipboard-data me-2"></i>詳細ROI分析
-            </h6>
-          </div>
-          <div className="card-body">
-            <div className="row">
-              <div className="col-md-6">
-                <h6>購入パターン分析</h6>
-                {expenseData.recentPurchases.length > 0 ? (
+      <Col span={24}>
+        <Card title="詳細ROI分析">
+          <Row gutter={24}>
+            <Col xs={24} md={12}>
+              <Title level={5}>購入パターン分析</Title>
+              {expenseData.recentPurchases.length > 0 ? (
+                <Space direction="vertical" style={{ width: '100%' }}>
                   <div>
-                    <div className="mb-2">
-                      <small className="text-muted">高割引購入率 (50%+)</small>
-                      <div className="d-flex align-items-center">
-                        <div className="progress flex-grow-1 me-2">
-                          <div 
-                            className="progress-bar bg-success" 
-                            style={{ 
-                              width: `${(expenseData.recentPurchases.filter(p => p.discount_percent >= 50).length / expenseData.recentPurchases.length * 100)}%` 
-                            }}
-                          />
-                        </div>
-                        <small className="fw-bold">
-                          {((expenseData.recentPurchases.filter(p => p.discount_percent >= 50).length / expenseData.recentPurchases.length) * 100).toFixed(0)}%
-                        </small>
-                      </div>
-                    </div>
-                    <div className="mb-2">
-                      <small className="text-muted">中割引購入率 (20-49%)</small>
-                      <div className="d-flex align-items-center">
-                        <div className="progress flex-grow-1 me-2">
-                          <div 
-                            className="progress-bar bg-warning" 
-                            style={{ 
-                              width: `${(expenseData.recentPurchases.filter(p => p.discount_percent >= 20 && p.discount_percent < 50).length / expenseData.recentPurchases.length * 100)}%` 
-                            }}
-                          />
-                        </div>
-                        <small className="fw-bold">
-                          {((expenseData.recentPurchases.filter(p => p.discount_percent >= 20 && p.discount_percent < 50).length / expenseData.recentPurchases.length) * 100).toFixed(0)}%
-                        </small>
-                      </div>
-                    </div>
-                    <div>
-                      <small className="text-muted">低割引購入率 (0-19%)</small>
-                      <div className="d-flex align-items-center">
-                        <div className="progress flex-grow-1 me-2">
-                          <div 
-                            className="progress-bar bg-danger" 
-                            style={{ 
-                              width: `${(expenseData.recentPurchases.filter(p => p.discount_percent < 20).length / expenseData.recentPurchases.length * 100)}%` 
-                            }}
-                          />
-                        </div>
-                        <small className="fw-bold">
-                          {((expenseData.recentPurchases.filter(p => p.discount_percent < 20).length / expenseData.recentPurchases.length) * 100).toFixed(0)}%
-                        </small>
-                      </div>
-                    </div>
+                    <Space style={{ width: '100%', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <Text type="secondary">高割引購入率 (50%+)</Text>
+                      <Text strong>
+                        {((expenseData.recentPurchases.filter(p => p.discount_percent >= 50).length / expenseData.recentPurchases.length) * 100).toFixed(0)}%
+                      </Text>
+                    </Space>
+                    <Progress
+                      percent={(expenseData.recentPurchases.filter(p => p.discount_percent >= 50).length / expenseData.recentPurchases.length * 100)}
+                      strokeColor="#52c41a"
+                      showInfo={false}
+                    />
                   </div>
-                ) : (
-                  <p className="text-muted">データがありません</p>
-                )}
-              </div>
-              
-              <div className="col-md-6">
-                <h6>投資回収予測</h6>
-                {analysis.roi > 0 ? (
                   <div>
-                    <div className="alert alert-success">
-                      <small>
-                        <strong>優良投資:</strong> 現在の節約率{analysis.roi.toFixed(1)}%で、
-                        支出額の{analysis.roi.toFixed(1)}%相当の価値を既に回収済み
-                      </small>
-                    </div>
-                    <div className="mb-2">
-                      <small className="text-muted">次の¥10,000投資時の予想節約額</small>
-                      <div className="fw-bold text-success">
-                        ¥{Math.round(10000 * (analysis.roi / 100)).toLocaleString()}
-                      </div>
-                    </div>
-                    <div>
-                      <small className="text-muted">月間平均節約ペース</small>
-                      <div className="fw-bold">
-                        ¥{Math.round(analysis.totalSaved / Math.max(expenseData.monthlyTrends.expenses.length, 1)).toLocaleString()}/月
-                      </div>
-                    </div>
+                    <Space style={{ width: '100%', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <Text type="secondary">中割引購入率 (20-49%)</Text>
+                      <Text strong>
+                        {((expenseData.recentPurchases.filter(p => p.discount_percent >= 20 && p.discount_percent < 50).length / expenseData.recentPurchases.length) * 100).toFixed(0)}%
+                      </Text>
+                    </Space>
+                    <Progress
+                      percent={(expenseData.recentPurchases.filter(p => p.discount_percent >= 20 && p.discount_percent < 50).length / expenseData.recentPurchases.length * 100)}
+                      strokeColor="#faad14"
+                      showInfo={false}
+                    />
                   </div>
-                ) : (
-                  <div className="alert alert-warning">
-                    <small>投資回収データが不足しています。より多くの購入データが必要です。</small>
+                  <div>
+                    <Space style={{ width: '100%', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <Text type="secondary">低割引購入率 (0-19%)</Text>
+                      <Text strong>
+                        {((expenseData.recentPurchases.filter(p => p.discount_percent < 20).length / expenseData.recentPurchases.length) * 100).toFixed(0)}%
+                      </Text>
+                    </Space>
+                    <Progress
+                      percent={(expenseData.recentPurchases.filter(p => p.discount_percent < 20).length / expenseData.recentPurchases.length * 100)}
+                      strokeColor="#f5222d"
+                      showInfo={false}
+                    />
                   </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+                </Space>
+              ) : (
+                <Text type="secondary">データがありません</Text>
+              )}
+            </Col>
+            
+            <Col xs={24} md={12}>
+              <Title level={5}>投資回収予測</Title>
+              {analysis.roi > 0 ? (
+                <Space direction="vertical" style={{ width: '100%' }}>
+                  <Alert
+                    message="優良投資"
+                    description={`現在の節約率${analysis.roi.toFixed(1)}%で、支出額の${analysis.roi.toFixed(1)}%相当の価値を既に回収済み`}
+                    type="success"
+                    showIcon
+                  />
+                  <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+                    <Text type="secondary">次の¥10,000投資時の予想節約額</Text>
+                    <Text strong style={{ color: '#52c41a' }}>
+                      ¥{Math.round(10000 * (analysis.roi / 100)).toLocaleString()}
+                    </Text>
+                  </Space>
+                  <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+                    <Text type="secondary">月間平均節約ペース</Text>
+                    <Text strong>
+                      ¥{Math.round(analysis.totalSaved / Math.max(expenseData.monthlyTrends.expenses.length, 1)).toLocaleString()}/月
+                    </Text>
+                  </Space>
+                </Space>
+              ) : (
+                <Alert
+                  message="投資回収データが不足しています。より多くの購入データが必要です。"
+                  type="warning"
+                  showIcon
+                />
+              )}
+            </Col>
+          </Row>
+        </Card>
+      </Col>
+    </>
   )
 }

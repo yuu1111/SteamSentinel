@@ -1,7 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react'
+import { Modal, Card, Typography, Spin, Alert, Space } from 'antd'
+import { LineChartOutlined, InfoCircleOutlined } from '@ant-design/icons'
 import { api } from '../utils/api'
 import { useAlert } from '../contexts/AlertContext'
-import { formatDateJP } from '../utils/dateUtils'
+
+const { Text } = Typography
 
 interface PriceChartModalProps {
   show: boolean
@@ -41,7 +44,7 @@ export const PriceChartModal: React.FC<PriceChartModalProps> = ({
   }, [show, steamAppId])
 
   const loadPriceHistory = async () => {
-    if (!steamAppId) {return}
+    if (!steamAppId) return
 
     try {
       setLoading(true)
@@ -53,9 +56,8 @@ export const PriceChartModal: React.FC<PriceChartModalProps> = ({
           return
         }
         
-        // priceHistoryにdate形式でAPIから取得した価格履歴を変換
         const formattedData = response.data.priceHistory.map((item: any) => ({
-          date: formatDateJP(item.recorded_at, 'date'),
+          date: new Date(item.recorded_at).toISOString().split('T')[0],
           current_price: item.current_price
         }))
         setPriceHistory(formattedData)
@@ -71,17 +73,16 @@ export const PriceChartModal: React.FC<PriceChartModalProps> = ({
   }
 
   const createChart = (data: PriceHistoryData[]) => {
-    if (!chartRef.current || !(window as any).Chart) {return}
+    if (!chartRef.current || !(window as any).Chart) return
 
-    // 既存のチャートを破棄
     if (chartInstanceRef.current) {
       chartInstanceRef.current.destroy()
     }
 
     const ctx = chartRef.current.getContext('2d')
-    if (!ctx) {return}
+    if (!ctx) return
 
-    const labels = data.map(item => item.date)
+    const labels = data.map(item => new Date(item.date).toLocaleDateString('ja-JP'))
     const currentPrices = data.map(item => item.current_price)
 
     chartInstanceRef.current = new ((window as any).Chart)(ctx, {
@@ -92,12 +93,12 @@ export const PriceChartModal: React.FC<PriceChartModalProps> = ({
           {
             label: '価格',
             data: currentPrices,
-            borderColor: 'rgb(54, 162, 235)',
-            backgroundColor: 'rgba(54, 162, 235, 0.1)',
+            borderColor: '#1890ff',
+            backgroundColor: 'rgba(24, 144, 255, 0.1)',
             tension: 0.1,
             fill: false,
-            pointBackgroundColor: 'rgb(54, 162, 235)',
-            pointBorderColor: 'rgb(54, 162, 235)',
+            pointBackgroundColor: '#1890ff',
+            pointBorderColor: '#1890ff',
             pointRadius: 4,
             pointHoverRadius: 6
           }
@@ -149,46 +150,50 @@ export const PriceChartModal: React.FC<PriceChartModalProps> = ({
     })
   }
 
-  if (!show) {return null}
-
   return (
-    <div className="modal fade show d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-      <div className="modal-dialog modal-lg">
-        <div className="modal-content">
-          <div className="modal-header">
-            <h5 className="modal-title">価格推移グラフ - {gameName}</h5>
-            <button type="button" className="btn-close" onClick={onHide}></button>
+    <Modal
+      title={
+        <Space>
+          <LineChartOutlined />
+          価格推移グラフ - {gameName}
+        </Space>
+      }
+      open={show}
+      onCancel={onHide}
+      footer={null}
+      width={900}
+    >
+      {loading ? (
+        <Card style={{ textAlign: 'center', padding: '60px 0' }}>
+          <Space direction="vertical">
+            <Spin size="large" />
+            <Text>価格履歴を読み込み中...</Text>
+          </Space>
+        </Card>
+      ) : priceHistory.length > 0 ? (
+        <>
+          <div style={{ position: 'relative', height: '400px', width: '100%' }}>
+            <canvas ref={chartRef}></canvas>
           </div>
-          <div className="modal-body">
-            {loading ? (
-              <div className="text-center py-5">
-                <div className="spinner-border" role="status">
-                  <span className="visually-hidden">読み込み中...</span>
-                </div>
-                <div className="mt-2">価格履歴を読み込み中...</div>
-              </div>
-            ) : priceHistory.length > 0 ? (
-              <div style={{ position: 'relative', height: '400px', width: '100%' }}>
-                <canvas ref={chartRef}></canvas>
-              </div>
-            ) : (
-              <div className="text-center py-5">
-                <i className="bi bi-graph-up display-1 text-muted"></i>
-                <div className="mt-2 text-muted">価格履歴データがありません</div>
-              </div>
-            )}
-            
-            {priceHistory.length > 0 && (
-              <div className="mt-3">
-                <small className="text-muted">
-                  <i className="bi bi-info-circle me-1"></i>
-                  過去{priceHistory.length}回分の価格データを表示しています（セール価格含む）
-                </small>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
+          <Alert
+            message={
+              <Space>
+                <InfoCircleOutlined />
+                過去{priceHistory.length}回分の価格データを表示しています（セール価格含む）
+              </Space>
+            }
+            type="info"
+            style={{ marginTop: 16 }}
+          />
+        </>
+      ) : (
+        <Card style={{ textAlign: 'center', padding: '60px 0' }}>
+          <Space direction="vertical">
+            <LineChartOutlined style={{ fontSize: '64px', color: '#d9d9d9' }} />
+            <Text type="secondary">価格履歴データがありません</Text>
+          </Space>
+        </Card>
+      )}
+    </Modal>
   )
 }

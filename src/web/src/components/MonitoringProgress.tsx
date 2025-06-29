@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react'
+import { Card, Progress, Typography, Space, Row, Col, Spin } from 'antd'
+import { ClockCircleOutlined, ExclamationCircleOutlined } from '@ant-design/icons'
 import { api } from '../utils/api'
 import { MonitoringProgress as MonitoringProgressType } from '../types'
+
+const { Text } = Typography
 
 interface MonitoringProgressProps {
   onMonitoringComplete?: () => void
@@ -87,16 +91,14 @@ export const MonitoringProgress: React.FC<MonitoringProgressProps> = ({ onMonito
   // 初期チェック中は軽量なローディング表示（API応答が遅い場合のみ）
   if (isChecking) {
     return (
-      <div className="row mb-4">
-        <div className="col-12">
-          <div className="text-center py-2">
-            <div className="spinner-border spinner-border-sm text-info" role="status">
-              <span className="visually-hidden">監視状況確認中...</span>
-            </div>
-            <small className="text-muted ms-2">監視状況を確認中...</small>
-          </div>
-        </div>
-      </div>
+      <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+        <Col span={24}>
+          <Space direction="vertical" style={{ width: '100%' }} align="center">
+            <Spin size="small" />
+            <Text type="secondary" style={{ fontSize: 12 }}>監視状況を確認中...</Text>
+          </Space>
+        </Col>
+      </Row>
     )
   }
   
@@ -118,56 +120,71 @@ export const MonitoringProgress: React.FC<MonitoringProgressProps> = ({ onMonito
   }
 
   return (
-    <div className="row mb-4">
-      <div className="col-12">
-        <div className="card border-info">
-          <div className="card-header bg-info text-white">
-            <h6 className="mb-0">
-              <div className="spinner-grow spinner-grow-sm spinner-grow-fast me-2" role="status">
-                <span className="visually-hidden">Loading...</span>
-              </div>
-              ゲーム情報を取得中...
-            </h6>
-          </div>
-          <div className="card-body">
-            <div className="d-flex justify-content-between align-items-center mb-2">
-              <div className="text-truncate flex-grow-1 me-3">
-                <small className="text-muted">現在処理中:</small><br />
-                <span className="current-game-name fw-bold">
-                  {progress.currentGame || '待機中...'}
-                </span>
-              </div>
-              <div className="text-end">
-                <span className="badge bg-primary">
+    <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+      <Col span={24}>
+        <Card
+          title={
+            <Space align="center">
+              <Spin size="small" />
+              <Text>ゲーム情報を取得中...</Text>
+            </Space>
+          }
+          styles={{ 
+            header: { 
+              backgroundColor: '#1890ff', 
+              color: 'white' 
+            } 
+          }}
+        >
+          <Space direction="vertical" style={{ width: '100%' }} size="middle">
+            <Row justify="space-between" align="middle">
+              <Col flex="auto">
+                <div>
+                  <Text type="secondary" style={{ fontSize: 12 }}>現在処理中:</Text>
+                  <br />
+                  <Text strong style={{ fontSize: 14 }}>
+                    {progress.currentGame || '待機中...'}
+                  </Text>
+                </div>
+              </Col>
+              <Col>
+                <Text strong style={{ 
+                  background: '#1890ff', 
+                  color: 'white', 
+                  padding: '2px 8px', 
+                  borderRadius: '4px',
+                  fontSize: 12
+                }}>
                   {progress.completedGames}/{progress.totalGames}
-                </span>
-              </div>
-            </div>
+                </Text>
+              </Col>
+            </Row>
             
-            <div className="progress mb-2" style={{ height: '8px' }}>
-              <div 
-                className="progress-bar progress-bar-striped progress-bar-animated bg-info"
-                role="progressbar"
-                style={{ width: `${percentage}%` }}
-                aria-valuenow={percentage}
-                aria-valuemin={0}
-                aria-valuemax={100}
-              ></div>
-            </div>
+            <Progress 
+              percent={percentage} 
+              strokeColor="#1890ff"
+              trailColor="#f0f0f0"
+              size="small"
+              showInfo={false}
+            />
             
-            <div className="d-flex justify-content-between">
-              <small className="text-muted">
-                <i className="bi bi-clock me-1"></i>
-                残り時間: {formatTimeRemaining(progress.estimatedTimeRemaining)}
-              </small>
-              <small className="text-muted">
-                <i className="bi bi-exclamation-triangle me-1"></i>
-                失敗: {progress.failedGames || 0}件
-              </small>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+            <Row justify="space-between">
+              <Col>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  <ClockCircleOutlined style={{ marginRight: 4 }} />
+                  残り時間: {formatTimeRemaining(progress.estimatedTimeRemaining)}
+                </Text>
+              </Col>
+              <Col>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  <ExclamationCircleOutlined style={{ marginRight: 4 }} />
+                  失敗: {progress.failedGames || 0}件
+                </Text>
+              </Col>
+            </Row>
+          </Space>
+        </Card>
+      </Col>
+    </Row>
   )
 }

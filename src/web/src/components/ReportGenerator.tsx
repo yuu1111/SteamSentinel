@@ -1,15 +1,22 @@
 import React, { useState, useEffect } from 'react'
+import { Modal, Card, Typography, Tabs, Row, Col, Input, Select, Switch, Button, Space, Alert } from 'antd'
+import { FileTextOutlined, SettingOutlined, EyeOutlined, DownloadOutlined, BarChartOutlined, TableOutlined, WalletOutlined, TrophyOutlined, FileOutlined, LineChartOutlined } from '@ant-design/icons'
 import { ReportConfig, ReportSection, ExpenseData, BudgetData } from '../types'
 import { useAlert } from '../contexts/AlertContext'
-import { formatDateJP, getCurrentJstDateTime } from '../utils/dateUtils'
+
+const { Text, Title } = Typography
+const { TabPane } = Tabs
+const { Option } = Select
 
 interface ReportGeneratorProps {
+  show: boolean
   expenseData: ExpenseData | null
   budgets?: BudgetData[]
   onClose: () => void
 }
 
 export const ReportGenerator: React.FC<ReportGeneratorProps> = ({
+  show,
   expenseData,
   budgets = [],
   onClose
@@ -70,13 +77,13 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({
 
   const getSectionIcon = (type: ReportSection['type']) => {
     switch (type) {
-      case 'summary': return 'clipboard-data'
-      case 'charts': return 'bar-chart-line'
-      case 'table': return 'table'
-      case 'roi': return 'graph-up-arrow'
-      case 'budget': return 'wallet'
-      case 'trends': return 'trending-up'
-      default: return 'file-text'
+      case 'summary': return <FileOutlined />
+      case 'charts': return <BarChartOutlined />
+      case 'table': return <TableOutlined />
+      case 'roi': return <TrophyOutlined />
+      case 'budget': return <WalletOutlined />
+      case 'trends': return <LineChartOutlined />
+      default: return <FileTextOutlined />
     }
   }
 
@@ -109,7 +116,7 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({
 
     const enabledSections = reportConfig.sections.filter(s => s.isEnabled)
     let preview = `# ${reportConfig.name}\n\n`
-    preview += `生成日時: ${getCurrentJstDateTime()} JST\n`
+    preview += `生成日時: ${new Date().toLocaleString('ja-JP')}\n`
     preview += `レポート期間: ${reportConfig.type}\n`
     preview += `フォーマット: ${reportConfig.format.toUpperCase()}\n\n`
 
@@ -129,10 +136,6 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({
           preview += `### 月間支出トレンド\n`
           expenseData.monthlyTrends.expenses.forEach(month => {
             preview += `- ${month.month}: ¥${month.amount.toLocaleString()}\n`
-          })
-          preview += `\n### カテゴリ別支出\n`
-          Object.entries(expenseData.categories).forEach(([, cat]) => {
-            preview += `- ${cat.label}: ¥${cat.total.toLocaleString()} (${cat.count}件)\n`
           })
           preview += '\n'
           break
@@ -162,7 +165,7 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({
           preview += '| ゲーム名 | 購入価格 | 割引率 | 購入日 |\n'
           preview += '|---------|---------|--------|--------|\n'
           expenseData.recentPurchases.slice(0, 10).forEach(purchase => {
-            preview += `| ${purchase.game_name} | ¥${purchase.trigger_price.toLocaleString()} | ${purchase.discount_percent}% | ${formatDateJP(purchase.created_at, 'date')} |\n`
+            preview += `| ${purchase.game_name} | ¥${purchase.trigger_price.toLocaleString()} | ${purchase.discount_percent}% | ${new Date(purchase.created_at).toLocaleDateString('ja-JP')} |\n`
           })
           preview += '\n'
           break
@@ -176,8 +179,7 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({
     try {
       setGenerating(true)
       
-      // 実際の実装ではAPIを呼び出してレポートを生成
-      await new Promise(resolve => setTimeout(resolve, 2000)) // Simulate generation time
+      await new Promise(resolve => setTimeout(resolve, 2000))
       
       if (reportConfig.format === 'csv') {
         generateCSV()
@@ -196,7 +198,7 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({
   }
 
   const generateCSV = () => {
-    if (!expenseData) {return}
+    if (!expenseData) return
 
     const csvContent = [
       ['ゲーム名', '購入価格', '割引率', '購入日'],
@@ -204,7 +206,7 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({
         purchase.game_name,
         purchase.trigger_price.toString(),
         purchase.discount_percent.toString(),
-        formatDateJP(purchase.created_at, 'date')
+        new Date(purchase.created_at).toLocaleDateString('ja-JP')
       ])
     ]
 
@@ -221,7 +223,6 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({
       },
       summary: expenseData?.summary,
       monthlyTrends: expenseData?.monthlyTrends,
-      categories: expenseData?.categories,
       recentPurchases: expenseData?.recentPurchases,
       budgets: budgets
     }
@@ -231,7 +232,6 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({
   }
 
   const generatePDF = () => {
-    // PDFの生成は実際にはライブラリ（jsPDF等）を使用
     const pdfContent = `PDF Report: ${reportConfig.name}\n\n${previewData}`
     downloadFile(pdfContent, `${reportConfig.name}.txt`, 'text/plain')
     showSuccess('PDFレポート機能は今後実装予定です。テキストファイルとして出力しました。')
@@ -257,185 +257,172 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({
 
   if (!expenseData) {
     return (
-      <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-        <div className="modal-dialog modal-lg">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h5 className="modal-title">レポート生成</h5>
-              <button type="button" className="btn-close" onClick={onClose} />
-            </div>
-            <div className="modal-body">
-              <div className="alert alert-warning">
-                <i className="bi bi-exclamation-triangle me-2"></i>
-                レポート生成に必要なデータが不足しています。
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={onClose}>閉じる</button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <Modal
+        title="レポート生成"
+        open={show}
+        onCancel={onClose}
+        footer={[
+          <Button key="close" onClick={onClose}>
+            閉じる
+          </Button>
+        ]}
+        width={600}
+      >
+        <Alert
+          message="警告"
+          description="レポート生成に必要なデータが不足しています。"
+          type="warning"
+          showIcon
+        />
+      </Modal>
     )
   }
 
   return (
-    <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-      <div className="modal-dialog modal-lg">
-        <div className="modal-content">
-          <div className="modal-header">
-            <h5 className="modal-title">
-              <i className="bi bi-file-earmark-text me-2"></i>レポート生成
-            </h5>
-            <button type="button" className="btn-close" onClick={onClose} />
-          </div>
-          
-          <div className="modal-body">
-            {/* Tab Navigation */}
-            <ul className="nav nav-tabs mb-4">
-              <li className="nav-item">
-                <button
-                  className={`nav-link ${activeTab === 'config' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('config')}
+    <Modal
+      title={
+        <Space>
+          <FileTextOutlined />
+          レポート生成
+        </Space>
+      }
+      open={show}
+      onCancel={onClose}
+      footer={[
+        <Space key="footer">
+          <Text type="secondary">
+            {reportConfig.sections.filter(s => s.isEnabled).length} セクションが選択されています
+          </Text>
+          <Button onClick={onClose}>
+            キャンセル
+          </Button>
+          <Button 
+            type="primary"
+            icon={<DownloadOutlined />}
+            onClick={generateReport}
+            disabled={generating || reportConfig.sections.filter(s => s.isEnabled).length === 0}
+            loading={generating}
+          >
+            レポート生成
+          </Button>
+        </Space>
+      ]}
+      width={900}
+    >
+      <Tabs activeKey={activeTab} onChange={(key) => setActiveTab(key as any)}>
+        <TabPane
+          tab={
+            <Space>
+              <SettingOutlined />
+              設定
+            </Space>
+          }
+          key="config"
+        >
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <Row gutter={16}>
+              <Col span={12}>
+                <Text>レポート名</Text>
+                <Input
+                  value={reportConfig.name}
+                  onChange={(e) => setReportConfig(prev => ({ ...prev, name: e.target.value }))}
+                  style={{ marginTop: 8 }}
+                />
+              </Col>
+              <Col span={6}>
+                <Text>期間</Text>
+                <Select
+                  value={reportConfig.type}
+                  onChange={(value) => setReportConfig(prev => ({ ...prev, type: value as any }))}
+                  style={{ width: '100%', marginTop: 8 }}
                 >
-                  <i className="bi bi-gear me-1"></i>設定
-                </button>
-              </li>
-              <li className="nav-item">
-                <button
-                  className={`nav-link ${activeTab === 'preview' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('preview')}
+                  <Option value="monthly">月間</Option>
+                  <Option value="yearly">年間</Option>
+                  <Option value="custom">カスタム</Option>
+                  <Option value="summary">総合</Option>
+                </Select>
+              </Col>
+              <Col span={6}>
+                <Text>フォーマット</Text>
+                <Select
+                  value={reportConfig.format}
+                  onChange={(value) => setReportConfig(prev => ({ ...prev, format: value as any }))}
+                  style={{ width: '100%', marginTop: 8 }}
                 >
-                  <i className="bi bi-eye me-1"></i>プレビュー
-                </button>
-              </li>
-            </ul>
+                  <Option value="pdf">PDF</Option>
+                  <Option value="csv">CSV</Option>
+                  <Option value="json">JSON</Option>
+                </Select>
+              </Col>
+            </Row>
 
-            {/* Config Tab */}
-            {activeTab === 'config' && (
-              <div>
-                <div className="row mb-4">
-                  <div className="col-md-6">
-                    <label className="form-label">レポート名</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={reportConfig.name}
-                      onChange={(e) => setReportConfig(prev => ({ ...prev, name: e.target.value }))}
-                    />
-                  </div>
-                  <div className="col-md-3">
-                    <label className="form-label">期間</label>
-                    <select
-                      className="form-select"
-                      value={reportConfig.type}
-                      onChange={(e) => setReportConfig(prev => ({ ...prev, type: e.target.value as any }))}
-                    >
-                      <option value="monthly">月間</option>
-                      <option value="yearly">年間</option>
-                      <option value="custom">カスタム</option>
-                      <option value="summary">総合</option>
-                    </select>
-                  </div>
-                  <div className="col-md-3">
-                    <label className="form-label">フォーマット</label>
-                    <select
-                      className="form-select"
-                      value={reportConfig.format}
-                      onChange={(e) => setReportConfig(prev => ({ ...prev, format: e.target.value as any }))}
-                    >
-                      <option value="pdf">PDF</option>
-                      <option value="csv">CSV</option>
-                      <option value="json">JSON</option>
-                    </select>
-                  </div>
-                </div>
-
-                <h6>含めるセクション</h6>
-                <div className="row">
-                  {reportConfig.sections.map(section => (
-                    <div key={section.id} className="col-lg-6 mb-3">
-                      <div className="card">
-                        <div className="card-body">
-                          <div className="d-flex justify-content-between align-items-center">
-                            <div className="d-flex align-items-center">
-                              <i className={`bi bi-${getSectionIcon(section.type)} me-2`}></i>
-                              <div>
-                                <strong>{section.title}</strong>
-                                <br />
-                                <small className="text-muted">{getSectionDescription(section.type)}</small>
-                              </div>
-                            </div>
-                            <div className="form-check form-switch">
-                              <input
-                                className="form-check-input"
-                                type="checkbox"
-                                checked={section.isEnabled}
-                                onChange={() => toggleSection(section.id)}
-                              />
-                            </div>
+            <Title level={5}>含めるセクション</Title>
+            <Row gutter={[16, 16]}>
+              {reportConfig.sections.map(section => (
+                <Col key={section.id} xs={24} lg={12}>
+                  <Card>
+                    <Row justify="space-between" align="middle">
+                      <Col>
+                        <Space>
+                          {getSectionIcon(section.type)}
+                          <div>
+                            <Text strong>{section.title}</Text>
+                            <br />
+                            <Text type="secondary" style={{ fontSize: '12px' }}>
+                              {getSectionDescription(section.type)}
+                            </Text>
                           </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+                        </Space>
+                      </Col>
+                      <Col>
+                        <Switch
+                          checked={section.isEnabled}
+                          onChange={() => toggleSection(section.id)}
+                        />
+                      </Col>
+                    </Row>
+                  </Card>
+                </Col>
+              ))}
+            </Row>
+          </Space>
+        </TabPane>
 
-            {/* Preview Tab */}
-            {activeTab === 'preview' && (
-              <div>
-                <div className="alert alert-info">
-                  <i className="bi bi-info-circle me-2"></i>
-                  以下は生成されるレポートのプレビューです。
-                </div>
-                <div 
-                  className="border rounded p-3"
-                  style={{ 
-                    height: '400px', 
-                    overflow: 'auto', 
-                    backgroundColor: '#f8f9fa',
-                    fontFamily: 'monospace',
-                    fontSize: '0.9em',
-                    whiteSpace: 'pre-wrap'
-                  }}
-                >
-                  {previewData}
-                </div>
-              </div>
-            )}
-          </div>
-          
-          <div className="modal-footer">
-            <div className="me-auto">
-              <small className="text-muted">
-                {reportConfig.sections.filter(s => s.isEnabled).length} セクションが選択されています
-              </small>
-            </div>
-            <button className="btn btn-secondary" onClick={onClose}>
-              キャンセル
-            </button>
-            <button 
-              className="btn btn-primary" 
-              onClick={generateReport}
-              disabled={generating || reportConfig.sections.filter(s => s.isEnabled).length === 0}
+        <TabPane
+          tab={
+            <Space>
+              <EyeOutlined />
+              プレビュー
+            </Space>
+          }
+          key="preview"
+        >
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <Alert
+              message="情報"
+              description="以下は生成されるレポートのプレビューです。"
+              type="info"
+              showIcon
+            />
+            <Card
+              style={{ 
+                height: '500px', 
+                overflow: 'auto',
+                backgroundColor: '#fafafa'
+              }}
             >
-              {generating ? (
-                <>
-                  <span className="spinner-border spinner-border-sm me-2" />
-                  生成中...
-                </>
-              ) : (
-                <>
-                  <i className="bi bi-download me-1"></i>
-                  レポート生成
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+              <pre style={{ 
+                fontFamily: 'monospace',
+                fontSize: '13px',
+                whiteSpace: 'pre-wrap',
+                margin: 0
+              }}>
+                {previewData}
+              </pre>
+            </Card>
+          </Space>
+        </TabPane>
+      </Tabs>
+    </Modal>
   )
 }

@@ -1,14 +1,22 @@
 import React, { useState } from 'react'
+import { Modal, Card, Typography, Tabs, Row, Col, Input, Select, Switch, Button, Space, Tag } from 'antd'
+import { SettingOutlined, LayoutOutlined, AppstoreOutlined, BgColorsOutlined, SlidersFilled, SunOutlined, MoonOutlined, CheckCircleOutlined, DownloadOutlined, RedoOutlined, AlertOutlined, ShoppingCartOutlined, LineChartOutlined } from '@ant-design/icons'
 import { DashboardLayout, DashboardWidget, DashboardTheme, UserPreferences } from '../types'
 import { useAlert } from '../contexts/AlertContext'
 
+const { Text, Title } = Typography
+const { TabPane } = Tabs
+const { Option } = Select
+
 interface DashboardCustomizerProps {
+  show: boolean
   currentLayout?: DashboardLayout
-  onLayoutChange: (layout: DashboardLayout) => void
+  onLayoutChange?: (layout: DashboardLayout) => void
   onClose: () => void
 }
 
 export const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
+  show,
   currentLayout,
   onLayoutChange,
   onClose
@@ -17,7 +25,6 @@ export const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
     currentLayout || getDefaultLayout()
   )
   const [activeTab, setActiveTab] = useState<'layout' | 'widgets' | 'theme' | 'preferences'>('layout')
-  // const [selectedWidget, setSelectedWidget] = useState<DashboardWidget | null>(null)
   const [themes] = useState<DashboardTheme[]>(getAvailableThemes())
   const [preferences, setPreferences] = useState<UserPreferences>(getDefaultPreferences())
   const { showSuccess, showError } = useAlert()
@@ -91,44 +98,44 @@ export const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
         id: 'blue',
         name: 'ブルー',
         colors: {
-          primary: '#007bff',
+          primary: '#1890ff',
           secondary: '#6c757d',
-          success: '#28a745',
-          warning: '#ffc107',
-          danger: '#dc3545',
-          info: '#17a2b8',
+          success: '#52c41a',
+          warning: '#faad14',
+          danger: '#f5222d',
+          info: '#13c2c2',
           background: '#ffffff',
-          surface: '#f8f9fa',
-          text: '#212529'
+          surface: '#f5f5f5',
+          text: '#262626'
         }
       },
       {
         id: 'green',
         name: 'グリーン',
         colors: {
-          primary: '#28a745',
+          primary: '#52c41a',
           secondary: '#6c757d',
-          success: '#20c997',
-          warning: '#ffc107',
-          danger: '#dc3545',
-          info: '#17a2b8',
+          success: '#73d13d',
+          warning: '#faad14',
+          danger: '#f5222d',
+          info: '#13c2c2',
           background: '#ffffff',
-          surface: '#f8f9fa',
-          text: '#212529'
+          surface: '#f5f5f5',
+          text: '#262626'
         }
       },
       {
         id: 'dark',
         name: 'ダーク',
         colors: {
-          primary: '#6f42c1',
+          primary: '#722ed1',
           secondary: '#6c757d',
-          success: '#28a745',
-          warning: '#ffc107',
-          danger: '#dc3545',
-          info: '#17a2b8',
-          background: '#212529',
-          surface: '#343a40',
+          success: '#52c41a',
+          warning: '#faad14',
+          danger: '#f5222d',
+          info: '#13c2c2',
+          background: '#141414',
+          surface: '#1f1f1f',
           text: '#ffffff'
         }
       }
@@ -171,14 +178,14 @@ export const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
 
   const getWidgetTypeIcon = (type: DashboardWidget['type']) => {
     switch (type) {
-      case 'statistics': return 'grid-3x3'
-      case 'charts': return 'bar-chart-line'
-      case 'roi': return 'graph-up-arrow'
-      case 'budget': return 'wallet'
-      case 'alerts': return 'bell'
-      case 'purchases': return 'bag-check'
-      case 'trends': return 'trending-up'
-      default: return 'square'
+      case 'statistics': return <AppstoreOutlined />
+      case 'charts': return <BgColorsOutlined />
+      case 'roi': return <SlidersFilled />
+      case 'budget': return <SettingOutlined />
+      case 'alerts': return <AlertOutlined />
+      case 'purchases': return <ShoppingCartOutlined />
+      case 'trends': return <LineChartOutlined />
+      default: return <AppstoreOutlined />
     }
   }
 
@@ -219,9 +226,11 @@ export const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
         ...layout,
         updated_at: new Date().toISOString()
       }
-      onLayoutChange(updatedLayout)
       
-      // Save to localStorage
+      if (onLayoutChange) {
+        onLayoutChange(updatedLayout)
+      }
+      
       localStorage.setItem('dashboard_layout', JSON.stringify(updatedLayout))
       localStorage.setItem('user_preferences', JSON.stringify(preferences))
       
@@ -259,380 +268,346 @@ export const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
   }
 
   return (
-    <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-      <div className="modal-dialog modal-xl">
-        <div className="modal-content">
-          <div className="modal-header">
-            <h5 className="modal-title">
-              <i className="bi bi-gear me-2"></i>ダッシュボード カスタマイズ
-            </h5>
-            <button type="button" className="btn-close" onClick={onClose} />
-          </div>
-          
-          <div className="modal-body">
-            {/* Tab Navigation */}
-            <ul className="nav nav-tabs mb-4">
-              <li className="nav-item">
-                <button
-                  className={`nav-link ${activeTab === 'layout' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('layout')}
-                >
-                  <i className="bi bi-layout-text-window me-1"></i>レイアウト
-                </button>
-              </li>
-              <li className="nav-item">
-                <button
-                  className={`nav-link ${activeTab === 'widgets' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('widgets')}
-                >
-                  <i className="bi bi-grid-3x3 me-1"></i>ウィジェット
-                </button>
-              </li>
-              <li className="nav-item">
-                <button
-                  className={`nav-link ${activeTab === 'theme' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('theme')}
-                >
-                  <i className="bi bi-palette me-1"></i>テーマ
-                </button>
-              </li>
-              <li className="nav-item">
-                <button
-                  className={`nav-link ${activeTab === 'preferences' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('preferences')}
-                >
-                  <i className="bi bi-sliders me-1"></i>設定
-                </button>
-              </li>
-            </ul>
-
-            {/* Layout Tab */}
-            {activeTab === 'layout' && (
-              <div>
-                <h6>レイアウト情報</h6>
-                <div className="row mb-4">
-                  <div className="col-md-6">
-                    <label className="form-label">レイアウト名</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={layout.name}
-                      onChange={(e) => setLayout(prev => ({ ...prev, name: e.target.value }))}
-                    />
-                  </div>
-                  <div className="col-md-6">
-                    <label className="form-label">説明</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={layout.description || ''}
-                      onChange={(e) => setLayout(prev => ({ ...prev, description: e.target.value }))}
-                    />
-                  </div>
-                </div>
-                
-                <h6>レイアウトプレビュー</h6>
-                <div className="border rounded p-3" style={{ minHeight: '400px', backgroundColor: '#f8f9fa' }}>
-                  <div className="row">
-                    {layout.widgets
-                      .filter(widget => widget.isVisible)
-                      .sort((a, b) => a.position.y - b.position.y)
-                      .map(widget => (
-                        <div key={widget.id} className="col-12 mb-2">
-                          <div 
-                            className="card"
-                            style={{ 
-                              height: `${widget.size === 'small' ? '60px' : widget.size === 'medium' ? '120px' : '180px'}`,
-                              cursor: 'pointer'
-                            }}
-                            // onClick={() => setSelectedWidget(widget)}
-                          >
-                            <div className="card-body d-flex align-items-center justify-content-center">
-                              <div className="text-center">
-                                <i className={`bi bi-${getWidgetTypeIcon(widget.type)} display-6 text-primary mb-2`}></i>
-                                <p className="mb-0">{widget.title}</p>
-                                <small className="text-muted">{getWidgetTypeName(widget.type)}</small>
-                              </div>
-                            </div>
-                          </div>
+    <Modal
+      title={
+        <Space>
+          <SettingOutlined />
+          ダッシュボード カスタマイズ
+        </Space>
+      }
+      open={show}
+      onCancel={onClose}
+      footer={[
+        <Space key="actions">
+          <Button icon={<DownloadOutlined />} onClick={exportSettings}>
+            エクスポート
+          </Button>
+          <Button icon={<RedoOutlined />} onClick={resetToDefault}>
+            リセット
+          </Button>
+          <Button onClick={onClose}>
+            キャンセル
+          </Button>
+          <Button type="primary" icon={<CheckCircleOutlined />} onClick={saveLayout}>
+            保存
+          </Button>
+        </Space>
+      ]}
+      width={1000}
+    >
+      <Tabs activeKey={activeTab} onChange={(key) => setActiveTab(key as any)}>
+        <TabPane
+          tab={
+            <Space>
+              <LayoutOutlined />
+              レイアウト
+            </Space>
+          }
+          key="layout"
+        >
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <Title level={5}>レイアウト情報</Title>
+            <Row gutter={16}>
+              <Col span={12}>
+                <Text>レイアウト名</Text>
+                <Input
+                  value={layout.name}
+                  onChange={(e) => setLayout(prev => ({ ...prev, name: e.target.value }))}
+                  style={{ marginTop: 8 }}
+                />
+              </Col>
+              <Col span={12}>
+                <Text>説明</Text>
+                <Input
+                  value={layout.description || ''}
+                  onChange={(e) => setLayout(prev => ({ ...prev, description: e.target.value }))}
+                  style={{ marginTop: 8 }}
+                />
+              </Col>
+            </Row>
+            
+            <Title level={5}>レイアウトプレビュー</Title>
+            <Card style={{ backgroundColor: '#fafafa', minHeight: '400px' }}>
+              <Space direction="vertical" style={{ width: '100%' }}>
+                {layout.widgets
+                  .filter(widget => widget.isVisible)
+                  .sort((a, b) => a.position.y - b.position.y)
+                  .map(widget => (
+                    <Card key={widget.id} size="small" style={{ 
+                      height: widget.size === 'small' ? '60px' : widget.size === 'medium' ? '120px' : '180px'
+                    }}>
+                      <Space>
+                        {getWidgetTypeIcon(widget.type)}
+                        <div>
+                          <Text strong>{widget.title}</Text>
+                          <br />
+                          <Text type="secondary" style={{ fontSize: '12px' }}>
+                            {getWidgetTypeName(widget.type)}
+                          </Text>
                         </div>
-                      ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Widgets Tab */}
-            {activeTab === 'widgets' && (
-              <div>
-                <h6>ウィジェット設定</h6>
-                <div className="row">
-                  {layout.widgets.map(widget => (
-                    <div key={widget.id} className="col-lg-6 mb-3">
-                      <div className="card">
-                        <div className="card-body">
-                          <div className="d-flex justify-content-between align-items-center mb-3">
-                            <div className="d-flex align-items-center">
-                              <i className={`bi bi-${getWidgetTypeIcon(widget.type)} me-2`}></i>
-                              <strong>{widget.title}</strong>
-                            </div>
-                            <div className="form-check form-switch">
-                              <input
-                                className="form-check-input"
-                                type="checkbox"
-                                checked={widget.isVisible}
-                                onChange={() => toggleWidgetVisibility(widget.id)}
-                              />
-                            </div>
-                          </div>
-                          
-                          <div className="mb-3">
-                            <label className="form-label">サイズ</label>
-                            <select
-                              className="form-select form-select-sm"
-                              value={widget.size}
-                              onChange={(e) => updateWidgetSize(widget.id, e.target.value as DashboardWidget['size'])}
-                            >
-                              <option value="small">小</option>
-                              <option value="medium">中</option>
-                              <option value="large">大</option>
-                              <option value="full">全幅</option>
-                            </select>
-                          </div>
-                          
-                          <small className="text-muted">{getWidgetTypeName(widget.type)}</small>
-                        </div>
-                      </div>
-                    </div>
+                      </Space>
+                    </Card>
                   ))}
-                </div>
-              </div>
-            )}
+              </Space>
+            </Card>
+          </Space>
+        </TabPane>
 
-            {/* Theme Tab */}
-            {activeTab === 'theme' && (
-              <div>
-                <h6>カラーテーマ</h6>
-                <div className="row mb-4">
-                  {themes.map(theme => (
-                    <div key={theme.id} className="col-lg-4 mb-3">
-                      <div 
-                        className={`card h-100 ${layout.colorScheme === theme.id ? 'border-primary' : ''}`}
-                        style={{ cursor: 'pointer' }}
-                        onClick={() => setLayout(prev => ({ ...prev, colorScheme: theme.id }))}
-                      >
-                        <div className="card-body">
-                          <h6 className="card-title">{theme.name}</h6>
-                          <div className="d-flex mb-2">
-                            {Object.entries(theme.colors).slice(0, 6).map(([key, color]) => (
-                              <div
-                                key={key}
-                                className="me-1"
-                                style={{
-                                  width: '20px',
-                                  height: '20px',
-                                  backgroundColor: color,
-                                  borderRadius: '3px',
-                                  border: '1px solid #dee2e6'
-                                }}
-                                title={key}
-                              />
-                            ))}
-                          </div>
-                          {layout.colorScheme === theme.id && (
-                            <div className="text-primary">
-                              <i className="bi bi-check-circle me-1"></i>選択中
-                            </div>
-                          )}
-                        </div>
+        <TabPane
+          tab={
+            <Space>
+              <AppstoreOutlined />
+              ウィジェット
+            </Space>
+          }
+          key="widgets"
+        >
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <Title level={5}>ウィジェット設定</Title>
+            <Row gutter={[16, 16]}>
+              {layout.widgets.map(widget => (
+                <Col key={widget.id} xs={24} lg={12}>
+                  <Card>
+                    <Space direction="vertical" style={{ width: '100%' }}>
+                      <Row justify="space-between" align="middle">
+                        <Col>
+                          <Space>
+                            {getWidgetTypeIcon(widget.type)}
+                            <Text strong>{widget.title}</Text>
+                          </Space>
+                        </Col>
+                        <Col>
+                          <Switch
+                            checked={widget.isVisible}
+                            onChange={() => toggleWidgetVisibility(widget.id)}
+                          />
+                        </Col>
+                      </Row>
+                      
+                      <div>
+                        <Text>サイズ</Text>
+                        <Select
+                          value={widget.size}
+                          onChange={(value) => updateWidgetSize(widget.id, value)}
+                          style={{ width: '100%', marginTop: 8 }}
+                        >
+                          <Option value="small">小</Option>
+                          <Option value="medium">中</Option>
+                          <Option value="large">大</Option>
+                          <Option value="full">全幅</Option>
+                        </Select>
                       </div>
-                    </div>
-                  ))}
-                </div>
-                
-                <h6>テーマモード</h6>
-                <div className="btn-group w-100" role="group">
-                  <input
-                    type="radio"
-                    className="btn-check"
-                    name="theme"
-                    id="theme-light"
-                    checked={layout.theme === 'light'}
-                    onChange={() => setLayout(prev => ({ ...prev, theme: 'light' }))}
-                  />
-                  <label className="btn btn-outline-primary" htmlFor="theme-light">
-                    <i className="bi bi-sun me-1"></i>ライト
-                  </label>
-                  
-                  <input
-                    type="radio"
-                    className="btn-check"
-                    name="theme"
-                    id="theme-dark"
-                    checked={layout.theme === 'dark'}
-                    onChange={() => setLayout(prev => ({ ...prev, theme: 'dark' }))}
-                  />
-                  <label className="btn btn-outline-primary" htmlFor="theme-dark">
-                    <i className="bi bi-moon me-1"></i>ダーク
-                  </label>
-                  
-                  <input
-                    type="radio"
-                    className="btn-check"
-                    name="theme"
-                    id="theme-auto"
-                    checked={layout.theme === 'auto'}
-                    onChange={() => setLayout(prev => ({ ...prev, theme: 'auto' }))}
-                  />
-                  <label className="btn btn-outline-primary" htmlFor="theme-auto">
-                    <i className="bi bi-circle-half me-1"></i>自動
-                  </label>
-                </div>
-              </div>
-            )}
+                      
+                      <Text type="secondary" style={{ fontSize: '12px' }}>
+                        {getWidgetTypeName(widget.type)}
+                      </Text>
+                    </Space>
+                  </Card>
+                </Col>
+              ))}
+            </Row>
+          </Space>
+        </TabPane>
 
-            {/* Preferences Tab */}
-            {activeTab === 'preferences' && (
-              <div>
-                <h6>ダッシュボード設定</h6>
-                <div className="row mb-4">
-                  <div className="col-md-6">
-                    <label className="form-label">デフォルトビュー</label>
-                    <select
-                      className="form-select"
-                      value={preferences.dashboard.defaultView}
-                      onChange={(e) => setPreferences(prev => ({
+        <TabPane
+          tab={
+            <Space>
+              <BgColorsOutlined />
+              テーマ
+            </Space>
+          }
+          key="theme"
+        >
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <Title level={5}>カラーテーマ</Title>
+            <Row gutter={[16, 16]}>
+              {themes.map(theme => (
+                <Col key={theme.id} xs={24} lg={8}>
+                  <Card
+                    hoverable
+                    style={{
+                      borderColor: layout.colorScheme === theme.id ? '#1890ff' : undefined,
+                      borderWidth: layout.colorScheme === theme.id ? 2 : undefined
+                    }}
+                    onClick={() => setLayout(prev => ({ ...prev, colorScheme: theme.id }))}
+                  >
+                    <Space direction="vertical" style={{ width: '100%' }}>
+                      <Text strong>{theme.name}</Text>
+                      <Row>
+                        {Object.entries(theme.colors).slice(0, 6).map(([key, color]) => (
+                          <Col key={key} span={4}>
+                            <div
+                              style={{
+                                width: '20px',
+                                height: '20px',
+                                backgroundColor: color,
+                                borderRadius: '3px',
+                                border: '1px solid #d9d9d9'
+                              }}
+                              title={key}
+                            />
+                          </Col>
+                        ))}
+                      </Row>
+                      {layout.colorScheme === theme.id && (
+                        <Tag color="blue" icon={<CheckCircleOutlined />}>
+                          選択中
+                        </Tag>
+                      )}
+                    </Space>
+                  </Card>
+                </Col>
+              ))}
+            </Row>
+            
+            <Title level={5}>テーマモード</Title>
+            <Space size="large">
+              <Button
+                type={layout.theme === 'light' ? 'primary' : 'default'}
+                icon={<SunOutlined />}
+                onClick={() => setLayout(prev => ({ ...prev, theme: 'light' }))}
+              >
+                ライト
+              </Button>
+              <Button
+                type={layout.theme === 'dark' ? 'primary' : 'default'}
+                icon={<MoonOutlined />}
+                onClick={() => setLayout(prev => ({ ...prev, theme: 'dark' }))}
+              >
+                ダーク
+              </Button>
+              <Button
+                type={layout.theme === 'auto' ? 'primary' : 'default'}
+                onClick={() => setLayout(prev => ({ ...prev, theme: 'auto' }))}
+              >
+                自動
+              </Button>
+            </Space>
+          </Space>
+        </TabPane>
+
+        <TabPane
+          tab={
+            <Space>
+              <SlidersFilled />
+              設定
+            </Space>
+          }
+          key="preferences"
+        >
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <Title level={5}>ダッシュボード設定</Title>
+            <Row gutter={16}>
+              <Col span={12}>
+                <Text>デフォルトビュー</Text>
+                <Select
+                  value={preferences.dashboard.defaultView}
+                  onChange={(value) => setPreferences(prev => ({
+                    ...prev,
+                    dashboard: { ...prev.dashboard, defaultView: value as any }
+                  }))}
+                  style={{ width: '100%', marginTop: 8 }}
+                >
+                  <Option value="overview">概要</Option>
+                  <Option value="monitoring">監視統計</Option>
+                  <Option value="expenses">出費分析</Option>
+                </Select>
+              </Col>
+              <Col span={12}>
+                <Text>自動更新間隔 (秒)</Text>
+                <Input
+                  type="number"
+                  value={preferences.dashboard.refreshInterval}
+                  onChange={(e) => setPreferences(prev => ({
+                    ...prev,
+                    dashboard: { ...prev.dashboard, refreshInterval: parseInt(e.target.value) || 300 }
+                  }))}
+                  style={{ marginTop: 8 }}
+                />
+              </Col>
+            </Row>
+            
+            <Row gutter={16}>
+              <Col span={12}>
+                <Space>
+                  <Text>自動更新を有効化</Text>
+                  <Switch
+                    checked={preferences.dashboard.autoRefresh}
+                    onChange={(checked) => setPreferences(prev => ({
+                      ...prev,
+                      dashboard: { ...prev.dashboard, autoRefresh: checked }
+                    }))}
+                  />
+                </Space>
+              </Col>
+              <Col span={12}>
+                <Space>
+                  <Text>コンパクトモード</Text>
+                  <Switch
+                    checked={preferences.dashboard.compactMode}
+                    onChange={(checked) => setPreferences(prev => ({
+                      ...prev,
+                      dashboard: { ...prev.dashboard, compactMode: checked }
+                    }))}
+                  />
+                </Space>
+              </Col>
+            </Row>
+
+            <Title level={5}>通知設定</Title>
+            <Row gutter={[16, 16]}>
+              <Col span={12}>
+                <Space direction="vertical">
+                  <Space>
+                    <Text>予算アラート</Text>
+                    <Switch
+                      checked={preferences.notifications.budget_alerts}
+                      onChange={(checked) => setPreferences(prev => ({
                         ...prev,
-                        dashboard: { ...prev.dashboard, defaultView: e.target.value as any }
-                      }))}
-                    >
-                      <option value="overview">概要</option>
-                      <option value="monitoring">監視統計</option>
-                      <option value="expenses">出費分析</option>
-                    </select>
-                  </div>
-                  <div className="col-md-6">
-                    <label className="form-label">自動更新間隔 (秒)</label>
-                    <input
-                      type="number"
-                      className="form-control"
-                      value={preferences.dashboard.refreshInterval}
-                      onChange={(e) => setPreferences(prev => ({
-                        ...prev,
-                        dashboard: { ...prev.dashboard, refreshInterval: parseInt(e.target.value) || 300 }
+                        notifications: { ...prev.notifications, budget_alerts: checked }
                       }))}
                     />
-                  </div>
-                </div>
-                
-                <div className="row mb-4">
-                  <div className="col-md-6">
-                    <div className="form-check form-switch">
-                      <input
-                        className="form-check-input"
-                        type="checkbox"
-                        checked={preferences.dashboard.autoRefresh}
-                        onChange={(e) => setPreferences(prev => ({
-                          ...prev,
-                          dashboard: { ...prev.dashboard, autoRefresh: e.target.checked }
-                        }))}
-                      />
-                      <label className="form-check-label">自動更新を有効化</label>
-                    </div>
-                  </div>
-                  <div className="col-md-6">
-                    <div className="form-check form-switch">
-                      <input
-                        className="form-check-input"
-                        type="checkbox"
-                        checked={preferences.dashboard.compactMode}
-                        onChange={(e) => setPreferences(prev => ({
-                          ...prev,
-                          dashboard: { ...prev.dashboard, compactMode: e.target.checked }
-                        }))}
-                      />
-                      <label className="form-check-label">コンパクトモード</label>
-                    </div>
-                  </div>
-                </div>
-
-                <h6>通知設定</h6>
-                <div className="row mb-4">
-                  <div className="col-md-6">
-                    <div className="form-check form-switch mb-2">
-                      <input
-                        className="form-check-input"
-                        type="checkbox"
-                        checked={preferences.notifications.budget_alerts}
-                        onChange={(e) => setPreferences(prev => ({
-                          ...prev,
-                          notifications: { ...prev.notifications, budget_alerts: e.target.checked }
-                        }))}
-                      />
-                      <label className="form-check-label">予算アラート</label>
-                    </div>
-                    <div className="form-check form-switch mb-2">
-                      <input
-                        className="form-check-input"
-                        type="checkbox"
-                        checked={preferences.notifications.spending_alerts}
-                        onChange={(e) => setPreferences(prev => ({
-                          ...prev,
-                          notifications: { ...prev.notifications, spending_alerts: e.target.checked }
-                        }))}
-                      />
-                      <label className="form-check-label">支出アラート</label>
-                    </div>
-                  </div>
-                  <div className="col-md-6">
-                    <div className="form-check form-switch mb-2">
-                      <input
-                        className="form-check-input"
-                        type="checkbox"
-                        checked={preferences.notifications.milestone_alerts}
-                        onChange={(e) => setPreferences(prev => ({
-                          ...prev,
-                          notifications: { ...prev.notifications, milestone_alerts: e.target.checked }
-                        }))}
-                      />
-                      <label className="form-check-label">マイルストーン通知</label>
-                    </div>
-                    <div className="form-check form-switch mb-2">
-                      <input
-                        className="form-check-input"
-                        type="checkbox"
-                        checked={preferences.notifications.sound_enabled}
-                        onChange={(e) => setPreferences(prev => ({
-                          ...prev,
-                          notifications: { ...prev.notifications, sound_enabled: e.target.checked }
-                        }))}
-                      />
-                      <label className="form-check-label">サウンド通知</label>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-          
-          <div className="modal-footer">
-            <div className="me-auto">
-              <button className="btn btn-outline-secondary me-2" onClick={exportSettings}>
-                <i className="bi bi-download me-1"></i>エクスポート
-              </button>
-              <button className="btn btn-outline-warning" onClick={resetToDefault}>
-                <i className="bi bi-arrow-clockwise me-1"></i>リセット
-              </button>
-            </div>
-            <button className="btn btn-secondary" onClick={onClose}>
-              キャンセル
-            </button>
-            <button className="btn btn-primary" onClick={saveLayout}>
-              <i className="bi bi-check me-1"></i>保存
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+                  </Space>
+                  <Space>
+                    <Text>支出アラート</Text>
+                    <Switch
+                      checked={preferences.notifications.spending_alerts}
+                      onChange={(checked) => setPreferences(prev => ({
+                        ...prev,
+                        notifications: { ...prev.notifications, spending_alerts: checked }
+                      }))}
+                    />
+                  </Space>
+                </Space>
+              </Col>
+              <Col span={12}>
+                <Space direction="vertical">
+                  <Space>
+                    <Text>マイルストーン通知</Text>
+                    <Switch
+                      checked={preferences.notifications.milestone_alerts}
+                      onChange={(checked) => setPreferences(prev => ({
+                        ...prev,
+                        notifications: { ...prev.notifications, milestone_alerts: checked }
+                      }))}
+                    />
+                  </Space>
+                  <Space>
+                    <Text>サウンド通知</Text>
+                    <Switch
+                      checked={preferences.notifications.sound_enabled}
+                      onChange={(checked) => setPreferences(prev => ({
+                        ...prev,
+                        notifications: { ...prev.notifications, sound_enabled: checked }
+                      }))}
+                    />
+                  </Space>
+                </Space>
+              </Col>
+            </Row>
+          </Space>
+        </TabPane>
+      </Tabs>
+    </Modal>
   )
 }

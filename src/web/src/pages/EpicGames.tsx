@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Row, Col, Button, Typography, Spin, Space, Card, Tag } from 'antd';
-import { GiftOutlined, SyncOutlined, ReloadOutlined } from '@ant-design/icons';
+import { Row, Col, Button, Typography, Spin, Space, Card, Tag, Select, Checkbox } from 'antd';
+import { GiftOutlined, SyncOutlined, ReloadOutlined, CheckCircleOutlined, ClockCircleOutlined } from '@ant-design/icons';
 import { useAlert } from '../contexts/AlertContext';
+import { api } from '../utils/api';
 // import { formatDateJP } from '../utils/dateUtils';
 
 interface EpicFreeGame {
@@ -20,7 +21,7 @@ interface EpicFreeGame {
 const EpicGames: React.FC = () => {
   const [games, setGames] = useState<EpicFreeGame[]>([]);
   const [loading, setLoading] = useState(true);
-  // const [filter, setFilter] = useState<'all' | 'active' | 'claimed' | 'unclaimed'>('all');
+  const [filter, setFilter] = useState<'all' | 'active' | 'claimed' | 'unclaimed' | 'past'>('all');
   const { showSuccess, showError } = useAlert();
 
   useEffect(() => {
@@ -30,16 +31,10 @@ const EpicGames: React.FC = () => {
   const loadGames = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/epic-games');
+      const response = await api.get('/epic-games');
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch Epic Games data');
-      }
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        setGames(data.data || []);
+      if (response.success && response.data) {
+        setGames(response.data || []);
       } else {
         showError('Epic Gamesデータの取得に失敗しました');
       }
@@ -50,6 +45,57 @@ const EpicGames: React.FC = () => {
       setLoading(false);
     }
   };
+
+  const toggleClaimedStatus = async (gameId: number, currentStatus: boolean) => {
+    try {
+      const response = await api.put(`/epic-games/${gameId}/claimed`, {
+        is_claimed: !currentStatus,
+        claimed_date: !currentStatus ? new Date().toISOString() : null
+      });
+
+      if (response.success) {
+        setGames(prevGames => 
+          prevGames.map(game => 
+            game.id === gameId 
+              ? { 
+                  ...game, 
+                  is_claimed: !currentStatus,
+                  claimed_date: !currentStatus ? new Date().toISOString() : undefined
+                }
+              : game
+          )
+        );
+        showSuccess(!currentStatus ? 'ゲームを受け取り済みにマークしました' : '受け取り済みマークを解除しました');
+      } else {
+        showError('受け取り状況の更新に失敗しました');
+      }
+    } catch (error) {
+      console.error('Error updating claimed status:', error);
+      showError('受け取り状況の更新中にエラーが発生しました');
+    }
+  };
+
+  const isGameActive = (game: EpicFreeGame) => {
+    if (!game.end_date) return true;
+    const now = new Date();
+    const endDate = new Date(game.end_date);
+    return now <= endDate;
+  };
+
+  const filteredGames = games.filter(game => {
+    switch (filter) {
+      case 'active':
+        return isGameActive(game);
+      case 'past':
+        return !isGameActive(game);
+      case 'claimed':
+        return game.is_claimed;
+      case 'unclaimed':
+        return !game.is_claimed;
+      default:
+        return true;
+    }
+  });
 
   if (loading) {
     return (
@@ -77,6 +123,18 @@ const EpicGames: React.FC = () => {
               Epic Games 無料ゲーム
             </Typography.Title>
             <Space>
+              <Select
+                value={filter}
+                onChange={setFilter}
+                style={{ width: 120 }}
+                options={[
+                  { value: 'all', label: 'すべて' },
+                  { value: 'active', label: '配布中' },
+                  { value: 'past', label: '過去' },
+                  { value: 'claimed', label: '受け取り済み' },
+                  { value: 'unclaimed', label: '未受け取り' }
+                ]}
+              />
               <Button
                 icon={<ReloadOutlined />}
                 onClick={loadGames}
@@ -93,11 +151,10 @@ const EpicGames: React.FC = () => {
                 onClick={async () => {
                   try {
                     setLoading(true);
-                    const response = await fetch('/api/epic-games/refresh', { method: 'POST' });
-                    const data = await response.json();
+                    const response = await api.post('/epic-games/refresh');
                     
-                    if (data.success) {
-                      showSuccess(data.message || '新しい無料ゲームを取得しました');
+                    if (response.success) {
+                      showSuccess(response.message || '新しい無料ゲームを取得しました');
                       await loadGames();
                     } else {
                       showError('Epic Gamesの更新に失敗しました');
@@ -118,16 +175,21 @@ const EpicGames: React.FC = () => {
       </Row>
       
       <Row gutter={[16, 16]}>
-        {games.length === 0 ? (
+        {filteredGames.length === 0 ? (
           <Col span={24}>
             <Card>
               <Typography.Text type="secondary">
-                現在、Epic Games Storeで配布中の無料ゲームはありません。
+                {filter === 'all' 
+                  ? '現在、Epic Games Storeで配布中の無料ゲームはありません。'
+                  : `選択したフィルター「${filter === 'active' ? '配布中' : filter === 'past' ? '過去' : filter === 'claimed' ? '受け取り済み' : '未受け取り'}」に該当するゲームはありません。`
+                }
               </Typography.Text>
             </Card>
           </Col>
         ) : (
-          games.map((game) => (
+          filteredGames.map((game) => {
+            const isActive = isGameActive(game);
+            return (
             <Col key={game.id} xs={24} sm={12} md={8} lg={6}>
               <Card
                 hoverable
@@ -145,13 +207,20 @@ const EpicGames: React.FC = () => {
                   )
                 }
                 actions={[
+                  <Checkbox
+                    checked={game.is_claimed}
+                    onChange={() => toggleClaimedStatus(game.id, game.is_claimed)}
+                  >
+                    受け取り済み
+                  </Checkbox>,
                   <Button
                     type="link"
                     href={game.epic_url}
                     target="_blank"
                     rel="noopener noreferrer"
+                    size="small"
                   >
-                    Epic Storeで見る
+                    Epic Store
                   </Button>
                 ]}
               >
@@ -164,20 +233,29 @@ const EpicGames: React.FC = () => {
                           {game.description}
                         </Typography.Paragraph>
                       )}
+                      <Space wrap>
+                        {!isActive && (
+                          <Tag color="default" icon={<ClockCircleOutlined />}>過去</Tag>
+                        )}
+                        {isActive && (
+                          <Tag color="green" icon={<GiftOutlined />}>配布中</Tag>
+                        )}
+                        {game.is_claimed && (
+                          <Tag color="success" icon={<CheckCircleOutlined />}>受け取り済み</Tag>
+                        )}
+                      </Space>
                       {game.start_date && game.end_date && (
                         <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                          配布期間: {new Date(game.start_date).toLocaleDateString()} - {new Date(game.end_date).toLocaleDateString()}
+                          {new Date(game.start_date).toLocaleDateString()} - {new Date(game.end_date).toLocaleDateString()}
                         </Typography.Text>
-                      )}
-                      {game.is_claimed && (
-                        <Tag color="success">受け取り済み</Tag>
                       )}
                     </Space>
                   }
                 />
               </Card>
             </Col>
-          ))
+            );
+          })
         )}
       </Row>
     </div>

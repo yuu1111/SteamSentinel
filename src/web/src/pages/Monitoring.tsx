@@ -1,16 +1,23 @@
 import React from 'react'
+import { Row, Col, Typography, Card } from 'antd'
+import { LineChartOutlined } from '@ant-design/icons'
+
+const { Title, Text } = Typography
 
 const Monitoring: React.FC = () => {
   return (
-    <div className="row">
-      <div className="col-12">
-        <h2><i className="bi bi-activity me-2"></i>監視状況</h2>
-        <div className="card">
-          <div className="card-body">
-            <p className="text-muted">監視状況機能はまだ実装中です。</p>
-          </div>
-        </div>
-      </div>
+    <div style={{ padding: '0 24px' }}>
+      <Row gutter={[16, 16]}>
+        <Col span={24}>
+          <Title level={2}>
+            <LineChartOutlined style={{ marginRight: 8 }} />
+            監視状況
+          </Title>
+          <Card>
+            <Text type="secondary">監視状況機能はまだ実装中です。</Text>
+          </Card>
+        </Col>
+      </Row>
     </div>
   )
 }

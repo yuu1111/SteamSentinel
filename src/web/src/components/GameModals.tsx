@@ -35,8 +35,7 @@ export const AddGameModal: React.FC<AddGameModalProps> = ({ show, onHide, onGame
     })
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = async () => {
     
     const steamAppId = parseInt(formData.steamAppId)
     const gameName = formData.gameName.trim()
@@ -120,12 +119,20 @@ export const AddGameModal: React.FC<AddGameModalProps> = ({ show, onHide, onGame
             </Typography.Text>
           }
         >
-          <InputNumber
+          <Input
             style={{ width: '100%' }}
-            value={formData.steamAppId ? parseInt(formData.steamAppId) : undefined}
-            onChange={(value) => setFormData(prev => ({ ...prev, steamAppId: value?.toString() || '' }))}
-            placeholder="Steam App IDを入力"
-            min={1}
+            value={formData.steamAppId}
+            onChange={(e) => {
+              const value = e.target.value.replace(/[^0-9]/g, '')
+              setFormData(prev => ({ ...prev, steamAppId: value }))
+            }}
+            onPaste={(e) => {
+              e.preventDefault()
+              const pastedText = e.clipboardData.getData('text')
+              const numericOnly = pastedText.replace(/[^0-9]/g, '')
+              setFormData(prev => ({ ...prev, steamAppId: numericOnly }))
+            }}
+            placeholder="Steam App IDを入力（数字のみ）"
           />
         </Form.Item>
 

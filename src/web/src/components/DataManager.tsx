@@ -1,13 +1,18 @@
 import React, { useState } from 'react'
+import { Modal, Card, Typography, Tabs, Row, Col, Button, Table, Space, Alert, Upload, Spin, Tag, Popconfirm } from 'antd'
+import { CloudUploadOutlined, CloudDownloadOutlined, UploadOutlined, DownloadOutlined, HddOutlined, SettingOutlined, BarChartOutlined, WalletOutlined, DeleteOutlined, InboxOutlined, ExclamationCircleOutlined } from '@ant-design/icons'
 import { DataBackup } from '../types'
 import { useAlert } from '../contexts/AlertContext'
-import { formatDateJP, getCurrentJstDate } from '../utils/dateUtils'
+
+const { Text, Title } = Typography
+const { TabPane } = Tabs
 
 interface DataManagerProps {
+  show: boolean
   onClose: () => void
 }
 
-export const DataManager: React.FC<DataManagerProps> = ({ onClose }) => {
+export const DataManager: React.FC<DataManagerProps> = ({ show, onClose }) => {
   const [activeTab, setActiveTab] = useState<'backup' | 'restore' | 'import' | 'export'>('backup')
   const [backups, setBackups] = useState<DataBackup[]>(getExistingBackups())
   const [selectedBackup, setSelectedBackup] = useState<DataBackup | null>(null)
@@ -16,7 +21,6 @@ export const DataManager: React.FC<DataManagerProps> = ({ onClose }) => {
   const { showSuccess, showError, showWarning } = useAlert()
 
   function getExistingBackups(): DataBackup[] {
-    // 実際の実装では localStorage や API から取得
     const stored = localStorage.getItem('steamsentinel_backups')
     if (stored) {
       try {
@@ -41,7 +45,7 @@ export const DataManager: React.FC<DataManagerProps> = ({ onClose }) => {
             budgets: localStorage.getItem('budgets'),
             settings: localStorage.getItem('app_settings')
           }
-          name = `完全バックアップ_${getCurrentJstDate()}`
+          name = `完全バックアップ_${new Date().toISOString().split('T')[0]}`
           break
           
         case 'settings':
@@ -49,7 +53,7 @@ export const DataManager: React.FC<DataManagerProps> = ({ onClose }) => {
             preferences: localStorage.getItem('user_preferences'),
             settings: localStorage.getItem('app_settings')
           }
-          name = `設定バックアップ_${getCurrentJstDate()}`
+          name = `設定バックアップ_${new Date().toISOString().split('T')[0]}`
           break
           
         case 'expense_data':
@@ -57,14 +61,14 @@ export const DataManager: React.FC<DataManagerProps> = ({ onClose }) => {
             budgets: localStorage.getItem('budgets'),
             expenses: localStorage.getItem('expense_data')
           }
-          name = `出費データバックアップ_${getCurrentJstDate()}`
+          name = `出費データバックアップ_${new Date().toISOString().split('T')[0]}`
           break
           
         case 'budgets':
           data = {
             budgets: localStorage.getItem('budgets')
           }
-          name = `予算バックアップ_${getCurrentJstDate()}`
+          name = `予算バックアップ_${new Date().toISOString().split('T')[0]}`
           break
       }
 
@@ -95,7 +99,6 @@ export const DataManager: React.FC<DataManagerProps> = ({ onClose }) => {
         return
       }
 
-      // データの復元
       Object.entries(backup.data).forEach(([key, value]) => {
         if (value) {
           localStorage.setItem(key, value)
@@ -104,7 +107,6 @@ export const DataManager: React.FC<DataManagerProps> = ({ onClose }) => {
 
       showSuccess(`${backup.name}を復元しました。ページを更新してください。`)
       
-      // ページを更新して変更を反映
       setTimeout(() => {
         window.location.reload()
       }, 2000)
@@ -150,7 +152,7 @@ export const DataManager: React.FC<DataManagerProps> = ({ onClose }) => {
   }
 
   const importBackup = (file: File) => {
-    if (!file) {return}
+    if (!file) return
 
     setImporting(true)
     const reader = new FileReader()
@@ -159,17 +161,14 @@ export const DataManager: React.FC<DataManagerProps> = ({ onClose }) => {
       try {
         const importedData = JSON.parse(e.target?.result as string)
         
-        // バックアップファイルの検証
         if (!importedData.id || !importedData.data || !importedData.type) {
           throw new Error('無効なバックアップファイル形式です')
         }
 
-        // チェックサムの再生成（ファイルが古い場合）
         if (!importedData.checksum) {
           importedData.checksum = generateChecksum(importedData.data)
         }
 
-        // 新しいIDを生成（重複を避けるため）
         importedData.id = Date.now().toString()
         importedData.name = `${importedData.name}_インポート`
 
@@ -228,34 +227,31 @@ export const DataManager: React.FC<DataManagerProps> = ({ onClose }) => {
   }
 
   const clearAllData = () => {
-    if (window.confirm('本当にすべてのデータを削除しますか？この操作は取り消せません。')) {
-      localStorage.removeItem('dashboard_layout')
-      localStorage.removeItem('user_preferences')
-      localStorage.removeItem('budgets')
-      localStorage.removeItem('app_settings')
-      localStorage.removeItem('steamsentinel_backups')
-      
-      showWarning('すべてのデータを削除しました。ページを更新してください。')
-      setTimeout(() => {
-        window.location.reload()
-      }, 2000)
-    }
+    localStorage.removeItem('dashboard_layout')
+    localStorage.removeItem('user_preferences')
+    localStorage.removeItem('budgets')
+    localStorage.removeItem('app_settings')
+    localStorage.removeItem('steamsentinel_backups')
+    
+    showWarning('すべてのデータを削除しました。ページを更新してください。')
+    setTimeout(() => {
+      window.location.reload()
+    }, 2000)
   }
 
   const generateChecksum = (data: any): string => {
-    // 簡易チェックサム（実際の実装ではより堅牢な方法を使用）
     const str = JSON.stringify(data)
     let hash = 0
     for (let i = 0; i < str.length; i++) {
       const char = str.charCodeAt(i)
       hash = ((hash << 5) - hash) + char
-      hash = hash & hash // 32bit整数に変換
+      hash = hash & hash
     }
     return Math.abs(hash).toString(16)
   }
 
   const verifyChecksum = (backup: DataBackup): boolean => {
-    if (!backup.checksum) {return true} // 古いバックアップ用
+    if (!backup.checksum) return true
     return generateChecksum(backup.data) === backup.checksum
   }
 
@@ -269,355 +265,361 @@ export const DataManager: React.FC<DataManagerProps> = ({ onClose }) => {
     }
   }
 
-  const getBackupTypeIcon = (type: DataBackup['type']): string => {
+  const getBackupTypeIcon = (type: DataBackup['type']) => {
     switch (type) {
-      case 'full': return 'hdd-stack'
-      case 'settings': return 'gear'
-      case 'expense_data': return 'bar-chart'
-      case 'budgets': return 'wallet'
-      default: return 'file-earmark'
+      case 'full': return <HddOutlined />
+      case 'settings': return <SettingOutlined />
+      case 'expense_data': return <BarChartOutlined />
+      case 'budgets': return <WalletOutlined />
+      default: return <HddOutlined />
     }
   }
 
   const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) {return '0 B'}
+    if (bytes === 0) return '0 B'
     const k = 1024
     const sizes = ['B', 'KB', 'MB', 'GB']
     const i = Math.floor(Math.log(bytes) / Math.log(k))
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
 
+  const backupColumns = [
+    {
+      title: '名前',
+      dataIndex: 'name',
+      key: 'name',
+      render: (text: string, record: DataBackup) => (
+        <Space>
+          {getBackupTypeIcon(record.type)}
+          {text}
+        </Space>
+      )
+    },
+    {
+      title: 'タイプ',
+      dataIndex: 'type',
+      key: 'type',
+      render: (type: DataBackup['type']) => (
+        <Tag color="blue">{getBackupTypeName(type)}</Tag>
+      )
+    },
+    {
+      title: 'サイズ',
+      dataIndex: 'size',
+      key: 'size',
+      render: (size: number) => formatFileSize(size)
+    },
+    {
+      title: '作成日時',
+      dataIndex: 'created_at',
+      key: 'created_at',
+      render: (date: string) => new Date(date).toLocaleString('ja-JP')
+    },
+    {
+      title: '操作',
+      key: 'actions',
+      render: (_: any, record: DataBackup) => (
+        <Space>
+          <Button
+            size="small"
+            icon={<DownloadOutlined />}
+            onClick={() => exportBackup(record)}
+            loading={exporting}
+          />
+          <Popconfirm
+            title="このバックアップを削除しますか？"
+            onConfirm={() => deleteBackup(record.id)}
+            okText="削除"
+            cancelText="キャンセル"
+          >
+            <Button size="small" danger icon={<DeleteOutlined />} />
+          </Popconfirm>
+        </Space>
+      )
+    }
+  ]
+
   return (
-    <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-      <div className="modal-dialog modal-xl">
-        <div className="modal-content">
-          <div className="modal-header">
-            <h5 className="modal-title">
-              <i className="bi bi-hdd me-2"></i>データ管理
-            </h5>
-            <button type="button" className="btn-close" onClick={onClose} />
-          </div>
-          
-          <div className="modal-body">
-            {/* Tab Navigation */}
-            <ul className="nav nav-tabs mb-4">
-              <li className="nav-item">
-                <button
-                  className={`nav-link ${activeTab === 'backup' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('backup')}
-                >
-                  <i className="bi bi-cloud-arrow-up me-1"></i>バックアップ
-                </button>
-              </li>
-              <li className="nav-item">
-                <button
-                  className={`nav-link ${activeTab === 'restore' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('restore')}
-                >
-                  <i className="bi bi-cloud-arrow-down me-1"></i>復元
-                </button>
-              </li>
-              <li className="nav-item">
-                <button
-                  className={`nav-link ${activeTab === 'import' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('import')}
-                >
-                  <i className="bi bi-upload me-1"></i>インポート
-                </button>
-              </li>
-              <li className="nav-item">
-                <button
-                  className={`nav-link ${activeTab === 'export' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('export')}
-                >
-                  <i className="bi bi-download me-1"></i>エクスポート
-                </button>
-              </li>
-            </ul>
-
-            {/* Backup Tab */}
-            {activeTab === 'backup' && (
-              <div>
-                <h6>新しいバックアップを作成</h6>
-                <div className="row mb-4">
-                  <div className="col-lg-3 col-md-6 mb-3">
-                    <div className="card h-100">
-                      <div className="card-body text-center">
-                        <i className="bi bi-hdd-stack display-4 text-primary mb-3"></i>
-                        <h6>完全バックアップ</h6>
-                        <p className="text-muted small mb-3">すべての設定とデータ</p>
-                        <button 
-                          className="btn btn-primary btn-sm"
-                          onClick={() => createBackup('full')}
-                        >
-                          作成
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="col-lg-3 col-md-6 mb-3">
-                    <div className="card h-100">
-                      <div className="card-body text-center">
-                        <i className="bi bi-gear display-4 text-info mb-3"></i>
-                        <h6>設定のみ</h6>
-                        <p className="text-muted small mb-3">ユーザー設定と環境設定</p>
-                        <button 
-                          className="btn btn-info btn-sm"
-                          onClick={() => createBackup('settings')}
-                        >
-                          作成
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="col-lg-3 col-md-6 mb-3">
-                    <div className="card h-100">
-                      <div className="card-body text-center">
-                        <i className="bi bi-bar-chart display-4 text-success mb-3"></i>
-                        <h6>出費データ</h6>
-                        <p className="text-muted small mb-3">購入履歴と分析データ</p>
-                        <button 
-                          className="btn btn-success btn-sm"
-                          onClick={() => createBackup('expense_data')}
-                        >
-                          作成
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="col-lg-3 col-md-6 mb-3">
-                    <div className="card h-100">
-                      <div className="card-body text-center">
-                        <i className="bi bi-wallet display-4 text-warning mb-3"></i>
-                        <h6>予算データ</h6>
-                        <p className="text-muted small mb-3">予算設定とアラート</p>
-                        <button 
-                          className="btn btn-warning btn-sm"
-                          onClick={() => createBackup('budgets')}
-                        >
-                          作成
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <h6>既存のバックアップ ({backups.length})</h6>
-                {backups.length > 0 ? (
-                  <div className="table-responsive">
-                    <table className="table table-hover">
-                      <thead>
-                        <tr>
-                          <th>名前</th>
-                          <th>タイプ</th>
-                          <th>サイズ</th>
-                          <th>作成日時</th>
-                          <th>操作</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {backups.map(backup => (
-                          <tr key={backup.id}>
-                            <td>
-                              <i className={`bi bi-${getBackupTypeIcon(backup.type)} me-2`}></i>
-                              {backup.name}
-                            </td>
-                            <td>
-                              <span className="badge bg-secondary">
-                                {getBackupTypeName(backup.type)}
-                              </span>
-                            </td>
-                            <td>{formatFileSize(backup.size)}</td>
-                            <td>{formatDateJP(backup.created_at, 'datetime')}</td>
-                            <td>
-                              <div className="btn-group btn-group-sm">
-                                <button 
-                                  className="btn btn-outline-primary"
-                                  onClick={() => exportBackup(backup)}
-                                  disabled={exporting}
-                                >
-                                  <i className="bi bi-download"></i>
-                                </button>
-                                <button 
-                                  className="btn btn-outline-danger"
-                                  onClick={() => deleteBackup(backup.id)}
-                                >
-                                  <i className="bi bi-trash"></i>
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <div className="text-center py-4">
-                    <i className="bi bi-inbox display-1 text-muted mb-3"></i>
-                    <p className="text-muted">まだバックアップがありません。</p>
-                  </div>
-                )}
-              </div>
+    <Modal
+      title={
+        <Space>
+          <HddOutlined />
+          データ管理
+        </Space>
+      }
+      open={show}
+      onCancel={onClose}
+      footer={[
+        <Button key="close" onClick={onClose}>
+          閉じる
+        </Button>
+      ]}
+      width={1200}
+    >
+      <Tabs activeKey={activeTab} onChange={(key) => setActiveTab(key as any)}>
+        <TabPane
+          tab={
+            <Space>
+              <CloudUploadOutlined />
+              バックアップ
+            </Space>
+          }
+          key="backup"
+        >
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <Title level={5}>新しいバックアップを作成</Title>
+            <Row gutter={[16, 16]}>
+              <Col xs={24} sm={12} lg={6}>
+                <Card hoverable>
+                  <Space direction="vertical" align="center" style={{ width: '100%' }}>
+                    <HddOutlined style={{ fontSize: '48px', color: '#1890ff' }} />
+                    <Title level={5}>完全バックアップ</Title>
+                    <Text type="secondary">すべての設定とデータ</Text>
+                    <Button type="primary" onClick={() => createBackup('full')}>
+                      作成
+                    </Button>
+                  </Space>
+                </Card>
+              </Col>
+              <Col xs={24} sm={12} lg={6}>
+                <Card hoverable>
+                  <Space direction="vertical" align="center" style={{ width: '100%' }}>
+                    <SettingOutlined style={{ fontSize: '48px', color: '#52c41a' }} />
+                    <Title level={5}>設定のみ</Title>
+                    <Text type="secondary">ユーザー設定と環境設定</Text>
+                    <Button type="primary" onClick={() => createBackup('settings')}>
+                      作成
+                    </Button>
+                  </Space>
+                </Card>
+              </Col>
+              <Col xs={24} sm={12} lg={6}>
+                <Card hoverable>
+                  <Space direction="vertical" align="center" style={{ width: '100%' }}>
+                    <BarChartOutlined style={{ fontSize: '48px', color: '#faad14' }} />
+                    <Title level={5}>出費データ</Title>
+                    <Text type="secondary">購入履歴と分析データ</Text>
+                    <Button type="primary" onClick={() => createBackup('expense_data')}>
+                      作成
+                    </Button>
+                  </Space>
+                </Card>
+              </Col>
+              <Col xs={24} sm={12} lg={6}>
+                <Card hoverable>
+                  <Space direction="vertical" align="center" style={{ width: '100%' }}>
+                    <WalletOutlined style={{ fontSize: '48px', color: '#f5222d' }} />
+                    <Title level={5}>予算データ</Title>
+                    <Text type="secondary">予算設定とアラート</Text>
+                    <Button type="primary" onClick={() => createBackup('budgets')}>
+                      作成
+                    </Button>
+                  </Space>
+                </Card>
+              </Col>
+            </Row>
+            
+            <Title level={5}>既存のバックアップ ({backups.length})</Title>
+            {backups.length > 0 ? (
+              <Table
+                dataSource={backups}
+                columns={backupColumns}
+                rowKey="id"
+                pagination={{ pageSize: 5 }}
+              />
+            ) : (
+              <Card>
+                <Space direction="vertical" align="center" style={{ width: '100%' }}>
+                  <InboxOutlined style={{ fontSize: '64px', color: '#d9d9d9' }} />
+                  <Text type="secondary">まだバックアップがありません。</Text>
+                </Space>
+              </Card>
             )}
-
-            {/* Restore Tab */}
-            {activeTab === 'restore' && (
-              <div>
-                <div className="alert alert-warning">
-                  <i className="bi bi-exclamation-triangle me-2"></i>
-                  復元を実行すると、現在の設定が上書きされます。重要なデータは事前にバックアップしてください。
-                </div>
-                
-                {backups.length > 0 ? (
-                  <div className="row">
-                    {backups.map(backup => (
-                      <div key={backup.id} className="col-lg-6 mb-3">
-                        <div 
-                          className={`card h-100 ${selectedBackup?.id === backup.id ? 'border-primary' : ''}`}
-                          style={{ cursor: 'pointer' }}
-                          onClick={() => setSelectedBackup(backup)}
-                        >
-                          <div className="card-body">
-                            <div className="d-flex justify-content-between align-items-start mb-2">
-                              <h6 className="card-title mb-0">
-                                <i className={`bi bi-${getBackupTypeIcon(backup.type)} me-2`}></i>
-                                {backup.name}
-                              </h6>
-                              {!verifyChecksum(backup) && (
-                                <span className="badge bg-danger">破損</span>
-                              )}
-                            </div>
-                            <p className="text-muted small mb-2">
-                              {getBackupTypeName(backup.type)} • {formatFileSize(backup.size)}
-                            </p>
-                            <p className="text-muted small mb-0">
-                              {formatDateJP(backup.created_at, 'datetime')}
-                            </p>
-                            {selectedBackup?.id === backup.id && (
-                              <div className="mt-3">
-                                <button 
-                                  className="btn btn-primary btn-sm"
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    restoreBackup(backup)
-                                  }}
-                                  disabled={!verifyChecksum(backup)}
-                                >
-                                  <i className="bi bi-arrow-clockwise me-1"></i>復元
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-5">
-                    <i className="bi bi-inbox display-1 text-muted mb-3"></i>
-                    <p className="text-muted">復元可能なバックアップがありません。</p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Import Tab */}
-            {activeTab === 'import' && (
-              <div>
-                <h6>バックアップファイルをインポート</h6>
-                <div className="mb-4">
-                  <input
-                    type="file"
-                    className="form-control"
-                    accept=".json"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0]
-                      if (file) {importBackup(file)}
-                    }}
-                    disabled={importing}
-                  />
-                  <div className="form-text">
-                    SteamSentinelのバックアップファイル（.json）を選択してください。
-                  </div>
-                </div>
-
-                {importing && (
-                  <div className="text-center py-4">
-                    <div className="spinner-border text-primary me-2" />
-                    インポート中...
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Export Tab */}
-            {activeTab === 'export' && (
-              <div>
-                <h6>データエクスポート</h6>
-                <div className="row mb-4">
-                  <div className="col-lg-6">
-                    <div className="card">
-                      <div className="card-body text-center">
-                        <i className="bi bi-hdd-stack display-4 text-primary mb-3"></i>
-                        <h6>全データエクスポート</h6>
-                        <p className="text-muted">
-                          すべての設定、データ、バックアップをまとめてエクスポートします。
-                        </p>
-                        <button 
-                          className="btn btn-primary"
-                          onClick={exportAllData}
-                          disabled={exporting}
-                        >
-                          {exporting ? (
-                            <>
-                              <span className="spinner-border spinner-border-sm me-2" />
-                              エクスポート中...
-                            </>
-                          ) : (
-                            <>
-                              <i className="bi bi-download me-1"></i>
-                              エクスポート
-                            </>
+          </Space>
+        </TabPane>
+        
+        <TabPane
+          tab={
+            <Space>
+              <CloudDownloadOutlined />
+              復元
+            </Space>
+          }
+          key="restore"
+        >
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <Alert
+              message="警告"
+              description="復元を実行すると、現在の設定が上書きされます。重要なデータは事前にバックアップしてください。"
+              type="warning"
+              showIcon
+              icon={<ExclamationCircleOutlined />}
+            />
+            
+            {backups.length > 0 ? (
+              <Row gutter={[16, 16]}>
+                {backups.map(backup => (
+                  <Col key={backup.id} xs={24} lg={12}>
+                    <Card
+                      hoverable
+                      className={selectedBackup?.id === backup.id ? 'ant-card-bordered' : ''}
+                      style={{
+                        borderColor: selectedBackup?.id === backup.id ? '#1890ff' : undefined,
+                        borderWidth: selectedBackup?.id === backup.id ? 2 : undefined
+                      }}
+                      onClick={() => setSelectedBackup(backup)}
+                    >
+                      <Space direction="vertical" style={{ width: '100%' }}>
+                        <Space style={{ justifyContent: 'space-between', width: '100%' }}>
+                          <Space>
+                            {getBackupTypeIcon(backup.type)}
+                            <Text strong>{backup.name}</Text>
+                          </Space>
+                          {!verifyChecksum(backup) && (
+                            <Tag color="red">破損</Tag>
                           )}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="col-lg-6">
-                    <div className="card border-danger">
-                      <div className="card-body text-center">
-                        <i className="bi bi-trash display-4 text-danger mb-3"></i>
-                        <h6>全データ削除</h6>
-                        <p className="text-muted">
-                          すべてのローカルデータを削除します。この操作は取り消せません。
-                        </p>
-                        <button 
-                          className="btn btn-danger"
-                          onClick={clearAllData}
-                        >
-                          <i className="bi bi-trash me-1"></i>
-                          削除
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="alert alert-info">
-                  <i className="bi bi-info-circle me-2"></i>
-                  エクスポートされたファイルは他のデバイスでのインポートや、データ移行に使用できます。
-                </div>
-              </div>
+                        </Space>
+                        <Text type="secondary">
+                          {getBackupTypeName(backup.type)} • {formatFileSize(backup.size)}
+                        </Text>
+                        <Text type="secondary">
+                          {new Date(backup.created_at).toLocaleString('ja-JP')}
+                        </Text>
+                        {selectedBackup?.id === backup.id && (
+                          <Button
+                            type="primary"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              restoreBackup(backup)
+                            }}
+                            disabled={!verifyChecksum(backup)}
+                          >
+                            復元
+                          </Button>
+                        )}
+                      </Space>
+                    </Card>
+                  </Col>
+                ))}
+              </Row>
+            ) : (
+              <Card>
+                <Space direction="vertical" align="center" style={{ width: '100%' }}>
+                  <InboxOutlined style={{ fontSize: '64px', color: '#d9d9d9' }} />
+                  <Text type="secondary">復元可能なバックアップがありません。</Text>
+                </Space>
+              </Card>
             )}
-          </div>
-          
-          <div className="modal-footer">
-            <button className="btn btn-secondary" onClick={onClose}>
-              閉じる
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+          </Space>
+        </TabPane>
+        
+        <TabPane
+          tab={
+            <Space>
+              <UploadOutlined />
+              インポート
+            </Space>
+          }
+          key="import"
+        >
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <Title level={5}>バックアップファイルをインポート</Title>
+            <Upload.Dragger
+              accept=".json"
+              beforeUpload={(file) => {
+                importBackup(file)
+                return false
+              }}
+              disabled={importing}
+              showUploadList={false}
+            >
+              <p className="ant-upload-drag-icon">
+                <InboxOutlined />
+              </p>
+              <p className="ant-upload-text">
+                ファイルをクリックまたはドラッグしてアップロード
+              </p>
+              <p className="ant-upload-hint">
+                SteamSentinelのバックアップファイル（.json）を選択してください。
+              </p>
+            </Upload.Dragger>
+            
+            {importing && (
+              <Card>
+                <Space>
+                  <Spin />
+                  <Text>インポート中...</Text>
+                </Space>
+              </Card>
+            )}
+          </Space>
+        </TabPane>
+        
+        <TabPane
+          tab={
+            <Space>
+              <DownloadOutlined />
+              エクスポート
+            </Space>
+          }
+          key="export"
+        >
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <Title level={5}>データエクスポート</Title>
+            <Row gutter={[16, 16]}>
+              <Col xs={24} lg={12}>
+                <Card>
+                  <Space direction="vertical" align="center" style={{ width: '100%' }}>
+                    <HddOutlined style={{ fontSize: '48px', color: '#1890ff' }} />
+                    <Title level={5}>全データエクスポート</Title>
+                    <Text type="secondary" style={{ textAlign: 'center' }}>
+                      すべての設定、データ、バックアップをまとめてエクスポートします。
+                    </Text>
+                    <Button
+                      type="primary"
+                      onClick={exportAllData}
+                      loading={exporting}
+                      icon={<DownloadOutlined />}
+                    >
+                      エクスポート
+                    </Button>
+                  </Space>
+                </Card>
+              </Col>
+              <Col xs={24} lg={12}>
+                <Card style={{ borderColor: '#ff4d4f' }}>
+                  <Space direction="vertical" align="center" style={{ width: '100%' }}>
+                    <DeleteOutlined style={{ fontSize: '48px', color: '#ff4d4f' }} />
+                    <Title level={5}>全データ削除</Title>
+                    <Text type="secondary" style={{ textAlign: 'center' }}>
+                      すべてのローカルデータを削除します。この操作は取り消せません。
+                    </Text>
+                    <Popconfirm
+                      title="全データ削除"
+                      description="本当にすべてのデータを削除しますか？この操作は取り消せません。"
+                      onConfirm={clearAllData}
+                      okText="削除"
+                      cancelText="キャンセル"
+                      okButtonProps={{ danger: true }}
+                    >
+                      <Button danger icon={<DeleteOutlined />}>
+                        削除
+                      </Button>
+                    </Popconfirm>
+                  </Space>
+                </Card>
+              </Col>
+            </Row>
+            
+            <Alert
+              message="情報"
+              description="エクスポートされたファイルは他のデバイスでのインポートや、データ移行に使用できます。"
+              type="info"
+              showIcon
+            />
+          </Space>
+        </TabPane>
+      </Tabs>
+    </Modal>
   )
 }

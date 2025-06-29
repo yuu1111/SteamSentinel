@@ -28,22 +28,6 @@ const { Title, Text, Paragraph, Link } = Typography
 const Licenses: React.FC = () => {
   const frontendLibraries = [
     {
-      name: 'Bootstrap 5.3.0',
-      license: 'MIT License',
-      purpose: 'UIフレームワーク、レスポンシブデザイン',
-      source: 'Bootstrap',
-      url: 'https://getbootstrap.com/',
-      cdn: 'jsDelivr'
-    },
-    {
-      name: 'Bootstrap Icons 1.10.0',
-      license: 'MIT License',
-      purpose: 'アイコンフォント',
-      source: 'Bootstrap Icons',
-      url: 'https://icons.getbootstrap.com/',
-      cdn: 'jsDelivr'
-    },
-    {
       name: 'Chart.js 4.4.0',
       license: 'MIT License',
       purpose: '価格推移グラフの描画',
@@ -379,7 +363,6 @@ const Licenses: React.FC = () => {
                 dataSource={[
                   { name: 'IsThereAnyDeal', description: '包括的なゲーム価格データの提供' },
                   { name: 'Steam', description: 'ゲーム情報・画像データの提供' },
-                  { name: 'Bootstrap', description: '美しく使いやすいUIコンポーネント' },
                   { name: 'Ant Design', description: '現代的で包括的なUIコンポーネントライブラリ' },
                   { name: 'React', description: '効率的なUIコンポーネント開発環境' },
                   { name: 'Node.js', description: '安定したサーバーサイドJavaScript環境' }

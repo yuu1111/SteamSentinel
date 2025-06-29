@@ -7,17 +7,14 @@ import {
   TagOutlined,
   BellOutlined,
   GiftOutlined,
-  RocketOutlined,
-  DollarOutlined,
-  PercentageOutlined,
-  ExportOutlined
+  RocketOutlined
 } from '@ant-design/icons'
 import { api } from '../utils/api'
 import { useAlert } from '../contexts/AlertContext'
 import { AlertData } from '../types'
 import { formatDateJP } from '../utils/dateUtils'
 
-const { Title, Text, Paragraph } = Typography
+const { Title, Text } = Typography
 
 const Alerts: React.FC = () => {
   const [alerts, setAlerts] = useState<AlertData[]>([])
@@ -133,6 +130,19 @@ const Alerts: React.FC = () => {
 
   const formatDate = (dateString: string) => {
     return formatDateJP(dateString, 'datetime')
+  }
+
+  const openBackloggd = (gameName: string) => {
+    // Backloggd uses URL-friendly game names
+    const urlFriendlyName = gameName
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '') // Remove special characters
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/-+/g, '-') // Replace multiple hyphens with single
+      .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
+    
+    const url = `https://backloggd.com/games/${urlFriendlyName}/`
+    window.open(url, '_blank', 'noopener,noreferrer')
   }
 
   const renderPagination = () => {
@@ -274,78 +284,86 @@ const Alerts: React.FC = () => {
                       color={getAlertColor(alert.alert_type)}
                       dot={
                         <Avatar 
-                          size="small" 
+                          size={24}
                           style={{ backgroundColor: getAlertColor(alert.alert_type) }}
                           icon={getAlertIcon(alert.alert_type)}
                         />
                       }
                     >
-                      <Card 
-                        size="small"
-                        hoverable
-                        extra={
-                          <Space>
+                      <div style={{ paddingBottom: 8 }}>
+                        <Row justify="space-between" align="top">
+                          <Col flex="auto">
+                            <Space direction="vertical" size={4} style={{ width: '100%' }}>
+                              <div>
+                                <Tag color={getAlertTagColor(alert.alert_type)} style={{ fontSize: 11 }}>
+                                  {getAlertTypeLabel(alert.alert_type)}
+                                </Tag>
+                                <Text strong style={{ fontSize: 14 }}>{gameName}</Text>
+                              </div>
+                              
+                              <Text style={{ fontSize: 13, color: '#666' }}>
+                                {alert.message}
+                              </Text>
+                              
+                              {alert.price_data && (
+                                <Space size={4} wrap>
+                                  <Tag style={{ fontSize: 11, margin: 0 }}>
+                                    ¥{alert.price_data.current_price?.toLocaleString() || '不明'}
+                                  </Tag>
+                                  {alert.price_data.is_on_sale && alert.price_data.discount_percent > 0 && (
+                                    <Tag color="green" style={{ fontSize: 11, margin: 0 }}>
+                                      {alert.price_data.discount_percent}% OFF
+                                    </Tag>
+                                  )}
+                                  {alert.price_data.original_price > 0 && (
+                                    <Text type="secondary" delete style={{ fontSize: 11 }}>
+                                      ¥{alert.price_data.original_price.toLocaleString()}
+                                    </Text>
+                                  )}
+                                </Space>
+                              )}
+                              
+                              <Text type="secondary" style={{ fontSize: 11 }}>
+                                {formatDate(alert.created_at)}
+                              </Text>
+                            </Space>
+                          </Col>
+                          <Col style={{ marginLeft: 12 }}>
                             {steamAppId && (
-                              <>
+                              <Space size={4}>
                                 <Button
-                                  type="link"
+                                  type="text"
                                   size="small"
-                                  icon={<ExportOutlined />}
                                   href={`https://store.steampowered.com/app/${steamAppId}/`}
                                   target="_blank"
                                   rel="noopener noreferrer"
+                                  style={{ fontSize: 11, padding: '0 4px', height: 20 }}
                                 >
                                   Steam
                                 </Button>
                                 <Button
-                                  type="link"
+                                  type="text"
                                   size="small"
                                   href={`https://steamdb.info/app/${steamAppId}/`}
                                   target="_blank"
                                   rel="noopener noreferrer"
+                                  style={{ fontSize: 11, padding: '0 4px', height: 20 }}
                                 >
                                   SteamDB
                                 </Button>
-                              </>
+                                <Button
+                                  type="text"
+                                  size="small"
+                                  onClick={() => openBackloggd(gameName)}
+                                  style={{ fontSize: 11, padding: '0 4px', height: 20 }}
+                                >
+                                  Backloggd
+                                </Button>
+                              </Space>
                             )}
-                          </Space>
-                        }
-                      >
-                        <Space direction="vertical" style={{ width: '100%' }} size="small">
-                          <div>
-                            <Tag color={getAlertTagColor(alert.alert_type)}>
-                              {getAlertTypeLabel(alert.alert_type)}
-                            </Tag>
-                            <Text strong style={{ marginLeft: 8 }}>{gameName}</Text>
-                          </div>
-                          
-                          <Paragraph style={{ margin: 0 }}>
-                            {alert.message}
-                          </Paragraph>
-                          
-                          {alert.price_data && (
-                            <Space wrap>
-                              <Tag icon={<DollarOutlined />}>
-                                ¥{alert.price_data.current_price?.toLocaleString() || '不明'}
-                              </Tag>
-                              {alert.price_data.is_on_sale && alert.price_data.discount_percent > 0 && (
-                                <Tag color="green" icon={<PercentageOutlined />}>
-                                  {alert.price_data.discount_percent}% OFF
-                                </Tag>
-                              )}
-                              {alert.price_data.original_price > 0 && (
-                                <Text type="secondary" delete style={{ fontSize: 12 }}>
-                                  ¥{alert.price_data.original_price.toLocaleString()}
-                                </Text>
-                              )}
-                            </Space>
-                          )}
-                          
-                          <Text type="secondary" style={{ fontSize: 12 }}>
-                            {formatDate(alert.created_at)}
-                          </Text>
-                        </Space>
-                      </Card>
+                          </Col>
+                        </Row>
+                      </div>
                     </Timeline.Item>
                   )
                 })}

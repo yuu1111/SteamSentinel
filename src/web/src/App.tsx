@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { ConfigProvider, theme, App as AntApp } from 'antd'
+import { ExclamationCircleOutlined, FileTextOutlined, GithubOutlined } from '@ant-design/icons'
 import Navigation from './components/Navigation'
 import Dashboard from './pages/Dashboard'
 import Games from './pages/Games'
@@ -192,13 +193,13 @@ function App() {
                 <small style={{ color: isDarkMode ? '#999' : '#666' }}>
                   SteamSentinel v1.0.0 - Steam価格監視システム<br />
                   <a href="#" onClick={(e) => { e.preventDefault(); setCurrentView('limitations') }} style={{ textDecoration: 'none', marginRight: '24px', color: isDarkMode ? '#1890ff' : '#1890ff' }}>
-                    <i className="bi bi-exclamation-triangle"></i> 制限事項・注意点
+                    <ExclamationCircleOutlined style={{ marginRight: '4px' }} /> 制限事項・注意点
                   </a>
                   <a href="#" onClick={(e) => { e.preventDefault(); setCurrentView('licenses') }} style={{ textDecoration: 'none', marginRight: '24px', color: isDarkMode ? '#1890ff' : '#1890ff' }}>
-                    <i className="bi bi-file-text"></i> ライセンス情報
+                    <FileTextOutlined style={{ marginRight: '4px' }} /> ライセンス情報
                   </a>
                   <a href="https://github.com/yuu1111/SteamSentinel" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: isDarkMode ? '#1890ff' : '#1890ff' }}>
-                    <i className="bi bi-github"></i> GitHub
+                    <GithubOutlined style={{ marginRight: '4px' }} /> GitHub
                   </a>
                 </small>
               </div>

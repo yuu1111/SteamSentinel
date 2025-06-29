@@ -1,7 +1,12 @@
 import React, { useState } from 'react'
+import { Modal, Typography, Upload, Radio, Alert, Button, Space } from 'antd'
+import { InboxOutlined, UploadOutlined, InfoCircleOutlined } from '@ant-design/icons'
 import { api } from '../utils/api'
 import { useAlert } from '../contexts/AlertContext'
 import { ConfirmationModal } from './ConfirmationModal'
+
+const { Text, Title } = Typography
+const { Dragger } = Upload
 
 interface ImportGamesModalProps {
   show: boolean
@@ -45,7 +50,6 @@ export const ImportGamesModal: React.FC<ImportGamesModalProps> = ({
     try {
       setLoading(true)
 
-      // ファイルを読み込む
       const fileContent = await readFileAsText(file)
       let importData: any
 
@@ -56,34 +60,30 @@ export const ImportGamesModal: React.FC<ImportGamesModalProps> = ({
         return
       }
 
-      // バリデーション
       if (!importData.games || !Array.isArray(importData.games)) {
         showError('無効なバックアップファイル形式です')
         return
       }
 
-      // 確認ダイアログを表示
       const message = importMode === 'replace' ? 
         `既存のゲーム・履歴データをすべて削除して、${importData.gameCount}件のゲームをインポートします。よろしいですか？` :
         `${importData.gameCount}件のゲームをインポートします。よろしいですか？`
         
       setConfirmMessage(message)
       setConfirmAction(() => async () => {
-        // インポート実行
         importData.mode = importMode
         const response = await api.post('/games/import', importData)
 
-      if (response.success) {
-        showSuccess(response.message || 'インポートが完了しました')
-        
-        // エラーがある場合は警告表示
-        if (response.data && response.data.errors && response.data.errors.length > 0) {
-          showWarning(`インポート完了（${response.data.errors.length}件のエラーあり）`)
-        }
-        
-        resetForm()
-        onHide()
-        onImportCompleted()
+        if (response.success) {
+          showSuccess(response.message || 'インポートが完了しました')
+          
+          if (response.data && response.data.errors && response.data.errors.length > 0) {
+            showWarning(`インポート完了（${response.data.errors.length}件のエラーあり）`)
+          }
+          
+          resetForm()
+          onHide()
+          onImportCompleted()
         } else {
           showError('インポートに失敗しました: ' + response.error)
         }
@@ -97,9 +97,7 @@ export const ImportGamesModal: React.FC<ImportGamesModalProps> = ({
   }
 
   const executeImport = async () => {
-    if (!confirmAction) {
-      return
-    }
+    if (!confirmAction) return
     
     try {
       setLoading(true)
@@ -114,105 +112,98 @@ export const ImportGamesModal: React.FC<ImportGamesModalProps> = ({
     }
   }
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0]
-    setFile(selectedFile || null)
+  const uploadProps = {
+    accept: '.json',
+    multiple: false,
+    beforeUpload: (selectedFile: File) => {
+      setFile(selectedFile)
+      return false
+    },
+    onRemove: () => {
+      setFile(null)
+    },
+    fileList: file ? [{
+      uid: '1',
+      name: file.name,
+      status: 'done' as const
+    }] : []
   }
 
-  if (!show) {return null}
-
   return (
-    <div className="modal fade show d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-      <div className="modal-dialog">
-        <div className="modal-content">
-          <div className="modal-header">
-            <h5 className="modal-title">ゲームリストをインポート</h5>
-            <button type="button" className="btn-close" onClick={onHide}></button>
-          </div>
-          <div className="modal-body">
-            <div className="mb-3">
-              <label htmlFor="importFile" className="form-label">バックアップファイルを選択</label>
-              <input
-                type="file"
-                className="form-control"
-                id="importFile"
-                accept=".json"
-                onChange={handleFileChange}
-                required
-              />
-              <div className="form-text">
+    <>
+      <Modal
+        title="ゲームリストをインポート"
+        open={show}
+        onCancel={() => {
+          resetForm()
+          onHide()
+        }}
+        footer={[
+          <Button key="cancel" onClick={() => {
+            resetForm()
+            onHide()
+          }}>
+            キャンセル
+          </Button>,
+          <Button 
+            key="import"
+            type="primary"
+            icon={<UploadOutlined />}
+            onClick={handleImport}
+            disabled={loading || !file}
+            loading={loading}
+          >
+            インポート
+          </Button>
+        ]}
+        width={600}
+      >
+        <Space direction="vertical" style={{ width: '100%' }}>
+          <div>
+            <Title level={5}>バックアップファイルを選択</Title>
+            <Dragger {...uploadProps}>
+              <p className="ant-upload-drag-icon">
+                <InboxOutlined />
+              </p>
+              <p className="ant-upload-text">
+                ファイルをクリックまたはドラッグしてアップロード
+              </p>
+              <p className="ant-upload-hint">
                 SteamSentinelでエクスポートしたJSONファイルを選択してください
-              </div>
-            </div>
+              </p>
+            </Dragger>
+          </div>
 
-            <div className="mb-3">
-              <label className="form-label">インポートモード</label>
-              <div className="form-check">
-                <input
-                  className="form-check-input"
-                  type="radio"
-                  name="importMode"
-                  id="importModeMerge"
-                  value="merge"
-                  checked={importMode === 'merge'}
-                  onChange={(e) => setImportMode(e.target.value as any)}
-                />
-                <label className="form-check-label" htmlFor="importModeMerge">
+          <div>
+            <Title level={5}>インポートモード</Title>
+            <Radio.Group value={importMode} onChange={(e) => setImportMode(e.target.value)}>
+              <Space direction="vertical">
+                <Radio value="merge">
                   <strong>マージ</strong> - 既存のゲームを保持し、新しいゲームを追加・更新
-                </label>
-              </div>
-              <div className="form-check">
-                <input
-                  className="form-check-input"
-                  type="radio"
-                  name="importMode"
-                  id="importModeSkip"
-                  value="skip"
-                  checked={importMode === 'skip'}
-                  onChange={(e) => setImportMode(e.target.value as any)}
-                />
-                <label className="form-check-label" htmlFor="importModeSkip">
+                </Radio>
+                <Radio value="skip">
                   <strong>スキップ</strong> - 既存のゲームは変更せず、新しいゲームのみ追加
-                </label>
-              </div>
-              <div className="form-check">
-                <input
-                  className="form-check-input"
-                  type="radio"
-                  name="importMode"
-                  id="importModeReplace"
-                  value="replace"
-                  checked={importMode === 'replace'}
-                  onChange={(e) => setImportMode(e.target.value as any)}
-                />
-                <label className="form-check-label" htmlFor="importModeReplace">
+                </Radio>
+                <Radio value="replace">
                   <strong>置換</strong> - 既存のゲームをすべて削除してから追加
-                  <div className="text-danger small">※ 価格履歴・アラート履歴も削除されます</div>
-                </label>
-              </div>
-            </div>
+                  <br />
+                  <Text type="danger" style={{ fontSize: '12px' }}>
+                    ※ 価格履歴・アラート履歴も削除されます
+                  </Text>
+                </Radio>
+              </Space>
+            </Radio.Group>
+          </div>
 
-            <div className="alert alert-info">
-              <i className="bi bi-info-circle"></i>
-              インポート前に現在のゲームリストをエクスポートしてバックアップすることをお勧めします。
-            </div>
-          </div>
-          <div className="modal-footer">
-            <button type="button" className="btn btn-secondary" onClick={onHide}>
-              キャンセル
-            </button>
-            <button 
-              type="button" 
-              className="btn btn-warning" 
-              onClick={handleImport}
-              disabled={loading || !file}
-            >
-              <i className="bi bi-upload"></i> 
-              {loading ? 'インポート中...' : 'インポート'}
-            </button>
-          </div>
-        </div>
-      </div>
+          <Alert
+            message="注意"
+            description="インポート前に現在のゲームリストをエクスポートしてバックアップすることをお勧めします。"
+            type="info"
+            showIcon
+            icon={<InfoCircleOutlined />}
+          />
+        </Space>
+      </Modal>
       
       <ConfirmationModal
         show={showConfirmModal}
@@ -226,7 +217,7 @@ export const ImportGamesModal: React.FC<ImportGamesModalProps> = ({
         }}
         variant="warning"
       />
-    </div>
+    </>
   )
 }
 
@@ -245,11 +236,9 @@ export const useExportGames = ({ onExportCompleted }: ExportGamesProps = {}) => 
       const response = await api.get('/games/export')
       
       if (response) {
-        // JSONデータをBlob化
         const jsonStr = JSON.stringify(response, null, 2)
         const blob = new Blob([jsonStr], { type: 'application/json' })
         
-        // ダウンロードリンクを作成
         const url = window.URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
@@ -257,7 +246,6 @@ export const useExportGames = ({ onExportCompleted }: ExportGamesProps = {}) => 
           `steamsentinel_backup_${new Date().toISOString().split('T')[0].replace(/-/g, '')}.json` : 
           'steamsentinel_backup.json'
         
-        // ダウンロードを実行
         document.body.appendChild(a)
         a.click()
         document.body.removeChild(a)

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Table, Button, Space, Typography, Avatar, Tag, Tooltip, Row, Col, Card, Spin } from 'antd'
-import { AppstoreOutlined, PlusOutlined, SyncOutlined, DownloadOutlined, UploadOutlined, EditOutlined, DeleteOutlined, BarChartOutlined, DatabaseOutlined } from '@ant-design/icons'
+import { AppstoreOutlined, PlusOutlined, SyncOutlined, DownloadOutlined, UploadOutlined, EditOutlined, DeleteOutlined, BarChartOutlined, DatabaseOutlined, BookOutlined, SettingOutlined, HddOutlined, PieChartOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import { Game } from '../types'
 import { api } from '../utils/api'
@@ -9,6 +9,9 @@ import { AddGameModal, EditGameModal } from '../components/GameModals'
 import { ImportGamesModal, useExportGames } from '../components/ImportExportModals'
 import { ConfirmationModal } from '../components/ConfirmationModal'
 import { PriceChartModal } from '../components/PriceChartModal'
+import { DataManager } from '../components/DataManager'
+import { DashboardCustomizer } from '../components/DashboardCustomizer'
+import { ReportGenerator } from '../components/ReportGenerator'
 
 const Games: React.FC = () => {
   const [games, setGames] = useState<Game[]>([])
@@ -23,6 +26,9 @@ const Games: React.FC = () => {
   const [chartGameId, setChartGameId] = useState<number | null>(null)
   const [chartGameName, setChartGameName] = useState('')
   const [updatingGameId, setUpdatingGameId] = useState<number | null>(null)
+  const [showDataManager, setShowDataManager] = useState(false)
+  const [showDashboardCustomizer, setShowDashboardCustomizer] = useState(false)
+  const [showReportGenerator, setShowReportGenerator] = useState(false)
   const { showError, showSuccess } = useAlert()
   const { exportGames, loading: exportLoading } = useExportGames()
 
@@ -87,6 +93,19 @@ const Games: React.FC = () => {
 
   const openSteamDB = (steamAppId: number) => {
     const url = `https://steamdb.info/app/${steamAppId}/`
+    window.open(url, '_blank', 'noopener,noreferrer')
+  }
+
+  const openBackloggd = (gameName: string) => {
+    // Backloggd uses URL-friendly game names
+    const urlFriendlyName = gameName
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '') // Remove special characters
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/-+/g, '-') // Replace multiple hyphens with single
+      .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
+    
+    const url = `https://backloggd.com/games/${urlFriendlyName}/`
     window.open(url, '_blank', 'noopener,noreferrer')
   }
 
@@ -206,9 +225,9 @@ const Games: React.FC = () => {
     {
       title: '操作',
       key: 'actions',
-      width: 260, // 幅を拡大
+      width: 300, // 幅を拡大
       render: (_, record: Game) => (
-        <Space size="small">
+        <Space size="small" wrap>
           <Tooltip title="価格推移">
             <Button
               size="middle"
@@ -221,6 +240,13 @@ const Games: React.FC = () => {
               size="middle"
               icon={<DatabaseOutlined />}
               onClick={() => openSteamDB(record.steam_app_id)}
+            />
+          </Tooltip>
+          <Tooltip title="Backloggd">
+            <Button
+              size="middle"
+              icon={<BookOutlined />}
+              onClick={() => openBackloggd(record.name)}
             />
           </Tooltip>
           <Tooltip title="編集">
@@ -271,7 +297,28 @@ const Games: React.FC = () => {
               </span>
             }
             extra={
-              <Space>
+              <Space wrap>
+                <Button 
+                  icon={<HddOutlined />}
+                  onClick={() => setShowDataManager(true)}
+                  size="middle"
+                >
+                  データ管理
+                </Button>
+                <Button 
+                  icon={<SettingOutlined />}
+                  onClick={() => setShowDashboardCustomizer(true)}
+                  size="middle"
+                >
+                  ダッシュボード設定
+                </Button>
+                <Button 
+                  icon={<PieChartOutlined />}
+                  onClick={() => setShowReportGenerator(true)}
+                  size="middle"
+                >
+                  レポート生成
+                </Button>
                 <Button 
                   type="default"
                   icon={<DownloadOutlined />}
@@ -386,6 +433,22 @@ const Games: React.FC = () => {
           setChartGameId(null)
           setChartGameName('')
         }}
+      />
+
+      <DataManager
+        show={showDataManager}
+        onClose={() => setShowDataManager(false)}
+      />
+
+      <DashboardCustomizer
+        show={showDashboardCustomizer}
+        onClose={() => setShowDashboardCustomizer(false)}
+      />
+
+      <ReportGenerator
+        show={showReportGenerator}
+        expenseData={null}
+        onClose={() => setShowReportGenerator(false)}
       />
     </div>
   )

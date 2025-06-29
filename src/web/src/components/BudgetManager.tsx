@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react'
-import { BudgetData, BudgetSummary, ExpenseData, BudgetAlert } from '../types'
+import { Col, Card, Typography, Progress, Row, Button, Modal, Form, Input, Select, Space, Tag, Alert, Statistic, List, Popconfirm } from 'antd'
+import { PlusOutlined, EditOutlined, DeleteOutlined, DollarOutlined, WarningOutlined } from '@ant-design/icons'
+import { BudgetData, BudgetSummary, ExpenseData } from '../types'
 import { useAlert } from '../contexts/AlertContext'
+
+const { Title, Text } = Typography
+const { Option } = Select
 
 interface BudgetManagerProps {
   expenseData: ExpenseData | null
@@ -10,12 +15,9 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({ expenseData }) => 
   const [budgets, setBudgets] = useState<BudgetData[]>([])
   const [budgetSummary, setBudgetSummary] = useState<BudgetSummary | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
-  const [_loading, setLoading] = useState(false)
-  const [newBudget, setNewBudget] = useState<Partial<BudgetData>>({
-    name: '',
-    type: 'monthly',
-    amount: 0
-  })
+  const [loading, setLoading] = useState(false)
+  const [editingBudget, setEditingBudget] = useState<BudgetData | null>(null)
+  const [form] = Form.useForm()
   const { showSuccess, showError } = useAlert()
 
   useEffect(() => {
@@ -52,8 +54,6 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({ expenseData }) => 
       }))
       
       setBudgets(convertedBudgets)
-      
-      // 予算サマリーを計算
       calculateBudgetSummary(convertedBudgets)
     } catch (error) {
       console.error('Failed to load budgets:', error)
@@ -96,65 +96,39 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({ expenseData }) => 
     setBudgetSummary(summary)
   }
 
-  const createBudget = async () => {
-    if (!newBudget.name || !newBudget.amount) {
-      showError('予算名と金額を入力してください')
-      return
-    }
-
+  const handleSubmit = async (values: any) => {
     try {
       setLoading(true)
       
-      const now = new Date()
-      const period_type = newBudget.type || 'monthly'
-      let start_date: string
-      let end_date: string | undefined
+      const url = editingBudget ? `/api/budgets/${editingBudget.id}` : '/api/budgets'
+      const method = editingBudget ? 'PUT' : 'POST'
       
-      switch (period_type) {
-        case 'monthly':
-          start_date = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
-          end_date = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]
-          break
-        case 'yearly':
-          start_date = `${now.getFullYear()}-01-01`
-          end_date = `${now.getFullYear()}-12-31`
-          break
-        default:
-          start_date = now.toISOString().split('T')[0]
-          end_date = undefined
-      }
-      
-      const budgetData = {
-        name: newBudget.name,
-        period_type,
-        budget_amount: newBudget.amount,
-        start_date,
-        end_date,
-        is_active: true
-      }
-      
-      const response = await fetch('/api/budgets', {
-        method: 'POST',
+      const response = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(budgetData)
+        body: JSON.stringify({
+          name: values.name,
+          period_type: values.type,
+          budget_amount: values.amount,
+          is_active: true
+        })
       })
       
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to create budget')
+        throw new Error(errorData.error || `Failed to ${editingBudget ? 'update' : 'create'} budget`)
       }
       
-      // 予算を再読み込み
       await loadBudgets()
-      
-      setNewBudget({ name: '', type: 'monthly', amount: 0 })
+      form.resetFields()
       setShowCreateModal(false)
-      showSuccess('予算を作成しました')
+      setEditingBudget(null)
+      showSuccess(editingBudget ? '予算を更新しました' : '予算を作成しました')
     } catch (error) {
-      console.error('Failed to create budget:', error)
-      showError('予算の作成に失敗しました: ' + (error as Error).message)
+      console.error('Budget operation error:', error)
+      showError(`予算の${editingBudget ? '更新' : '作成'}に失敗しました: ` + (error as Error).message)
     } finally {
       setLoading(false)
     }
@@ -183,317 +157,243 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({ expenseData }) => 
     }
   }
 
-  const editBudget = async (budgetId: string, updatedData: Partial<BudgetData>) => {
-    try {
-      setLoading(true)
-      
-      const response = await fetch(`/api/budgets/${budgetId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          name: updatedData.name,
-          period_type: updatedData.type,
-          budget_amount: updatedData.amount,
-          is_active: true
-        })
-      })
-      
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to update budget')
-      }
-      
-      await loadBudgets()
-      showSuccess('予算を更新しました')
-    } catch (error) {
-      console.error('Failed to update budget:', error)
-      showError('予算の更新に失敗しました: ' + (error as Error).message)
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const getBudgetProgress = (budget: BudgetData) => {
-    const progress = Math.min((budget.spent / budget.amount) * 100, 100)
-    return progress
+    return Math.min((budget.spent / budget.amount) * 100, 100)
   }
 
-  const getBudgetColor = (budget: BudgetData) => {
+  const getBudgetStatus = (budget: BudgetData) => {
     const progress = getBudgetProgress(budget)
-    if (progress >= 100) {return 'danger'}
-    if (progress >= 80) {return 'warning'}
-    if (progress >= 60) {return 'info'}
-    return 'success'
+    if (progress >= 100) return { status: 'exception', color: 'error' }
+    if (progress >= 80) return { status: 'normal', color: 'warning' }
+    return { status: 'normal', color: 'success' }
   }
 
-  const checkBudgetAlerts = (budget: BudgetData): BudgetAlert[] => {
-    const progress = getBudgetProgress(budget)
-    return budget.alerts.filter(alert => {
-      if (alert.type === 'threshold' && progress >= alert.threshold) {
-        return true
-      }
-      if (alert.type === 'exceeded' && budget.remaining < 0) {
-        return true
-      }
-      return false
+  const openEditModal = (budget: BudgetData) => {
+    setEditingBudget(budget)
+    form.setFieldsValue({
+      name: budget.name,
+      type: budget.type,
+      amount: budget.amount
     })
+    setShowCreateModal(true)
+  }
+
+  const openCreateModal = () => {
+    setEditingBudget(null)
+    form.resetFields()
+    setShowCreateModal(true)
   }
 
   if (!expenseData) {
     return (
-      <div className="row">
-        <div className="col-12">
-          <div className="alert alert-info">
-            <i className="bi bi-info-circle me-2"></i>
-            予算データを読み込み中...
-          </div>
-        </div>
-      </div>
+      <Col span={24}>
+        <Alert
+          message="予算管理"
+          description="予算管理機能を使用するには、まず出費データの読み込みが必要です。"
+          type="info"
+          showIcon
+        />
+      </Col>
     )
   }
 
   return (
-    <div className="row">
-      <div className="col-12 mb-4">
-        <div className="d-flex justify-content-between align-items-center">
-          <h4>
-            <i className="bi bi-wallet me-2"></i>予算管理
-          </h4>
-          <button 
-            className="btn btn-primary btn-sm"
-            onClick={() => setShowCreateModal(true)}
-          >
-            <i className="bi bi-plus-circle me-1"></i>予算を作成
-          </button>
-        </div>
-      </div>
+    <Col span={24}>
+      <Card
+        title={
+          <Space>
+            <DollarOutlined />
+            <Title level={4} style={{ margin: 0 }}>予算管理</Title>
+          </Space>
+        }
+        extra={
+          <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>
+            予算を追加
+          </Button>
+        }
+      >
+        {/* 予算サマリー */}
+        {budgetSummary && (
+          <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+            <Col xs={24} sm={6}>
+              <Statistic
+                title="総予算数"
+                value={budgetSummary.totalBudgets}
+                prefix={<DollarOutlined />}
+              />
+            </Col>
+            <Col xs={24} sm={6}>
+              <Statistic
+                title="予算総額"
+                value={budgetSummary.totalAllocated}
+                prefix="¥"
+                precision={0}
+              />
+            </Col>
+            <Col xs={24} sm={6}>
+              <Statistic
+                title="支出総額"
+                value={budgetSummary.totalSpent}
+                prefix="¥"
+                precision={0}
+                valueStyle={{ color: budgetSummary.overBudgetCount > 0 ? '#f5222d' : '#1890ff' }}
+              />
+            </Col>
+            <Col xs={24} sm={6}>
+              <Statistic
+                title="平均使用率"
+                value={budgetSummary.averageUtilization}
+                suffix="%"
+                precision={1}
+                valueStyle={{ color: budgetSummary.averageUtilization > 80 ? '#faad14' : '#52c41a' }}
+              />
+            </Col>
+          </Row>
+        )}
 
-      {/* Budget Summary Cards */}
-      {budgetSummary && (
-        <>
-          <div className="col-lg-3 col-md-6 mb-3">
-            <div className="card stats-card info">
-              <div className="card-body text-center">
-                <i className="bi bi-pie-chart display-4 mb-2"></i>
-                <h3 className="display-4">{budgetSummary.totalBudgets}</h3>
-                <p className="mb-0">総予算数</p>
-              </div>
-            </div>
-          </div>
-          <div className="col-lg-3 col-md-6 mb-3">
-            <div className="card stats-card success">
-              <div className="card-body text-center">
-                <i className="bi bi-currency-yen display-4 mb-2"></i>
-                <h3 className="display-4">¥{budgetSummary.totalAllocated.toLocaleString()}</h3>
-                <p className="mb-0">総予算額</p>
-              </div>
-            </div>
-          </div>
-          <div className="col-lg-3 col-md-6 mb-3">
-            <div className="card stats-card warning">
-              <div className="card-body text-center">
-                <i className="bi bi-graph-up display-4 mb-2"></i>
-                <h3 className="display-4">{budgetSummary.averageUtilization.toFixed(0)}%</h3>
-                <p className="mb-0">平均使用率</p>
-              </div>
-            </div>
-          </div>
-          <div className="col-lg-3 col-md-6 mb-3">
-            <div className="card stats-card danger">
-              <div className="card-body text-center">
-                <i className="bi bi-exclamation-triangle display-4 mb-2"></i>
-                <h3 className="display-4">{budgetSummary.overBudgetCount}</h3>
-                <p className="mb-0">予算超過</p>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
+        {/* 予算オーバーアラート */}
+        {budgetSummary && budgetSummary.overBudgetCount > 0 && (
+          <Alert
+            message={`${budgetSummary.overBudgetCount}個の予算が超過しています`}
+            type="error"
+            showIcon
+            icon={<WarningOutlined />}
+            style={{ marginBottom: 16 }}
+          />
+        )}
 
-      {/* Budget List */}
-      <div className="col-12 mb-4">
-        <div className="card">
-          <div className="card-header">
-            <h5 className="mb-0">
-              <i className="bi bi-list-ul me-2"></i>予算一覧
-            </h5>
-          </div>
-          <div className="card-body">
-            {budgets.length > 0 ? (
-              <div className="row">
-                {budgets.map(budget => {
-                  const progress = getBudgetProgress(budget)
-                  const color = getBudgetColor(budget)
-                  const alerts = checkBudgetAlerts(budget)
-                  
-                  return (
-                    <div key={budget.id} className="col-lg-6 mb-3">
-                      <div className="card h-100">
-                        <div className="card-header d-flex justify-content-between align-items-center">
-                          <h6 className="mb-0">{budget.name}</h6>
-                          <div className="d-flex gap-2">
-                            <span className={`badge bg-${color}`}>
-                              {budget.type === 'monthly' ? '月間' : budget.type === 'yearly' ? '年間' : 'カスタム'}
-                            </span>
-                            <div className="btn-group btn-group-sm">
-                              <button 
-                                className="btn btn-outline-primary btn-sm"
-                                onClick={() => {
-                                  const name = prompt('新しい予算名を入力してください:', budget.name)
-                                  if (name && name !== budget.name) {
-                                    editBudget(budget.id, { ...budget, name })
-                                  }
-                                }}
-                                title="編集"
-                              >
-                                <i className="bi bi-pencil"></i>
-                              </button>
-                              <button 
-                                className="btn btn-outline-danger btn-sm"
-                                onClick={() => {
-                                  if (confirm(`「${budget.name}」を削除しますか？`)) {
-                                    deleteBudget(budget.id)
-                                  }
-                                }}
-                                title="削除"
-                              >
-                                <i className="bi bi-trash"></i>
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="card-body">
-                          <div className="mb-3">
-                            <div className="d-flex justify-content-between mb-1">
-                              <span className="text-muted">使用状況</span>
-                              <span className="fw-bold">{progress.toFixed(1)}%</span>
-                            </div>
-                            <div className="progress">
-                              <div 
-                                className={`progress-bar bg-${color}`}
-                                style={{ width: `${Math.min(progress, 100)}%` }}
-                              />
-                            </div>
-                          </div>
-                          
-                          <div className="row text-center">
-                            <div className="col-4">
-                              <small className="text-muted">予算額</small>
-                              <div className="fw-bold">¥{budget.amount.toLocaleString()}</div>
-                            </div>
-                            <div className="col-4">
-                              <small className="text-muted">使用額</small>
-                              <div className="fw-bold">¥{budget.spent.toLocaleString()}</div>
-                            </div>
-                            <div className="col-4">
-                              <small className="text-muted">残額</small>
-                              <div className={`fw-bold ${budget.remaining < 0 ? 'text-danger' : 'text-success'}`}>
-                                ¥{budget.remaining.toLocaleString()}
-                              </div>
-                            </div>
-                          </div>
-                          
-                          {alerts.length > 0 && (
-                            <div className="mt-3">
-                              {alerts.map(alert => (
-                                <div key={alert.id} className={`alert alert-${color === 'danger' ? 'danger' : 'warning'} alert-sm`}>
-                                  <i className="bi bi-exclamation-triangle me-1"></i>
-                                  {alert.message}
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            ) : (
-              <div className="text-center py-4">
-                <i className="bi bi-wallet2 display-1 text-muted mb-3"></i>
-                <p className="text-muted">まだ予算が設定されていません。</p>
-                <button 
-                  className="btn btn-primary"
-                  onClick={() => setShowCreateModal(true)}
-                >
-                  最初の予算を作成する
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Create Budget Modal */}
-      {showCreateModal && (
-        <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">新規予算作成</h5>
-                <button 
-                  type="button" 
-                  className="btn-close"
-                  onClick={() => setShowCreateModal(false)}
-                />
-              </div>
-              <div className="modal-body">
-                <div className="mb-3">
-                  <label className="form-label">予算名</label>
-                  <input
+        {/* 予算リスト */}
+        <List
+          dataSource={budgets}
+          renderItem={(budget) => {
+            const progress = getBudgetProgress(budget)
+            const { status, color } = getBudgetStatus(budget)
+            
+            return (
+              <List.Item
+                actions={[
+                  <Button
                     type="text"
-                    className="form-control"
-                    value={newBudget.name || ''}
-                    onChange={(e) => setNewBudget({ ...newBudget, name: e.target.value })}
-                    placeholder="例: 月間ゲーム購入予算"
-                  />
-                </div>
-                <div className="mb-3">
-                  <label className="form-label">予算タイプ</label>
-                  <select
-                    className="form-select"
-                    value={newBudget.type || 'monthly'}
-                    onChange={(e) => setNewBudget({ ...newBudget, type: e.target.value as 'monthly' | 'yearly' | 'custom' })}
+                    icon={<EditOutlined />}
+                    onClick={() => openEditModal(budget)}
+                  />,
+                  <Popconfirm
+                    title="この予算を削除しますか？"
+                    onConfirm={() => deleteBudget(budget.id)}
+                    okText="削除"
+                    cancelText="キャンセル"
                   >
-                    <option value="monthly">月間予算</option>
-                    <option value="yearly">年間予算</option>
-                    <option value="custom">カスタム期間</option>
-                  </select>
-                </div>
-                <div className="mb-3">
-                  <label className="form-label">予算金額 (円)</label>
-                  <input
-                    type="number"
-                    className="form-control"
-                    value={newBudget.amount || ''}
-                    onChange={(e) => setNewBudget({ ...newBudget, amount: parseInt(e.target.value) || 0 })}
-                    placeholder="10000"
-                  />
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button 
-                  type="button" 
-                  className="btn btn-secondary"
-                  onClick={() => setShowCreateModal(false)}
-                >
-                  キャンセル
-                </button>
-                <button 
-                  type="button" 
-                  className="btn btn-primary"
-                  onClick={createBudget}
-                >
-                  作成
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+                    <Button type="text" danger icon={<DeleteOutlined />} />
+                  </Popconfirm>
+                ]}
+              >
+                <List.Item.Meta
+                  title={
+                    <Space>
+                      <Text strong>{budget.name}</Text>
+                      <Tag color={budget.type === 'monthly' ? 'blue' : budget.type === 'yearly' ? 'green' : 'purple'}>
+                        {budget.type === 'monthly' ? '月間' : budget.type === 'yearly' ? '年間' : 'カスタム'}
+                      </Tag>
+                    </Space>
+                  }
+                  description={
+                    <Space direction="vertical" style={{ width: '100%' }}>
+                      <Text>期間: {budget.period}</Text>
+                      <Progress
+                        percent={progress}
+                        status={status as any}
+                        strokeColor={color === 'error' ? '#f5222d' : color === 'warning' ? '#faad14' : '#52c41a'}
+                      />
+                      <Space>
+                        <Text>支出: ¥{budget.spent.toLocaleString()}</Text>
+                        <Text>予算: ¥{budget.amount.toLocaleString()}</Text>
+                        <Text type={budget.remaining < 0 ? 'danger' : 'secondary'}>
+                          残高: ¥{budget.remaining.toLocaleString()}
+                        </Text>
+                      </Space>
+                    </Space>
+                  }
+                />
+              </List.Item>
+            )
+          }}
+        />
+
+        {budgets.length === 0 && (
+          <Alert
+            message="予算が設定されていません"
+            description="「予算を追加」ボタンから最初の予算を設定してください。"
+            type="info"
+            showIcon
+            action={
+              <Button type="primary" onClick={openCreateModal}>
+                予算を追加
+              </Button>
+            }
+          />
+        )}
+      </Card>
+
+      {/* 予算作成/編集モーダル */}
+      <Modal
+        title={editingBudget ? '予算を編集' : '新しい予算を作成'}
+        open={showCreateModal}
+        onCancel={() => {
+          setShowCreateModal(false)
+          setEditingBudget(null)
+          form.resetFields()
+        }}
+        footer={null}
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleSubmit}
+          initialValues={{ type: 'monthly' }}
+        >
+          <Form.Item
+            name="name"
+            label="予算名"
+            rules={[{ required: true, message: '予算名を入力してください' }]}
+          >
+            <Input placeholder="例: 月間ゲーム予算" />
+          </Form.Item>
+
+          <Form.Item
+            name="type"
+            label="予算タイプ"
+            rules={[{ required: true, message: '予算タイプを選択してください' }]}
+          >
+            <Select>
+              <Option value="monthly">月間</Option>
+              <Option value="yearly">年間</Option>
+              <Option value="custom">カスタム</Option>
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            name="amount"
+            label="予算額（円）"
+            rules={[
+              { required: true, message: '予算額を入力してください' },
+              { type: 'number', min: 1, message: '1円以上を入力してください' }
+            ]}
+          >
+            <Input type="number" placeholder="10000" />
+          </Form.Item>
+
+          <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
+            <Space>
+              <Button onClick={() => setShowCreateModal(false)}>
+                キャンセル
+              </Button>
+              <Button type="primary" htmlType="submit" loading={loading}>
+                {editingBudget ? '更新' : '作成'}
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
+    </Col>
   )
 }
