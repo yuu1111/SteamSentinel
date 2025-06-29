@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { ReportConfig, ReportSection, ExpenseData, BudgetData } from '../types'
 import { useAlert } from '../contexts/AlertContext'
+import { formatDateJP, getCurrentJstDateTime } from '../utils/dateUtils'
 
 interface ReportGeneratorProps {
   expenseData: ExpenseData | null
@@ -108,7 +109,7 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({
 
     const enabledSections = reportConfig.sections.filter(s => s.isEnabled)
     let preview = `# ${reportConfig.name}\n\n`
-    preview += `生成日時: ${new Date().toLocaleString('ja-JP')}\n`
+    preview += `生成日時: ${getCurrentJstDateTime()} JST\n`
     preview += `レポート期間: ${reportConfig.type}\n`
     preview += `フォーマット: ${reportConfig.format.toUpperCase()}\n\n`
 
@@ -161,7 +162,7 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({
           preview += '| ゲーム名 | 購入価格 | 割引率 | 購入日 |\n'
           preview += '|---------|---------|--------|--------|\n'
           expenseData.recentPurchases.slice(0, 10).forEach(purchase => {
-            preview += `| ${purchase.game_name} | ¥${purchase.trigger_price.toLocaleString()} | ${purchase.discount_percent}% | ${new Date(purchase.created_at).toLocaleDateString('ja-JP')} |\n`
+            preview += `| ${purchase.game_name} | ¥${purchase.trigger_price.toLocaleString()} | ${purchase.discount_percent}% | ${formatDateJP(purchase.created_at, 'date')} |\n`
           })
           preview += '\n'
           break
@@ -203,7 +204,7 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({
         purchase.game_name,
         purchase.trigger_price.toString(),
         purchase.discount_percent.toString(),
-        new Date(purchase.created_at).toLocaleDateString('ja-JP')
+        formatDateJP(purchase.created_at, 'date')
       ])
     ]
 

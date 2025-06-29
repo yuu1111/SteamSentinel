@@ -3,6 +3,7 @@ import { api } from '../utils/api'
 import { useAlert } from '../contexts/AlertContext'
 import { AlertData } from '../types'
 import { ConfirmationModal } from '../components/ConfirmationModal'
+import { formatDateJP } from '../utils/dateUtils'
 
 const Alerts: React.FC = () => {
   const [alerts, setAlerts] = useState<AlertData[]>([])
@@ -67,15 +68,17 @@ const Alerts: React.FC = () => {
   const getAlertIcon = (alertType: string) => {
     switch (alertType) {
       case 'new_low':
-        return 'bi-graph-down-arrow text-success'
+        return 'bi-graph-down-arrow'
       case 'sale_start':
-        return 'bi-tag text-warning'
+        return 'bi-tag'
       case 'threshold_met':
-        return 'bi-bell text-primary'
+        return 'bi-bell'
       case 'free_game':
-        return 'bi-gift text-info'
+        return 'bi-gift'
+      case 'game_released':
+        return 'bi-rocket'
       default:
-        return 'bi-bell text-secondary'
+        return 'bi-bell'
     }
   }
 
@@ -89,13 +92,37 @@ const Alerts: React.FC = () => {
         return '価格閾値達成'
       case 'free_game':
         return '無料ゲーム'
+      case 'game_released':
+        return 'ゲームリリース'
       default:
         return 'アラート'
     }
   }
 
+  const getAlertColor = (alertType: string) => {
+    switch(alertType) {
+      case 'new_low': return '#dc3545' // danger red
+      case 'sale_start': return '#198754' // success green
+      case 'threshold_met': return '#fd7e14' // warning orange
+      case 'free_game': return '#0d6efd' // primary blue
+      case 'game_released': return '#6f42c1' // purple
+      default: return '#6c757d' // secondary gray
+    }
+  }
+
+  const getAlertColorClass = (alertType: string) => {
+    switch(alertType) {
+      case 'new_low': return 'danger'
+      case 'sale_start': return 'success'
+      case 'threshold_met': return 'warning'
+      case 'free_game': return 'primary'
+      case 'game_released': return 'info'
+      default: return 'secondary'
+    }
+  }
+
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('ja-JP')
+    return formatDateJP(dateString, 'datetime')
   }
 
   const renderPagination = () => {
@@ -217,23 +244,25 @@ const Alerts: React.FC = () => {
               <>
                 <div className="list-group">
                   {alerts.map(alert => (
-                    <div key={alert.id} className="list-group-item">
+                    <div key={alert.id} className="list-group-item border-start border-4" style={{ borderLeftColor: getAlertColor(alert.alert_type) + ' !important' }}>
                       <div className="d-flex justify-content-between align-items-start">
                         <div className="flex-grow-1">
                           <div className="d-flex align-items-center mb-2">
-                            <i className={`bi ${getAlertIcon(alert.alert_type)} me-2`}></i>
-                            <span className="badge bg-secondary me-2">
+                            <i className={`bi ${getAlertIcon(alert.alert_type)} me-2 text-${getAlertColorClass(alert.alert_type)}`}></i>
+                            <span className={`badge bg-${getAlertColorClass(alert.alert_type)} me-2`}>
                               {getAlertTypeLabel(alert.alert_type)}
                             </span>
                             <strong>{alert.game_name || alert.game?.name || 'ゲーム名不明'}</strong>
                           </div>
                           <p className="mb-1">{alert.message}</p>
                           {alert.price_data && (
-                            <div className="small text-muted">
-                              価格情報: ¥{alert.price_data.current_price?.toLocaleString() || '不明'}
+                            <div className="small mb-2">
+                              <span className="badge bg-light text-dark me-2">
+                                価格: ¥{alert.price_data.current_price?.toLocaleString() || '不明'}
+                              </span>
                               {alert.price_data.is_on_sale && (
-                                <span className="text-success ms-2">
-                                  ({alert.price_data.discount_percent || 0}% OFF)
+                                <span className="badge bg-success">
+                                  {alert.price_data.discount_percent || 0}% OFF
                                 </span>
                               )}
                             </div>

@@ -296,7 +296,7 @@ export const EditGameModal: React.FC<EditGameModalProps> = ({ show, game, onHide
         manualHistoricalLow: game.manual_historical_low?.toString() || '',
         isPurchased: Boolean(game.is_purchased),
         purchasePrice: game.purchase_price?.toString() || '',
-        purchaseDate: game.purchase_date ? new Date(game.purchase_date).toISOString().split('T')[0] : ''
+        purchaseDate: game.purchase_date ? new Date(game.purchase_date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
       })
     }
   }, [show, game])

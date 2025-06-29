@@ -10,6 +10,7 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({ expenseData }) => 
   const [budgets, setBudgets] = useState<BudgetData[]>([])
   const [budgetSummary, setBudgetSummary] = useState<BudgetSummary | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [_loading, setLoading] = useState(false)
   const [newBudget, setNewBudget] = useState<Partial<BudgetData>>({
     name: '',
     type: 'monthly',
@@ -21,34 +22,63 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({ expenseData }) => 
     loadBudgets()
   }, [expenseData])
 
-  const loadBudgets = () => {
-    // Mock data - 実際の実装ではAPIから取得
-    const mockBudgets: BudgetData[] = [
-      {
-        id: '1',
-        name: '月間ゲーム予算',
-        type: 'monthly',
-        amount: 10000,
-        period: '2024-01',
-        spent: expenseData?.summary.totalExpenses || 0,
-        remaining: 10000 - (expenseData?.summary.totalExpenses || 0),
-        alerts: [
-          {
-            id: '1',
-            budgetId: '1',
-            type: 'threshold',
-            threshold: 80,
-            message: '予算の80%に達しました',
-            isActive: true
-          }
-        ],
-        created_at: '2024-01-01T00:00:00Z',
-        updated_at: '2024-01-01T00:00:00Z'
+  const loadBudgets = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/budgets/summaries')
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch budgets')
       }
-    ]
-
-    setBudgets(mockBudgets)
-    calculateBudgetSummary(mockBudgets)
+      
+      const budgetSummaries = await response.json()
+      
+      // バックエンドのBudgetSummaryをフロントエンドのBudgetDataに変換
+      const convertedBudgets: BudgetData[] = budgetSummaries.map((summary: any) => ({
+        id: summary.id.toString(),
+        name: summary.name,
+        type: summary.period_type as 'monthly' | 'yearly' | 'custom',
+        amount: summary.budget_amount,
+        period: summary.period_type === 'monthly' 
+          ? summary.start_date?.substring(0, 7) // YYYY-MM
+          : summary.period_type === 'yearly'
+          ? summary.start_date?.substring(0, 4) // YYYY
+          : `${summary.start_date} - ${summary.end_date}`,
+        spent: summary.spent_amount,
+        remaining: summary.remaining_amount,
+        alerts: [], // アラート機能は後で実装
+        created_at: summary.start_date,
+        updated_at: summary.start_date
+      }))
+      
+      setBudgets(convertedBudgets)
+      
+      // 予算サマリーを計算
+      calculateBudgetSummary(convertedBudgets)
+    } catch (error) {
+      console.error('Failed to load budgets:', error)
+      showError('予算データの読み込みに失敗しました')
+      
+      // フォールバック用のモックデータ
+      const fallbackBudgets: BudgetData[] = [
+        {
+          id: '1',
+          name: '月間ゲーム予算',
+          type: 'monthly',
+          amount: 10000,
+          period: '2024-01',
+          spent: expenseData?.summary.totalExpenses || 0,
+          remaining: 10000 - (expenseData?.summary.totalExpenses || 0),
+          alerts: [],
+          created_at: '2024-01-01T00:00:00Z',
+          updated_at: '2024-01-01T00:00:00Z'
+        }
+      ]
+      setBudgets(fallbackBudgets)
+      calculateBudgetSummary(fallbackBudgets)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const calculateBudgetSummary = (budgetList: BudgetData[]) => {
@@ -66,40 +96,122 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({ expenseData }) => 
     setBudgetSummary(summary)
   }
 
-  const createBudget = () => {
+  const createBudget = async () => {
     if (!newBudget.name || !newBudget.amount) {
       showError('予算名と金額を入力してください')
       return
     }
 
-    const budget: BudgetData = {
-      id: Date.now().toString(),
-      name: newBudget.name,
-      type: newBudget.type || 'monthly',
-      amount: newBudget.amount,
-      period: getCurrentPeriod(newBudget.type || 'monthly'),
-      spent: 0,
-      remaining: newBudget.amount,
-      alerts: [],
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+    try {
+      setLoading(true)
+      
+      const now = new Date()
+      const period_type = newBudget.type || 'monthly'
+      let start_date: string
+      let end_date: string | undefined
+      
+      switch (period_type) {
+        case 'monthly':
+          start_date = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+          end_date = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]
+          break
+        case 'yearly':
+          start_date = `${now.getFullYear()}-01-01`
+          end_date = `${now.getFullYear()}-12-31`
+          break
+        default:
+          start_date = now.toISOString().split('T')[0]
+          end_date = undefined
+      }
+      
+      const budgetData = {
+        name: newBudget.name,
+        period_type,
+        budget_amount: newBudget.amount,
+        start_date,
+        end_date,
+        is_active: true
+      }
+      
+      const response = await fetch('/api/budgets', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(budgetData)
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to create budget')
+      }
+      
+      // 予算を再読み込み
+      await loadBudgets()
+      
+      setNewBudget({ name: '', type: 'monthly', amount: 0 })
+      setShowCreateModal(false)
+      showSuccess('予算を作成しました')
+    } catch (error) {
+      console.error('Failed to create budget:', error)
+      showError('予算の作成に失敗しました: ' + (error as Error).message)
+    } finally {
+      setLoading(false)
     }
-
-    setBudgets([...budgets, budget])
-    setNewBudget({ name: '', type: 'monthly', amount: 0 })
-    setShowCreateModal(false)
-    showSuccess('予算を作成しました')
   }
 
-  const getCurrentPeriod = (type: string) => {
-    const now = new Date()
-    switch (type) {
-      case 'monthly':
-        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-      case 'yearly':
-        return now.getFullYear().toString()
-      default:
-        return now.toISOString().split('T')[0]
+  const deleteBudget = async (budgetId: string) => {
+    try {
+      setLoading(true)
+      
+      const response = await fetch(`/api/budgets/${budgetId}`, {
+        method: 'DELETE'
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to delete budget')
+      }
+      
+      await loadBudgets()
+      showSuccess('予算を削除しました')
+    } catch (error) {
+      console.error('Failed to delete budget:', error)
+      showError('予算の削除に失敗しました: ' + (error as Error).message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const editBudget = async (budgetId: string, updatedData: Partial<BudgetData>) => {
+    try {
+      setLoading(true)
+      
+      const response = await fetch(`/api/budgets/${budgetId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: updatedData.name,
+          period_type: updatedData.type,
+          budget_amount: updatedData.amount,
+          is_active: true
+        })
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to update budget')
+      }
+      
+      await loadBudgets()
+      showSuccess('予算を更新しました')
+    } catch (error) {
+      console.error('Failed to update budget:', error)
+      showError('予算の更新に失敗しました: ' + (error as Error).message)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -221,9 +333,36 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({ expenseData }) => 
                       <div className="card h-100">
                         <div className="card-header d-flex justify-content-between align-items-center">
                           <h6 className="mb-0">{budget.name}</h6>
-                          <span className={`badge bg-${color}`}>
-                            {budget.type === 'monthly' ? '月間' : budget.type === 'yearly' ? '年間' : 'カスタム'}
-                          </span>
+                          <div className="d-flex gap-2">
+                            <span className={`badge bg-${color}`}>
+                              {budget.type === 'monthly' ? '月間' : budget.type === 'yearly' ? '年間' : 'カスタム'}
+                            </span>
+                            <div className="btn-group btn-group-sm">
+                              <button 
+                                className="btn btn-outline-primary btn-sm"
+                                onClick={() => {
+                                  const name = prompt('新しい予算名を入力してください:', budget.name)
+                                  if (name && name !== budget.name) {
+                                    editBudget(budget.id, { ...budget, name })
+                                  }
+                                }}
+                                title="編集"
+                              >
+                                <i className="bi bi-pencil"></i>
+                              </button>
+                              <button 
+                                className="btn btn-outline-danger btn-sm"
+                                onClick={() => {
+                                  if (confirm(`「${budget.name}」を削除しますか？`)) {
+                                    deleteBudget(budget.id)
+                                  }
+                                }}
+                                title="削除"
+                              >
+                                <i className="bi bi-trash"></i>
+                              </button>
+                            </div>
+                          </div>
                         </div>
                         <div className="card-body">
                           <div className="mb-3">

@@ -321,6 +321,88 @@ class DatabaseManager {
         db.prepare('INSERT INTO db_version (version) VALUES (?)').run(6);
         logger.info('Migration v6 completed successfully');
       }
+
+      // v7: 予算管理とEpic Games無料ゲーム管理
+      if (currentVersion < 7) {
+        logger.info('Running migration v7: Adding budget management and Epic Games free games tracking');
+        
+        // 予算管理テーブル
+        db.exec(`
+          CREATE TABLE IF NOT EXISTS budgets (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            period_type TEXT NOT NULL CHECK(period_type IN ('monthly', 'yearly', 'custom')),
+            budget_amount REAL NOT NULL,
+            start_date DATE,
+            end_date DATE,
+            category_filter TEXT, -- JSON array of categories
+            is_active BOOLEAN DEFAULT 1,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          );
+        `);
+        
+        // 予算関連支出記録テーブル
+        db.exec(`
+          CREATE TABLE IF NOT EXISTS budget_expenses (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            budget_id INTEGER NOT NULL,
+            steam_app_id INTEGER,
+            game_name TEXT,
+            amount REAL NOT NULL,
+            purchase_date DATE NOT NULL,
+            category TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (budget_id) REFERENCES budgets(id) ON DELETE CASCADE
+          );
+        `);
+        
+        // Epic Games無料ゲーム管理テーブル
+        db.exec(`
+          CREATE TABLE IF NOT EXISTS epic_free_games (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            description TEXT,
+            epic_url TEXT,
+            image_url TEXT,
+            start_date DATE,
+            end_date DATE,
+            is_claimed BOOLEAN DEFAULT 0,
+            claimed_date DATETIME,
+            discovered_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(title, start_date) -- 同一ゲームの重複防止
+          );
+        `);
+        
+        // インデックスの作成
+        db.exec(`
+          CREATE INDEX IF NOT EXISTS idx_budgets_period ON budgets(period_type, start_date, end_date);
+          CREATE INDEX IF NOT EXISTS idx_budget_expenses_budget_id ON budget_expenses(budget_id);
+          CREATE INDEX IF NOT EXISTS idx_budget_expenses_date ON budget_expenses(purchase_date);
+          CREATE INDEX IF NOT EXISTS idx_epic_games_dates ON epic_free_games(start_date, end_date);
+          CREATE INDEX IF NOT EXISTS idx_epic_games_claimed ON epic_free_games(is_claimed);
+        `);
+        
+        // 予算テーブルのトリガー
+        db.exec(`
+          CREATE TRIGGER IF NOT EXISTS update_budgets_timestamp 
+          AFTER UPDATE ON budgets
+          BEGIN
+            UPDATE budgets SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+          END;
+          
+          CREATE TRIGGER IF NOT EXISTS update_epic_games_timestamp 
+          AFTER UPDATE ON epic_free_games
+          BEGIN
+            UPDATE epic_free_games SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+          END;
+        `);
+        
+        // バージョンを記録
+        db.prepare('INSERT INTO db_version (version) VALUES (?)').run(7);
+        logger.info('Migration v7 completed successfully');
+      }
       
     } catch (error) {
       logger.error('Migration failed:', error);

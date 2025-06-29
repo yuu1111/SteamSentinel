@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { SpendingAlert, ExpenseData, BudgetData } from '../types'
+import { formatRelativeTime } from '../utils/dateUtils'
 
 interface SpendingAlertsProps {
   expenseData: ExpenseData | null
@@ -288,7 +289,7 @@ export const SpendingAlerts: React.FC<SpendingAlertsProps> = ({
                         </div>
                         <p className="mb-1 text-muted">{alert.message}</p>
                         <small className="text-muted">
-                          {new Date(alert.created_at).toLocaleString('ja-JP')}
+                          {formatRelativeTime(alert.created_at)}
                         </small>
                       </div>
                       <div className="btn-group btn-group-sm">

@@ -19,6 +19,7 @@ const Navigation: React.FC<NavigationProps> = ({
     { id: 'games' as ViewType, label: 'ゲーム管理', icon: 'collection' },
     { id: 'alerts' as ViewType, label: 'アラート履歴', icon: 'bell' },
     { id: 'monitoring' as ViewType, label: '監視状況', icon: 'activity' },
+    { id: 'epic' as ViewType, label: 'Epic Games', icon: 'gift' },
     { id: 'settings' as ViewType, label: '設定・テスト', icon: 'gear' },
   ]
 
@@ -66,6 +67,17 @@ const Navigation: React.FC<NavigationProps> = ({
           </ul>
 
           <div className="d-flex align-items-center">
+            <button
+              className="btn btn-outline-light btn-sm me-2"
+              onClick={() => {
+                const event = new CustomEvent('showHelpModal');
+                window.dispatchEvent(event);
+              }}
+              title="ヘルプ"
+            >
+              <i className="bi bi-question-circle"></i>
+            </button>
+            
             <button
               className="btn btn-outline-light btn-sm me-2"
               onClick={onToggleDarkMode}

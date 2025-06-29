@@ -127,10 +127,11 @@ export class GameController {
           const steamAPI = new (await import('../api/SteamStoreAPI')).SteamStoreAPI();
           const steamDetails = await steamAPI.getAppDetails(steam_app_id);
           
-          if (steamDetails?.data?.name) {
+          if (steamDetails?.success && steamDetails.data?.name) {
             finalGameName = steamDetails.data.name;
             logger.info(`Got game name from Steam API: ${finalGameName} (${steam_app_id})`);
           } else {
+            logger.error(`Steam API failed for ${steam_app_id}:`, steamDetails);
             return res.status(400).json({
               success: false,
               error: 'Could not retrieve game name from Steam API and no name was provided'
@@ -458,10 +459,9 @@ export class GameController {
         alert_enabled: game.alert_enabled
       }));
 
-      // 現在の日時を日本時間で取得
+      // 現在の日時をUTCで取得
       const now = new Date();
-      const jstDate = new Date(now.getTime() + (9 * 60 * 60 * 1000));
-      const dateStr = jstDate.toISOString().split('T')[0].replace(/-/g, '');
+      const dateStr = now.toISOString().split('T')[0].replace(/-/g, '');
       
       // ファイル名を設定
       const filename = `steamsentinel_backup_${dateStr}.json`;

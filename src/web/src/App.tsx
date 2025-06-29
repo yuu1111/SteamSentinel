@@ -6,20 +6,36 @@ import Games from './pages/Games'
 import Alerts from './pages/Alerts'
 import Monitoring from './pages/Monitoring'
 import Settings from './pages/Settings'
+import EpicGames from './pages/EpicGames'
 import Limitations from './pages/Limitations'
 import Licenses from './pages/Licenses'
 import LoadingOverlay from './components/LoadingOverlay'
 import AlertContainer from './components/AlertContainer'
+import HelpModal from './components/HelpModal'
 import { useDarkMode } from './hooks/useDarkMode'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { AlertProvider } from './contexts/AlertContext'
-
-type ViewType = 'dashboard' | 'games' | 'alerts' | 'monitoring' | 'settings' | 'limitations' | 'licenses'
+import { ViewType } from './types'
+import './styles/dashboard-cards.css'
 
 function App() {
   const [currentView, setCurrentView] = useState<ViewType>('dashboard')
   const [isDarkMode, toggleDarkMode] = useDarkMode()
+  const [showHelpModal, setShowHelpModal] = useState(false)
   // const [dashboardRef, setDashboardRef] = useState<any>(null)
+
+  // ヘルプモーダル表示イベントリスナー
+  useEffect(() => {
+    const handleShowHelpModal = () => {
+      setShowHelpModal(true)
+    }
+    
+    window.addEventListener('showHelpModal', handleShowHelpModal)
+    
+    return () => {
+      window.removeEventListener('showHelpModal', handleShowHelpModal)
+    }
+  }, [])
 
   // 制限事項・ライセンス情報ページで一番上に移動
   useEffect(() => {
@@ -71,6 +87,8 @@ function App() {
         return <Monitoring />
       case 'settings':
         return <Settings />
+      case 'epic':
+        return <EpicGames />
       case 'limitations':
         return <Limitations />
       case 'licenses':
@@ -110,6 +128,10 @@ function App() {
 
           <LoadingOverlay />
           <AlertContainer />
+          <HelpModal 
+            show={showHelpModal} 
+            onHide={() => setShowHelpModal(false)} 
+          />
 
           <footer className="mt-5 py-4 text-center">
             <div className="container">

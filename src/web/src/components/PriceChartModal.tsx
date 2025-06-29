@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { api } from '../utils/api'
 import { useAlert } from '../contexts/AlertContext'
+import { formatDateJP } from '../utils/dateUtils'
 
 interface PriceChartModalProps {
   show: boolean
@@ -54,7 +55,7 @@ export const PriceChartModal: React.FC<PriceChartModalProps> = ({
         
         // priceHistoryにdate形式でAPIから取得した価格履歴を変換
         const formattedData = response.data.priceHistory.map((item: any) => ({
-          date: new Date(item.recorded_at).toISOString().split('T')[0],
+          date: formatDateJP(item.recorded_at, 'date'),
           current_price: item.current_price
         }))
         setPriceHistory(formattedData)
@@ -80,7 +81,7 @@ export const PriceChartModal: React.FC<PriceChartModalProps> = ({
     const ctx = chartRef.current.getContext('2d')
     if (!ctx) {return}
 
-    const labels = data.map(item => new Date(item.date).toLocaleDateString('ja-JP'))
+    const labels = data.map(item => item.date)
     const currentPrices = data.map(item => item.current_price)
 
     chartInstanceRef.current = new ((window as any).Chart)(ctx, {

@@ -3,6 +3,8 @@ import { GameController } from '../controllers/GameController';
 import { MonitoringController } from '../controllers/MonitoringController';
 import { validateSteamAppId, apiLimiter } from '../middleware/security';
 import discordService from '../services/DiscordService';
+import budgetRoutes from './budgets';
+import epicGamesRoutes from './epicGames';
 import logger from '../utils/logger';
 
 const router = Router();
@@ -502,5 +504,11 @@ alertRoutes.delete('/', async (_req, res) => {
 });
 
 router.use('/alerts', alertRoutes);
+
+// 予算管理関連のルート
+router.use('/budgets', budgetRoutes);
+
+// Epic Games関連のルート
+router.use('/epic-games', epicGamesRoutes);
 
 export default router;

@@ -8,6 +8,7 @@ import { BudgetManager } from './BudgetManager'
 import { SpendingAlerts } from './SpendingAlerts'
 import { SpecialGameStatus } from './SpecialGameStatus'
 import { MonitoringProgress } from './MonitoringProgress'
+import { formatDateJP } from '../utils/dateUtils'
 
 interface TabbedDashboardProps {
   dashboardData: TabDashboardData | null
@@ -301,7 +302,7 @@ const ExpensesDashboard: React.FC<ExpensesDashboardProps> = ({
                               {purchase.discount_percent}% OFF
                             </span>
                           </td>
-                          <td>{new Date(purchase.created_at).toLocaleDateString('ja-JP')}</td>
+                          <td>{formatDateJP(purchase.created_at, 'date')}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -353,7 +354,7 @@ const IntegratedStatisticsCards: React.FC<IntegratedStatisticsCardsProps> = ({
         <div className="card stats-card primary">
           <div className="card-body text-center">
             <i className="bi bi-cart-check display-4 mb-2"></i>
-            <h3 className="h4" style={{ fontSize: 'clamp(1rem, 2vw, 1.5rem)', lineHeight: '1.1', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{expenseData?.summary.totalGames || 0}</h3>
+            <h3 className="display-4">{expenseData?.summary.totalGames || 0}</h3>
             <p className="mb-0">購入ゲーム数</p>
           </div>
         </div>
@@ -362,7 +363,7 @@ const IntegratedStatisticsCards: React.FC<IntegratedStatisticsCardsProps> = ({
         <div className="card stats-card danger">
           <div className="card-body text-center">
             <i className="bi bi-wallet2 display-4 mb-2"></i>
-            <h3 className="h4" style={{ fontSize: 'clamp(1rem, 2vw, 1.5rem)', lineHeight: '1.1', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>¥{(expenseData?.summary.totalExpenses || 0).toLocaleString()}</h3>
+            <h3 className="display-4">¥{(expenseData?.summary.totalExpenses || 0).toLocaleString()}</h3>
             <p className="mb-0">総支出額</p>
           </div>
         </div>
@@ -391,7 +392,7 @@ const IntegratedStatisticsCards: React.FC<IntegratedStatisticsCardsProps> = ({
         <div className="card stats-card info">
           <div className="card-body text-center">
             <i className="bi bi-currency-yen display-4 mb-2"></i>
-            <h3 className="h4" style={{ fontSize: 'clamp(1rem, 2vw, 1.5rem)', lineHeight: '1.1', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>¥{(expenseData?.summary.averagePrice || 0).toLocaleString()}</h3>
+            <h3 className="display-4">¥{(expenseData?.summary.averagePrice || 0).toLocaleString()}</h3>
             <p className="mb-0">平均購入価格</p>
           </div>
         </div>
@@ -400,7 +401,7 @@ const IntegratedStatisticsCards: React.FC<IntegratedStatisticsCardsProps> = ({
         <div className="card stats-card success">
           <div className="card-body text-center">
             <i className="bi bi-piggy-bank display-4 mb-2"></i>
-            <h3 className="h4" style={{ fontSize: 'clamp(1rem, 2vw, 1.5rem)', lineHeight: '1.1', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>¥{(expenseData?.summary.totalSavings || 0).toLocaleString()}</h3>
+            <h3 className="display-4">¥{(expenseData?.summary.totalSavings || 0).toLocaleString()}</h3>
             <p className="mb-0">節約額</p>
           </div>
         </div>
@@ -558,13 +559,13 @@ const AlertTargetGames: React.FC<AlertTargetGamesProps> = ({ games }) => {
                     )}
                     <br />
                     {game.price_threshold_type === 'price' && game.price_threshold && (
-                      <>閾値: ¥{game.price_threshold.toLocaleString()}</>
+                      <>条件: ¥{game.price_threshold.toLocaleString()}以下</>
                     )}
                     {game.price_threshold_type === 'discount' && game.discount_threshold_percent && (
-                      <>閾値: {game.discount_threshold_percent}% OFF</>
+                      <>条件: {game.discount_threshold_percent}%以上割引</>
                     )}
                     {game.price_threshold_type === 'any_sale' && (
-                      <>閾値: セール中</>
+                      <>条件: セール開始時</>
                     )}
                   </small>
                 </p>
@@ -625,7 +626,7 @@ const MonitoringDetails: React.FC<MonitoringDetailsProps> = ({ games }) => {
             {recentlyUpdated.map(game => (
               <li key={game.id} className="mb-1">
                 <small>
-                  {game.name} - {new Date(game.latestPrice!.recorded_at).toLocaleString('ja-JP')}
+                  {game.name} - {formatDateJP(game.latestPrice!.recorded_at, 'datetime')}
                 </small>
               </li>
             ))}

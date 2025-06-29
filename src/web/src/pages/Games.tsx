@@ -6,6 +6,7 @@ import { AddGameModal, EditGameModal } from '../components/GameModals'
 import { ImportGamesModal, useExportGames } from '../components/ImportExportModals'
 import { useTableSort } from '../hooks/useTableSort'
 import { ConfirmationModal } from '../components/ConfirmationModal'
+import { PriceChartModal } from '../components/PriceChartModal'
 
 const Games: React.FC = () => {
   const [games, setGames] = useState<Game[]>([])
@@ -16,6 +17,9 @@ const Games: React.FC = () => {
   const [editingGame, setEditingGame] = useState<Game | null>(null)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [gameToDelete, setGameToDelete] = useState<{id: number, name: string} | null>(null)
+  const [showPriceChart, setShowPriceChart] = useState(false)
+  const [chartGameId, setChartGameId] = useState<number | null>(null)
+  const [chartGameName, setChartGameName] = useState('')
   const { showError, showSuccess } = useAlert()
   const { exportGames, loading: exportLoading } = useExportGames()
   const { sortedGames, handleSort, getSortIcon } = useTableSort(games)
@@ -76,8 +80,9 @@ const Games: React.FC = () => {
   }
 
   const handleShowChart = (steamAppId: number, gameName: string) => {
-    // TODO: Price chart functionality - could be implemented later
-    showError(`価格チャート機能は今後実装予定です。\nゲーム: ${gameName}\nSteam App ID: ${steamAppId}`)
+    setChartGameId(steamAppId)
+    setChartGameName(gameName)
+    setShowPriceChart(true)
   }
 
   const runSingleMonitoring = async (steamAppId: number) => {
@@ -306,7 +311,14 @@ const Games: React.FC = () => {
           setShowEditModal(false)
           setEditingGame(null)
         }}
-        onGameUpdated={loadAllGames}
+        onGameUpdated={() => {
+          // ゲーム更新後は画面をスクロールしないよう、現在の位置を保持
+          const scrollPosition = window.scrollY;
+          loadAllGames().then(() => {
+            // データ読み込み後に元の位置に戻す
+            setTimeout(() => window.scrollTo(0, scrollPosition), 0);
+          });
+        }}
       />
 
       <ImportGamesModal
@@ -326,6 +338,17 @@ const Games: React.FC = () => {
           setGameToDelete(null)
         }}
         variant="danger"
+      />
+
+      <PriceChartModal
+        show={showPriceChart}
+        steamAppId={chartGameId}
+        gameName={chartGameName}
+        onHide={() => {
+          setShowPriceChart(false)
+          setChartGameId(null)
+          setChartGameName('')
+        }}
       />
     </>
   )

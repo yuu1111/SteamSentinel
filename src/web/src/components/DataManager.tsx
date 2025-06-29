@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { DataBackup } from '../types'
 import { useAlert } from '../contexts/AlertContext'
+import { formatDateJP, getCurrentJstDate } from '../utils/dateUtils'
 
 interface DataManagerProps {
   onClose: () => void
@@ -40,7 +41,7 @@ export const DataManager: React.FC<DataManagerProps> = ({ onClose }) => {
             budgets: localStorage.getItem('budgets'),
             settings: localStorage.getItem('app_settings')
           }
-          name = `完全バックアップ_${new Date().toISOString().split('T')[0]}`
+          name = `完全バックアップ_${getCurrentJstDate()}`
           break
           
         case 'settings':
@@ -48,7 +49,7 @@ export const DataManager: React.FC<DataManagerProps> = ({ onClose }) => {
             preferences: localStorage.getItem('user_preferences'),
             settings: localStorage.getItem('app_settings')
           }
-          name = `設定バックアップ_${new Date().toISOString().split('T')[0]}`
+          name = `設定バックアップ_${getCurrentJstDate()}`
           break
           
         case 'expense_data':
@@ -56,14 +57,14 @@ export const DataManager: React.FC<DataManagerProps> = ({ onClose }) => {
             budgets: localStorage.getItem('budgets'),
             expenses: localStorage.getItem('expense_data')
           }
-          name = `出費データバックアップ_${new Date().toISOString().split('T')[0]}`
+          name = `出費データバックアップ_${getCurrentJstDate()}`
           break
           
         case 'budgets':
           data = {
             budgets: localStorage.getItem('budgets')
           }
-          name = `予算バックアップ_${new Date().toISOString().split('T')[0]}`
+          name = `予算バックアップ_${getCurrentJstDate()}`
           break
       }
 
@@ -427,7 +428,7 @@ export const DataManager: React.FC<DataManagerProps> = ({ onClose }) => {
                               </span>
                             </td>
                             <td>{formatFileSize(backup.size)}</td>
-                            <td>{new Date(backup.created_at).toLocaleString('ja-JP')}</td>
+                            <td>{formatDateJP(backup.created_at, 'datetime')}</td>
                             <td>
                               <div className="btn-group btn-group-sm">
                                 <button 
@@ -490,7 +491,7 @@ export const DataManager: React.FC<DataManagerProps> = ({ onClose }) => {
                               {getBackupTypeName(backup.type)} • {formatFileSize(backup.size)}
                             </p>
                             <p className="text-muted small mb-0">
-                              {new Date(backup.created_at).toLocaleString('ja-JP')}
+                              {formatDateJP(backup.created_at, 'datetime')}
                             </p>
                             {selectedBackup?.id === backup.id && (
                               <div className="mt-3">

@@ -1,3 +1,5 @@
+export type ViewType = 'dashboard' | 'games' | 'alerts' | 'monitoring' | 'settings' | 'epic' | 'limitations' | 'licenses';
+
 export interface Game {
   id: number
   steam_app_id: number
@@ -113,7 +115,6 @@ export interface ApiResponse<T = any> {
   message?: string
 }
 
-export type ViewType = 'dashboard' | 'games' | 'alerts' | 'monitoring' | 'settings' | 'limitations' | 'licenses'
 
 // Budget Management Types
 export interface BudgetData {

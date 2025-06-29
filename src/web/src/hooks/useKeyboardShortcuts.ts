@@ -75,6 +75,10 @@ export const useKeyboardShortcuts = ({
             break
           case '5':
             event.preventDefault()
+            onViewChange('epic')
+            break
+          case '6':
+            event.preventDefault()
             onViewChange('settings')
             break
         }
@@ -102,7 +106,7 @@ export const useKeyboardShortcuts = ({
 }
 
 const showKeyboardShortcutsHelp = () => {
-  // TODO: 将来的にはモーダルでキーボードショートカットを表示
-  // 現在は機能を無効化
-  // Keyboard shortcuts help requested - feature will be implemented with modal UI
+  // ヘルプモーダル表示イベントをディスパッチ
+  const event = new CustomEvent('showHelpModal');
+  window.dispatchEvent(event);
 }
