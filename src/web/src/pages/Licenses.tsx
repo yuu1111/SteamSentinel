@@ -1,286 +1,402 @@
 import React from 'react'
+import { 
+  Card, 
+  Row, 
+  Col, 
+  Typography, 
+  Space, 
+  Alert, 
+  List,
+  Divider,
+  Tag,
+  Button
+} from 'antd'
+import { 
+  FileTextOutlined,
+  GlobalOutlined,
+  DatabaseOutlined,
+  CloudOutlined,
+  SafetyOutlined,
+  HeartOutlined,
+  WarningOutlined,
+  InfoCircleOutlined,
+  LinkOutlined
+} from '@ant-design/icons'
+
+const { Title, Text, Paragraph, Link } = Typography
 
 const Licenses: React.FC = () => {
-  return (
-    <div className="container-fluid">
-      <div className="row">
-      <div className="col-12">
-        <h1 className="h2 h1-md"><i className="bi bi-file-text me-2"></i>ライセンス情報</h1>
-        <p className="lead">SteamSentinelで使用しているサードパーティライブラリ・サービスのライセンス情報です。</p>
-        
-        <hr />
-        
-        {/* Frontend Libraries */}
-        <section className="mb-5">
-          <h2><i className="bi bi-globe me-2"></i>フロントエンドライブラリ</h2>
-          
-          <div className="row">
-            <div className="col-md-6 mb-4">
-              <div className="card">
-                <div className="card-header">
-                  <h5>Bootstrap 5.3.0</h5>
-                </div>
-                <div className="card-body">
-                  <p><strong>ライセンス:</strong> MIT License</p>
-                  <p><strong>用途:</strong> UIフレームワーク、レスポンシブデザイン</p>
-                  <p><strong>配布元:</strong> <a href="https://getbootstrap.com/" target="_blank" rel="noopener noreferrer">Bootstrap</a></p>
-                  <p><strong>CDN:</strong> jsDelivr</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="col-md-6 mb-4">
-              <div className="card">
-                <div className="card-header">
-                  <h5>Bootstrap Icons 1.10.0</h5>
-                </div>
-                <div className="card-body">
-                  <p><strong>ライセンス:</strong> MIT License</p>
-                  <p><strong>用途:</strong> アイコンフォント</p>
-                  <p><strong>配布元:</strong> <a href="https://icons.getbootstrap.com/" target="_blank" rel="noopener noreferrer">Bootstrap Icons</a></p>
-                  <p><strong>CDN:</strong> jsDelivr</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="col-md-6 mb-4">
-              <div className="card">
-                <div className="card-header">
-                  <h5>Chart.js 4.4.0</h5>
-                </div>
-                <div className="card-body">
-                  <p><strong>ライセンス:</strong> MIT License</p>
-                  <p><strong>用途:</strong> 価格推移グラフの描画</p>
-                  <p><strong>配布元:</strong> <a href="https://www.chartjs.org/" target="_blank" rel="noopener noreferrer">Chart.js</a></p>
-                  <p><strong>CDN:</strong> jsDelivr</p>
-                </div>
-              </div>
-            </div>
+  const frontendLibraries = [
+    {
+      name: 'Bootstrap 5.3.0',
+      license: 'MIT License',
+      purpose: 'UIフレームワーク、レスポンシブデザイン',
+      source: 'Bootstrap',
+      url: 'https://getbootstrap.com/',
+      cdn: 'jsDelivr'
+    },
+    {
+      name: 'Bootstrap Icons 1.10.0',
+      license: 'MIT License',
+      purpose: 'アイコンフォント',
+      source: 'Bootstrap Icons',
+      url: 'https://icons.getbootstrap.com/',
+      cdn: 'jsDelivr'
+    },
+    {
+      name: 'Chart.js 4.4.0',
+      license: 'MIT License',
+      purpose: '価格推移グラフの描画',
+      source: 'Chart.js',
+      url: 'https://www.chartjs.org/',
+      cdn: 'jsDelivr'
+    },
+    {
+      name: 'React 18',
+      license: 'MIT License',
+      purpose: 'UIライブラリ、コンポーネント管理',
+      source: 'React',
+      url: 'https://reactjs.org/',
+      cdn: 'npm'
+    },
+    {
+      name: 'Ant Design 5.26.2',
+      license: 'MIT License',
+      purpose: 'UIコンポーネントライブラリ、デザインシステム',
+      source: 'Ant Design',
+      url: 'https://ant.design/',
+      cdn: 'npm'
+    }
+  ]
 
-            <div className="col-md-6 mb-4">
-              <div className="card">
-                <div className="card-header">
-                  <h5>React 18</h5>
-                </div>
-                <div className="card-body">
-                  <p><strong>ライセンス:</strong> MIT License</p>
-                  <p><strong>用途:</strong> UIライブラリ、コンポーネント管理</p>
-                  <p><strong>配布元:</strong> <a href="https://reactjs.org/" target="_blank" rel="noopener noreferrer">React</a></p>
-                  <p><strong>CDN:</strong> npm</p>
-                </div>
-              </div>
-            </div>
+  const backendLibraries = [
+    {
+      name: 'Express.js',
+      license: 'MIT License',
+      purpose: 'Webサーバーフレームワーク',
+      source: 'Express',
+      url: 'https://expressjs.com/'
+    },
+    {
+      name: 'better-sqlite3',
+      license: 'MIT License',
+      purpose: 'SQLiteデータベース操作',
+      source: 'better-sqlite3',
+      url: 'https://github.com/WiseLibs/better-sqlite3'
+    },
+    {
+      name: 'node-cron',
+      license: 'ISC License',
+      purpose: 'スケジュール実行',
+      source: 'node-cron',
+      url: 'https://github.com/node-cron/node-cron'
+    },
+    {
+      name: 'axios',
+      license: 'MIT License',
+      purpose: 'HTTP通信ライブラリ',
+      source: 'Axios',
+      url: 'https://axios-http.com/'
+    },
+    {
+      name: 'winston',
+      license: 'MIT License',
+      purpose: 'ログ管理システム',
+      source: 'Winston',
+      url: 'https://github.com/winstonjs/winston'
+    },
+    {
+      name: 'dotenv',
+      license: 'BSD-2-Clause License',
+      purpose: '環境変数管理',
+      source: 'dotenv',
+      url: 'https://github.com/motdotla/dotenv'
+    }
+  ]
+
+  const externalAPIs = [
+    {
+      name: 'IsThereAnyDeal API',
+      license: '利用規約に準拠',
+      purpose: 'ゲーム価格情報・歴代最安値データ取得',
+      source: 'IsThereAnyDeal',
+      url: 'https://isthereanydeal.com/',
+      terms: 'https://isthereanydeal.com/about/',
+      cost: '無料（APIキー必要）'
+    },
+    {
+      name: 'Steam Store API',
+      license: 'Steam Web API Terms of Use',
+      purpose: 'ゲーム詳細情報・価格情報取得',
+      source: 'Steam Store',
+      url: 'https://store.steampowered.com/',
+      terms: 'https://steamcommunity.com/dev/apiterms',
+      cost: '無料（制限あり）'
+    },
+    {
+      name: 'Steam CDN',
+      license: 'Steamの利用規約に準拠',
+      purpose: 'ゲームヘッダー画像の表示',
+      source: 'Steam CDN',
+      url: 'https://cdn.akamai.steamstatic.com/',
+      cost: '無料'
+    },
+    {
+      name: 'SteamDB',
+      license: 'リンク先サイトの利用規約に準拠',
+      purpose: '外部リンク（ゲーム詳細情報参照用）',
+      source: 'SteamDB',
+      url: 'https://steamdb.info/',
+      cost: '無料'
+    }
+  ]
+
+  const renderLibraryCard = (item: any, showCDN: boolean = false) => (
+    <Card size="small" style={{ height: '100%' }}>
+      <Space direction="vertical" style={{ width: '100%' }}>
+        <Title level={5} style={{ margin: 0 }}>{item.name}</Title>
+        <div>
+          <Text strong>ライセンス: </Text>
+          <Tag color="blue">{item.license}</Tag>
+        </div>
+        <div>
+          <Text strong>用途: </Text>
+          <Text>{item.purpose}</Text>
+        </div>
+        <div>
+          <Text strong>配布元: </Text>
+          <Link href={item.url} target="_blank" rel="noopener noreferrer">
+            {item.source}
+          </Link>
+        </div>
+        {showCDN && item.cdn && (
+          <div>
+            <Text strong>CDN: </Text>
+            <Text>{item.cdn}</Text>
           </div>
-        </section>
-        
+        )}
+        {item.cost && (
+          <div>
+            <Text strong>料金: </Text>
+            <Tag color="green">{item.cost}</Tag>
+          </div>
+        )}
+        {item.terms && (
+          <div>
+            <Button 
+              type="link" 
+              size="small" 
+              icon={<LinkOutlined />}
+              href={item.terms}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              利用規約
+            </Button>
+          </div>
+        )}
+      </Space>
+    </Card>
+  )
+
+  return (
+    <div style={{ padding: '24px' }}>
+      <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        {/* Header */}
+        <div>
+          <Title level={1}>
+            <FileTextOutlined style={{ marginRight: 8 }} />
+            ライセンス情報
+          </Title>
+          <Paragraph style={{ fontSize: '16px' }}>
+            SteamSentinelで使用しているサードパーティライブラリ・サービスのライセンス情報です。
+          </Paragraph>
+        </div>
+
+        <Divider />
+
+        {/* Frontend Libraries */}
+        <Card 
+          title={
+            <Space>
+              <GlobalOutlined style={{ color: '#1890ff' }} />
+              フロントエンドライブラリ
+            </Space>
+          }
+          headStyle={{ backgroundColor: '#f6ffff', borderBottom: '1px solid #91d5ff' }}
+        >
+          <Row gutter={[16, 16]}>
+            {frontendLibraries.map((lib, index) => (
+              <Col xs={24} md={12} lg={8} key={index}>
+                {renderLibraryCard(lib, true)}
+              </Col>
+            ))}
+          </Row>
+        </Card>
+
         {/* Backend Libraries */}
-        <section className="mb-5">
-          <h2><i className="bi bi-server me-2"></i>バックエンドライブラリ (Node.js)</h2>
-          
-          <div className="row">
-            <div className="col-md-6 mb-4">
-              <div className="card">
-                <div className="card-header">
-                  <h5>Express.js</h5>
-                </div>
-                <div className="card-body">
-                  <p><strong>ライセンス:</strong> MIT License</p>
-                  <p><strong>用途:</strong> Webサーバーフレームワーク</p>
-                  <p><strong>配布元:</strong> <a href="https://expressjs.com/" target="_blank" rel="noopener noreferrer">Express</a></p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="col-md-6 mb-4">
-              <div className="card">
-                <div className="card-header">
-                  <h5>better-sqlite3</h5>
-                </div>
-                <div className="card-body">
-                  <p><strong>ライセンス:</strong> MIT License</p>
-                  <p><strong>用途:</strong> SQLiteデータベース操作</p>
-                  <p><strong>配布元:</strong> <a href="https://github.com/WiseLibs/better-sqlite3" target="_blank" rel="noopener noreferrer">better-sqlite3</a></p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="col-md-6 mb-4">
-              <div className="card">
-                <div className="card-header">
-                  <h5>node-cron</h5>
-                </div>
-                <div className="card-body">
-                  <p><strong>ライセンス:</strong> ISC License</p>
-                  <p><strong>用途:</strong> スケジュール実行</p>
-                  <p><strong>配布元:</strong> <a href="https://github.com/node-cron/node-cron" target="_blank" rel="noopener noreferrer">node-cron</a></p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="col-md-6 mb-4">
-              <div className="card">
-                <div className="card-header">
-                  <h5>axios</h5>
-                </div>
-                <div className="card-body">
-                  <p><strong>ライセンス:</strong> MIT License</p>
-                  <p><strong>用途:</strong> HTTP通信ライブラリ</p>
-                  <p><strong>配布元:</strong> <a href="https://axios-http.com/" target="_blank" rel="noopener noreferrer">Axios</a></p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="col-md-6 mb-4">
-              <div className="card">
-                <div className="card-header">
-                  <h5>winston</h5>
-                </div>
-                <div className="card-body">
-                  <p><strong>ライセンス:</strong> MIT License</p>
-                  <p><strong>用途:</strong> ログ管理システム</p>
-                  <p><strong>配布元:</strong> <a href="https://github.com/winstonjs/winston" target="_blank" rel="noopener noreferrer">Winston</a></p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="col-md-6 mb-4">
-              <div className="card">
-                <div className="card-header">
-                  <h5>dotenv</h5>
-                </div>
-                <div className="card-body">
-                  <p><strong>ライセンス:</strong> BSD-2-Clause License</p>
-                  <p><strong>用途:</strong> 環境変数管理</p>
-                  <p><strong>配布元:</strong> <a href="https://github.com/motdotla/dotenv" target="_blank" rel="noopener noreferrer">dotenv</a></p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-        
+        <Card 
+          title={
+            <Space>
+              <DatabaseOutlined style={{ color: '#52c41a' }} />
+              バックエンドライブラリ (Node.js)
+            </Space>
+          }
+          headStyle={{ backgroundColor: '#f6ffed', borderBottom: '1px solid #b7eb8f' }}
+        >
+          <Row gutter={[16, 16]}>
+            {backendLibraries.map((lib, index) => (
+              <Col xs={24} md={12} lg={8} key={index}>
+                {renderLibraryCard(lib)}
+              </Col>
+            ))}
+          </Row>
+        </Card>
+
         {/* External APIs */}
-        <section className="mb-5">
-          <h2><i className="bi bi-cloud me-2"></i>外部API・サービス</h2>
-          
-          <div className="row">
-            <div className="col-md-6 mb-4">
-              <div className="card">
-                <div className="card-header">
-                  <h5>IsThereAnyDeal API</h5>
-                </div>
-                <div className="card-body">
-                  <p><strong>利用規約:</strong> <a href="https://isthereanydeal.com/about/" target="_blank" rel="noopener noreferrer">利用規約に準拠</a></p>
-                  <p><strong>用途:</strong> ゲーム価格情報・歴代最安値データ取得</p>
-                  <p><strong>データ提供元:</strong> <a href="https://isthereanydeal.com/" target="_blank" rel="noopener noreferrer">IsThereAnyDeal</a></p>
-                  <p><strong>料金:</strong> 無料（APIキー必要）</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="col-md-6 mb-4">
-              <div className="card">
-                <div className="card-header">
-                  <h5>Steam Store API</h5>
-                </div>
-                <div className="card-body">
-                  <p><strong>利用規約:</strong> <a href="https://steamcommunity.com/dev/apiterms" target="_blank" rel="noopener noreferrer">Steam Web API Terms of Use</a></p>
-                  <p><strong>用途:</strong> ゲーム詳細情報・価格情報取得</p>
-                  <p><strong>データ提供元:</strong> <a href="https://store.steampowered.com/" target="_blank" rel="noopener noreferrer">Steam Store</a></p>
-                  <p><strong>料金:</strong> 無料（制限あり）</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="col-md-6 mb-4">
-              <div className="card">
-                <div className="card-header">
-                  <h5>Steam CDN</h5>
-                </div>
-                <div className="card-body">
-                  <p><strong>利用規約:</strong> Steamの利用規約に準拠</p>
-                  <p><strong>用途:</strong> ゲームヘッダー画像の表示</p>
-                  <p><strong>データ提供元:</strong> <a href="https://cdn.akamai.steamstatic.com/" target="_blank" rel="noopener noreferrer">Steam CDN</a></p>
-                  <p><strong>料金:</strong> 無料</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="col-md-6 mb-4">
-              <div className="card">
-                <div className="card-header">
-                  <h5>SteamDB</h5>
-                </div>
-                <div className="card-body">
-                  <p><strong>利用規約:</strong> リンク先サイトの利用規約に準拠</p>
-                  <p><strong>用途:</strong> 外部リンク（ゲーム詳細情報参照用）</p>
-                  <p><strong>データ提供元:</strong> <a href="https://steamdb.info/" target="_blank" rel="noopener noreferrer">SteamDB</a></p>
-                  <p><strong>料金:</strong> 無料</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-        
+        <Card 
+          title={
+            <Space>
+              <CloudOutlined style={{ color: '#fa8c16' }} />
+              外部API・サービス
+            </Space>
+          }
+          headStyle={{ backgroundColor: '#fff7e6', borderBottom: '1px solid #ffd591' }}
+        >
+          <Row gutter={[16, 16]}>
+            {externalAPIs.map((api, index) => (
+              <Col xs={24} md={12} key={index}>
+                {renderLibraryCard(api)}
+              </Col>
+            ))}
+          </Row>
+        </Card>
+
         {/* CDN Services */}
-        <section className="mb-5">
-          <h2><i className="bi bi-globe2 me-2"></i>CDNサービス</h2>
-          
-          <div className="row">
-            <div className="col-md-6 mb-4">
-              <div className="card">
-                <div className="card-header">
-                  <h5>jsDelivr CDN</h5>
-                </div>
-                <div className="card-body">
-                  <p><strong>利用規約:</strong> <a href="https://www.jsdelivr.com/terms" target="_blank" rel="noopener noreferrer">jsDelivr Terms of Service</a></p>
-                  <p><strong>用途:</strong> フロントエンドライブラリの配信</p>
-                  <p><strong>サービス提供元:</strong> <a href="https://www.jsdelivr.com/" target="_blank" rel="noopener noreferrer">jsDelivr</a></p>
-                  <p><strong>料金:</strong> 無料</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-        
+        <Card 
+          title={
+            <Space>
+              <GlobalOutlined style={{ color: '#13c2c2' }} />
+              CDNサービス
+            </Space>
+          }
+          headStyle={{ backgroundColor: '#e6fffb', borderBottom: '1px solid #87e8de' }}
+        >
+          <Row gutter={[16, 16]}>
+            <Col xs={24} md={12}>
+              <Card size="small">
+                <Space direction="vertical" style={{ width: '100%' }}>
+                  <Title level={5} style={{ margin: 0 }}>jsDelivr CDN</Title>
+                  <div>
+                    <Text strong>利用規約: </Text>
+                    <Link href="https://www.jsdelivr.com/terms" target="_blank" rel="noopener noreferrer">
+                      jsDelivr Terms of Service
+                    </Link>
+                  </div>
+                  <div>
+                    <Text strong>用途: </Text>
+                    <Text>フロントエンドライブラリの配信</Text>
+                  </div>
+                  <div>
+                    <Text strong>サービス提供元: </Text>
+                    <Link href="https://www.jsdelivr.com/" target="_blank" rel="noopener noreferrer">
+                      jsDelivr
+                    </Link>
+                  </div>
+                  <div>
+                    <Text strong>料金: </Text>
+                    <Tag color="green">無料</Tag>
+                  </div>
+                </Space>
+              </Card>
+            </Col>
+          </Row>
+        </Card>
+
         {/* License Notices */}
-        <section className="mb-5">
-          <h2><i className="bi bi-shield-check me-2"></i>ライセンス表記</h2>
-          
-          <div className="alert alert-info">
-            <h5><i className="bi bi-info-circle me-2"></i>MIT License について</h5>
-            <p>多くのライブラリで使用されているMIT Licenseは、以下の条件で自由に利用できます：</p>
-            <ul>
-              <li>著作権表示と許可表示を保持すること</li>
-              <li>ソフトウェアは「現状のまま」提供され、保証はありません</li>
-              <li>商用・非商用問わず自由に使用・修正・配布可能</li>
-            </ul>
-            <p>詳細は各ライブラリのライセンスファイルをご確認ください。</p>
-          </div>
-          
-          <div className="alert alert-warning">
-            <h5><i className="bi bi-exclamation-triangle me-2"></i>外部API利用について</h5>
-            <p>外部APIサービスについては、各サービス提供者の利用規約に従って使用しています。これらのサービスの利用制限や変更により、SteamSentinelの機能に影響が出る可能性があります。</p>
-          </div>
-        </section>
-        
+        <Card 
+          title={
+            <Space>
+              <SafetyOutlined style={{ color: '#722ed1' }} />
+              ライセンス表記
+            </Space>
+          }
+          headStyle={{ backgroundColor: '#f9f0ff', borderBottom: '1px solid #d3adf7' }}
+        >
+          <Space direction="vertical" size="large" style={{ width: '100%' }}>
+            <Alert
+              type="info"
+              message="MIT License について"
+              description={
+                <div>
+                  <Paragraph>多くのライブラリで使用されているMIT Licenseは、以下の条件で自由に利用できます：</Paragraph>
+                  <List
+                    size="small"
+                    dataSource={[
+                      '著作権表示と許可表示を保持すること',
+                      'ソフトウェアは「現状のまま」提供され、保証はありません',
+                      '商用・非商用問わず自由に使用・修正・配布可能'
+                    ]}
+                    renderItem={item => <List.Item>• {item}</List.Item>}
+                  />
+                  <Paragraph style={{ marginTop: 16 }}>詳細は各ライブラリのライセンスファイルをご確認ください。</Paragraph>
+                </div>
+              }
+              icon={<InfoCircleOutlined />}
+              showIcon
+            />
+            
+            <Alert
+              type="warning"
+              message="外部API利用について"
+              description="外部APIサービスについては、各サービス提供者の利用規約に従って使用しています。これらのサービスの利用制限や変更により、SteamSentinelの機能に影響が出る可能性があります。"
+              icon={<WarningOutlined />}
+              showIcon
+            />
+          </Space>
+        </Card>
+
         {/* Attribution */}
-        <section className="mb-5">
-          <h2><i className="bi bi-heart me-2"></i>謝辞</h2>
-          <p>SteamSentinelの開発にあたり、多くのオープンソースプロジェクトとサービス提供者の皆様にお世話になっております。これらの素晴らしいライブラリ・サービスなしには、本プロジェクトは実現できませんでした。開発者・提供者の皆様に心より感謝いたします。</p>
-          
-          <div className="mt-4">
-            <h5>特別な感謝</h5>
-            <ul>
-              <li><strong>IsThereAnyDeal</strong> - 包括的なゲーム価格データの提供</li>
-              <li><strong>Steam</strong> - ゲーム情報・画像データの提供</li>
-              <li><strong>Bootstrap</strong> - 美しく使いやすいUIコンポーネント</li>
-              <li><strong>React</strong> - 効率的なUIコンポーネント開発環境</li>
-              <li><strong>Node.js</strong> - 安定したサーバーサイドJavaScript環境</li>
-            </ul>
-          </div>
-        </section>
-      </div>
-    </div>
+        <Card 
+          title={
+            <Space>
+              <HeartOutlined style={{ color: '#eb2f96' }} />
+              謝辞
+            </Space>
+          }
+          headStyle={{ backgroundColor: '#fff0f6', borderBottom: '1px solid #ffadd2' }}
+        >
+          <Space direction="vertical" size="large" style={{ width: '100%' }}>
+            <Paragraph style={{ fontSize: '16px' }}>
+              SteamSentinelの開発にあたり、多くのオープンソースプロジェクトとサービス提供者の皆様にお世話になっております。
+              これらの素晴らしいライブラリ・サービスなしには、本プロジェクトは実現できませんでした。
+              開発者・提供者の皆様に心より感謝いたします。
+            </Paragraph>
+            
+            <div>
+              <Title level={4}>特別な感謝</Title>
+              <List
+                dataSource={[
+                  { name: 'IsThereAnyDeal', description: '包括的なゲーム価格データの提供' },
+                  { name: 'Steam', description: 'ゲーム情報・画像データの提供' },
+                  { name: 'Bootstrap', description: '美しく使いやすいUIコンポーネント' },
+                  { name: 'Ant Design', description: '現代的で包括的なUIコンポーネントライブラリ' },
+                  { name: 'React', description: '効率的なUIコンポーネント開発環境' },
+                  { name: 'Node.js', description: '安定したサーバーサイドJavaScript環境' }
+                ]}
+                renderItem={item => (
+                  <List.Item>
+                    <List.Item.Meta
+                      title={<Text strong>{item.name}</Text>}
+                      description={item.description}
+                    />
+                  </List.Item>
+                )}
+              />
+            </div>
+          </Space>
+        </Card>
+      </Space>
     </div>
   )
 }

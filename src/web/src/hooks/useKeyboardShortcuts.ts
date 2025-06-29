@@ -79,7 +79,7 @@ export const useKeyboardShortcuts = ({
             break
           case '6':
             event.preventDefault()
-            onViewChange('settings')
+            onViewChange('test')
             break
         }
       }

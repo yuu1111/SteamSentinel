@@ -5,7 +5,7 @@ import Dashboard from './pages/Dashboard'
 import Games from './pages/Games'
 import Alerts from './pages/Alerts'
 import Monitoring from './pages/Monitoring'
-import Settings from './pages/Settings'
+import Test from './pages/Test'
 import EpicGames from './pages/EpicGames'
 import Limitations from './pages/Limitations'
 import Licenses from './pages/Licenses'
@@ -86,8 +86,8 @@ function App() {
         return <Alerts />
       case 'monitoring':
         return <Monitoring />
-      case 'settings':
-        return <Settings />
+      case 'test':
+        return <Test />
       case 'epic':
         return <EpicGames />
       case 'limitations':

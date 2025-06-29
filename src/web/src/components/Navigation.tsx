@@ -20,7 +20,7 @@ const Navigation: React.FC<NavigationProps> = ({
     { id: 'alerts' as ViewType, label: 'アラート履歴', icon: 'bell' },
     { id: 'monitoring' as ViewType, label: '監視状況', icon: 'activity' },
     { id: 'epic' as ViewType, label: 'Epic Games', icon: 'gift' },
-    { id: 'settings' as ViewType, label: '設定・テスト', icon: 'gear' },
+    { id: 'test' as ViewType, label: 'テスト', icon: 'flask' },
   ]
 
   return (

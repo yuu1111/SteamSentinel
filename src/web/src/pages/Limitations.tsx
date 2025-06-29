@@ -1,353 +1,435 @@
 import React from 'react'
+import { 
+  Card, 
+  Row, 
+  Col, 
+  Typography, 
+  Space, 
+  Alert, 
+  List
+} from 'antd'
+import { 
+  WarningOutlined,
+  LineChartOutlined,
+  CloudOutlined,
+  DatabaseOutlined,
+  TeamOutlined,
+  ControlOutlined,
+  CloseCircleOutlined,
+  EnvironmentOutlined,
+  BlockOutlined,
+  AimOutlined,
+  ExclamationCircleOutlined,
+  DollarOutlined,
+  QuestionCircleOutlined,
+  SafetyOutlined,
+  CheckCircleOutlined,
+  SmileOutlined,
+  CalendarOutlined
+} from '@ant-design/icons'
+
+const { Title, Text } = Typography
 
 const Limitations: React.FC = () => {
   return (
-    <div className="container-fluid">
-      <div className="row">
-      <div className="col-12">
-        <div className="d-flex flex-column flex-md-row align-items-start align-items-md-center mb-4">
-          <i className="bi bi-exclamation-triangle-fill text-warning me-md-3 mb-2 mb-md-0" style={{ fontSize: '2rem' }}></i>
+    <div style={{ padding: '24px' }}>
+      {/* Header */}
+      <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '24px' }}>
+          <WarningOutlined 
+            style={{ fontSize: '32px', color: '#faad14', marginRight: '16px' }} 
+          />
           <div>
-            <h1 className="mb-1 h2 h1-md">制限事項・注意点</h1>
-            <p className="text-muted mb-0">SteamSentinelの使用に関する重要な情報</p>
+            <Title level={1} style={{ margin: 0 }}>制限事項・注意点</Title>
+            <Text type="secondary">SteamSentinelの使用に関する重要な情報</Text>
           </div>
         </div>
-      </div>
 
-      {/* 歴代最安値に関する制限 */}
-      <div className="row mb-5">
-        <div className="col-12">
-          <div className="card border-warning">
-            <div className="card-header bg-warning text-dark">
-              <h3 className="card-title mb-0">
-                <i className="bi bi-graph-down me-2"></i>
-                歴代最安値データの制限
-              </h3>
-            </div>
-            <div className="card-body">
-              <div className="alert alert-warning mb-3">
-                <i className="bi bi-info-circle me-2"></i>
-                <strong>重要:</strong> SteamSentinelで表示される「歴代最安値」は、完全な履歴ではありません。
-              </div>
-              
-              <h5>データ保持期間の制限</h5>
-              <ul className="list-group list-group-flush mb-4">
-                <li className="list-group-item">
-                  <i className="bi bi-calendar-week text-primary me-2"></i>
-                  <strong>約6ヶ月間</strong>のデータのみ利用可能
-                </li>
-                <li className="list-group-item">
-                  <i className="bi bi-clock-history text-info me-2"></i>
-                  現在確認できる最古データ: <strong>2024年12月頃</strong>
-                </li>
-                <li className="list-group-item">
-                  <i className="bi bi-arrow-clockwise text-success me-2"></i>
-                  データは定期的に更新され、古いデータは削除される
-                </li>
-              </ul>
+        {/* 歴代最安値に関する制限 */}
+        <Card 
+          title={
+            <Space>
+              <LineChartOutlined style={{ color: '#fa8c16' }} />
+              歴代最安値データの制限
+            </Space>
+          }
+          headStyle={{ backgroundColor: '#fff7e6', borderBottom: '1px solid #ffd591' }}
+        >
+          <Alert
+            type="warning"
+            message="重要: SteamSentinelで表示される「歴代最安値」は、完全な履歴ではありません。"
+            icon={<ExclamationCircleOutlined />}
+            style={{ marginBottom: '24px' }}
+            showIcon
+          />
+          
+          <Title level={4}>データ保持期間の制限</Title>
+          <List
+            size="large"
+            style={{ marginBottom: '24px' }}
+            dataSource={[
+              { icon: <CalendarOutlined style={{ color: '#1890ff' }} />, text: '約6ヶ月間のデータのみ利用可能' },
+              { icon: <CalendarOutlined style={{ color: '#52c41a' }} />, text: '現在確認できる最古データ: 2024年12月頃' },
+              { icon: <CalendarOutlined style={{ color: '#13c2c2' }} />, text: 'データは定期的に更新され、古いデータは削除される' }
+            ]}
+            renderItem={item => (
+              <List.Item>
+                <Space>
+                  {item.icon}
+                  <Text strong>{item.text}</Text>
+                </Space>
+              </List.Item>
+            )}
+          />
 
-              <h5>データソースについて</h5>
-              <div className="row">
-                <div className="col-md-6">
-                  <div className="card border h-100">
-                    <div className="card-body">
-                      <h6 className="card-title">
-                        <i className="bi bi-database me-2"></i>
-                        IsThereAnyDeal (ITAD)
-                      </h6>
-                      <ul className="mb-0">
-                        <li>メインの価格データソース</li>
-                        <li>2024年末にAPI v2に移行</li>
-                        <li>古いデータが新形式に移行されていない</li>
-                        <li>約6ヶ月間のデータのみ提供</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-                <div className="col-md-6">
-                  <div className="card border h-100">
-                    <div className="card-body">
-                      <h6 className="card-title">
-                        <i className="bi bi-steam me-2"></i>
-                        Steam Store API
-                      </h6>
-                      <ul className="mb-0">
-                        <li>現在価格の取得に使用</li>
-                        <li>リアルタイムの価格情報</li>
-                        <li>歴史データは提供されない</li>
-                        <li>ゲームタイプ判別に使用</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              </div>
+          <Title level={4}>データソースについて</Title>
+          <Row gutter={[16, 16]}>
+            <Col xs={24} md={12}>
+              <Card size="small" style={{ height: '100%' }}>
+                <Space direction="vertical">
+                  <Title level={5}>
+                    <DatabaseOutlined style={{ marginRight: 8 }} />
+                    IsThereAnyDeal (ITAD)
+                  </Title>
+                  <List
+                    size="small"
+                    dataSource={[
+                      'メインの価格データソース',
+                      '2024年末にAPI v2に移行',
+                      '古いデータが新形式に移行されていない',
+                      '約6ヶ月間のデータのみ提供'
+                    ]}
+                    renderItem={item => <List.Item style={{ padding: '4px 0' }}>• {item}</List.Item>}
+                  />
+                </Space>
+              </Card>
+            </Col>
+            <Col xs={24} md={12}>
+              <Card size="small" style={{ height: '100%' }}>
+                <Space direction="vertical">
+                  <Title level={5}>
+                    <TeamOutlined style={{ marginRight: 8 }} />
+                    Steam Store API
+                  </Title>
+                  <List
+                    size="small"
+                    dataSource={[
+                      '現在価格の取得に使用',
+                      'リアルタイムの価格情報',
+                      '歴史データは提供されない',
+                      'ゲームタイプ判別に使用'
+                    ]}
+                    renderItem={item => <List.Item style={{ padding: '4px 0' }}>• {item}</List.Item>}
+                  />
+                </Space>
+              </Card>
+            </Col>
+          </Row>
 
-              <div className="alert alert-info mt-4">
-                <h6><i className="bi bi-lightbulb me-2"></i>実用的な解釈</h6>
-                <p className="mb-0">
-                  「歴代最安値」は <strong>「過去6ヶ月間の最安値」</strong> として理解してください。
-                  より古いセール（例：2024年以前）の価格は反映されていない可能性があります。
-                </p>
-              </div>
-            </div>
-          </div>
+          <Alert
+            type="info"
+            message="実用的な解釈"
+            description="「歴代最安値」は「過去6ヶ月間の最安値」として理解してください。より古いセール（例：2024年以前）の価格は反映されていない可能性があります。"
+            icon={<ExclamationCircleOutlined />}
+            style={{ marginTop: '24px' }}
+            showIcon
+          />
+        </Card>
+
+        {/* API制限 */}
+        <Card 
+          title={
+            <Space>
+              <CloudOutlined style={{ color: '#1890ff' }} />
+              API制限
+            </Space>
+          }
+          headStyle={{ backgroundColor: '#f6ffff', borderBottom: '1px solid #91d5ff' }}
+        >
+          <Row gutter={[24, 16]}>
+            <Col xs={24} md={12}>
+              <Title level={4}>監視間隔の制限</Title>
+              <List
+                dataSource={[
+                  '最短10分間隔（API制限のため）',
+                  'デフォルト: 1時間間隔',
+                  '大量のゲーム監視時は間隔を長めに設定推奨'
+                ]}
+                renderItem={item => <List.Item>• <Text strong>{item}</Text></List.Item>}
+              />
+            </Col>
+            <Col xs={24} md={12}>
+              <Title level={4}>同時接続制限</Title>
+              <List
+                dataSource={[
+                  'API負荷軽減のため1接続ずつ処理',
+                  '100ゲーム監視で約5分程度',
+                  '処理中は他の操作を控えることを推奨'
+                ]}
+                renderItem={item => <List.Item>• <Text strong>{item}</Text></List.Item>}
+              />
+            </Col>
+          </Row>
+        </Card>
+
+        {/* ゲームタイプ制限 */}
+        <Card 
+          title={
+            <Space>
+              <ControlOutlined style={{ color: '#722ed1' }} />
+              対応ゲームの制限
+            </Space>
+          }
+          headStyle={{ backgroundColor: '#f9f0ff', borderBottom: '1px solid #d3adf7' }}
+        >
+          <Title level={4}>監視が困難なゲーム</Title>
+          <Row gutter={[16, 16]}>
+            <Col xs={24} md={8}>
+              <Card size="small" style={{ textAlign: 'center', height: '150px' }}>
+                <Space direction="vertical">
+                  <CloseCircleOutlined style={{ fontSize: '32px', color: '#ff4d4f' }} />
+                  <Title level={5}>販売終了ゲーム</Title>
+                  <Text type="secondary">購入不可能</Text>
+                </Space>
+              </Card>
+            </Col>
+            <Col xs={24} md={8}>
+              <Card size="small" style={{ textAlign: 'center', height: '150px' }}>
+                <Space direction="vertical">
+                  <EnvironmentOutlined style={{ fontSize: '32px', color: '#faad14' }} />
+                  <Title level={5}>地域制限ゲーム</Title>
+                  <Text type="secondary">日本で販売されていない</Text>
+                </Space>
+              </Card>
+            </Col>
+            <Col xs={24} md={8}>
+              <Card size="small" style={{ textAlign: 'center', height: '150px' }}>
+                <Space direction="vertical">
+                  <BlockOutlined style={{ fontSize: '32px', color: '#13c2c2' }} />
+                  <Title level={5}>特殊ゲームタイプ</Title>
+                  <Text type="secondary">DLCやソフトウェアなど</Text>
+                </Space>
+              </Card>
+            </Col>
+          </Row>
+        </Card>
+
+        {/* 精度に関する注意 */}
+        <Card 
+          title={
+            <Space>
+              <AimOutlined style={{ color: '#1890ff' }} />
+              精度に関する注意
+            </Space>
+          }
+          headStyle={{ backgroundColor: '#f6ffff', borderBottom: '1px solid #91d5ff' }}
+        >
+          <Row gutter={[24, 16]}>
+            <Col xs={24} md={12}>
+              <Title level={4}>価格データの精度</Title>
+              <List
+                dataSource={[
+                  '為替レートの変動により誤差が生じる場合',
+                  '地域別価格の違い',
+                  'バンドル価格と単品価格の混在',
+                  'セール終了直後の価格反映遅延'
+                ]}
+                renderItem={item => <List.Item>• {item}</List.Item>}
+              />
+            </Col>
+            <Col xs={24} md={12}>
+              <Title level={4}>通知の遅延</Title>
+              <List
+                dataSource={[
+                  '最短10分〜最大監視間隔の遅延',
+                  'API障害時の通知停止',
+                  '手動更新による即座の確認を推奨'
+                ]}
+                renderItem={item => <List.Item>• {item}</List.Item>}
+              />
+            </Col>
+          </Row>
+        </Card>
+
+        {/* データ取得エラー */}
+        <Card 
+          title={
+            <Space>
+              <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />
+              データ取得エラーについて
+            </Space>
+          }
+          headStyle={{ backgroundColor: '#fff2f0', borderBottom: '1px solid #ffccc7' }}
+        >
+          <Alert
+            type="error"
+            message="重要: 一部のゲームでは正確な価格データが取得できない場合があります。"
+            icon={<WarningOutlined />}
+            style={{ marginBottom: '24px' }}
+            showIcon
+          />
+          
+          <Title level={4}>エラーが発生しやすいゲーム</Title>
+          <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+            <Col xs={24} md={12}>
+              <Card size="small">
+                <Title level={5}>
+                  <BlockOutlined style={{ color: '#faad14', marginRight: 8 }} />
+                  特殊なゲームタイプ
+                </Title>
+                <List
+                  size="small"
+                  dataSource={[
+                    'DLC・アドオン類',
+                    'ソフトウェア・ツール類',
+                    '古いゲーム（データベース未登録）',
+                    '地域限定販売ゲーム'
+                  ]}
+                  renderItem={item => <List.Item style={{ padding: '2px 0' }}>• {item}</List.Item>}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} md={12}>
+              <Card size="small">
+                <Title level={5}>
+                  <CloudOutlined style={{ color: '#faad14', marginRight: 8 }} />
+                  API側の問題
+                </Title>
+                <List
+                  size="small"
+                  dataSource={[
+                    'Steam App IDの誤認識',
+                    '価格データベースの不整合',
+                    'APIサーバーの一時的障害',
+                    'レート制限による取得失敗'
+                  ]}
+                  renderItem={item => <List.Item style={{ padding: '2px 0' }}>• {item}</List.Item>}
+                />
+              </Card>
+            </Col>
+          </Row>
+
+          <Title level={4}>間違ったデータの例</Title>
+          <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+            <Col xs={24} md={8}>
+              <Card size="small" style={{ textAlign: 'center', height: '150px' }}>
+                <Space direction="vertical">
+                  <DollarOutlined style={{ fontSize: '32px', color: '#ff4d4f' }} />
+                  <Title level={5}>価格の誤表示</Title>
+                  <Text type="secondary">¥0や異常に高い価格</Text>
+                </Space>
+              </Card>
+            </Col>
+            <Col xs={24} md={8}>
+              <Card size="small" style={{ textAlign: 'center', height: '150px' }}>
+                <Space direction="vertical">
+                  <LineChartOutlined style={{ fontSize: '32px', color: '#ff4d4f' }} />
+                  <Title level={5}>最安値の誤認</Title>
+                  <Text type="secondary">実際より高い・低い価格</Text>
+                </Space>
+              </Card>
+            </Col>
+            <Col xs={24} md={8}>
+              <Card size="small" style={{ textAlign: 'center', height: '150px' }}>
+                <Space direction="vertical">
+                  <QuestionCircleOutlined style={{ fontSize: '32px', color: '#ff4d4f' }} />
+                  <Title level={5}>ゲーム名の不一致</Title>
+                  <Text type="secondary">別ゲームのデータを取得</Text>
+                </Space>
+              </Card>
+            </Col>
+          </Row>
+
+          <Alert
+            type="warning"
+            message="対処法"
+            description={
+              <List
+                size="small"
+                dataSource={[
+                  '購入前には必ずSteamストアで価格を確認してください',
+                  '異常な価格が表示された場合は手動更新を試してください',
+                  'データ取得失敗が続く場合は、そのゲームの監視を一時停止することを推奨',
+                  '複数の価格比較サイト（SteamDB、IsThereAnyDeal等）で確認することを強く推奨'
+                ]}
+                renderItem={item => <List.Item style={{ padding: '2px 0' }}>• <Text strong>{item}</Text></List.Item>}
+              />
+            }
+            icon={<SafetyOutlined />}
+            showIcon
+          />
+        </Card>
+
+        {/* 推奨事項 */}
+        <Card 
+          title={
+            <Space>
+              <CheckCircleOutlined style={{ color: '#52c41a' }} />
+              推奨使用方法
+            </Space>
+          }
+          headStyle={{ backgroundColor: '#f6ffed', borderBottom: '1px solid #b7eb8f' }}
+        >
+          <Alert
+            type="success"
+            message="効果的な使用方法"
+            icon={<SmileOutlined />}
+            style={{ marginBottom: '24px' }}
+            showIcon
+          />
+          
+          <Row gutter={[24, 16]}>
+            <Col xs={24} md={12}>
+              <Title level={4}>監視設定</Title>
+              <List
+                dataSource={[
+                  { text: '監視ゲーム数を50-100タイトル以下に抑える', important: true },
+                  { text: '監視間隔は1-2時間に設定', important: true },
+                  { text: '不要なゲームは定期的に削除', important: false },
+                  { text: '価格閾値を適切に設定', important: false }
+                ]}
+                renderItem={item => (
+                  <List.Item>
+                    <Space>
+                      <CheckCircleOutlined style={{ color: '#52c41a' }} />
+                      <Text strong={item.important}>{item.text}</Text>
+                    </Space>
+                  </List.Item>
+                )}
+              />
+            </Col>
+            <Col xs={24} md={12}>
+              <Title level={4}>価格判断</Title>
+              <List
+                dataSource={[
+                  { text: '購入前に必ずSteamで確認', important: true },
+                  { text: '歴代最安値は参考程度に活用', important: false },
+                  { text: '複数のセール比較サイトを併用', important: false },
+                  { text: 'セール期間の終了日時を確認', important: false },
+                  { text: '異常な価格は疑って再確認', important: true },
+                  { text: 'データ取得失敗ゲームは監視を一時停止', important: false }
+                ]}
+                renderItem={item => (
+                  <List.Item>
+                    <Space>
+                      <CheckCircleOutlined style={{ color: '#52c41a' }} />
+                      <Text strong={item.important}>{item.text}</Text>
+                    </Space>
+                  </List.Item>
+                )}
+              />
+            </Col>
+          </Row>
+        </Card>
+
+        {/* 最終更新日 */}
+        <div style={{ textAlign: 'center', marginTop: '40px' }}>
+          <Text type="secondary">
+            <CalendarOutlined style={{ marginRight: 4 }} />
+            最終更新: 2025年6月27日
+          </Text>
         </div>
-      </div>
-
-      {/* API制限 */}
-      <div className="row mb-5">
-        <div className="col-12">
-          <div className="card border-info">
-            <div className="card-header bg-info text-white">
-              <h3 className="card-title mb-0">
-                <i className="bi bi-cloud me-2"></i>
-                API制限
-              </h3>
-            </div>
-            <div className="card-body">
-              <div className="row">
-                <div className="col-md-6">
-                  <h5>監視間隔の制限</h5>
-                  <ul>
-                    <li><strong>最短10分間隔</strong>（API制限のため）</li>
-                    <li>デフォルト: 1時間間隔</li>
-                    <li>大量のゲーム監視時は間隔を長めに設定推奨</li>
-                  </ul>
-                </div>
-                <div className="col-md-6">
-                  <h5>同時接続制限</h5>
-                  <ul>
-                    <li>API負荷軽減のため <strong>1接続ずつ処理</strong></li>
-                    <li>100ゲーム監視で約5分程度</li>
-                    <li>処理中は他の操作を控えることを推奨</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ゲームタイプ制限 */}
-      <div className="row mb-5">
-        <div className="col-12">
-          <div className="card border-secondary">
-            <div className="card-header bg-secondary text-white">
-              <h3 className="card-title mb-0">
-                <i className="bi bi-controller me-2"></i>
-                対応ゲームの制限
-              </h3>
-            </div>
-            <div className="card-body">
-              <h5>監視が困難なゲーム</h5>
-              <div className="row">
-                <div className="col-md-4">
-                  <div className="text-center p-3 border rounded">
-                    <i className="bi bi-x-circle text-danger" style={{ fontSize: '2rem' }}></i>
-                    <h6 className="mt-2">販売終了ゲーム</h6>
-                    <small className="text-muted">購入不可能</small>
-                  </div>
-                </div>
-                <div className="col-md-4">
-                  <div className="text-center p-3 border rounded">
-                    <i className="bi bi-geo text-warning" style={{ fontSize: '2rem' }}></i>
-                    <h6 className="mt-2">地域制限ゲーム</h6>
-                    <small className="text-muted">日本で販売されていない</small>
-                  </div>
-                </div>
-                <div className="col-md-4">
-                  <div className="text-center p-3 border rounded">
-                    <i className="bi bi-puzzle text-info" style={{ fontSize: '2rem' }}></i>
-                    <h6 className="mt-2">特殊ゲームタイプ</h6>
-                    <small className="text-muted">DLCやソフトウェアなど</small>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 精度に関する注意 */}
-      <div className="row mb-5">
-        <div className="col-12">
-          <div className="card border-primary">
-            <div className="card-header bg-primary text-white">
-              <h3 className="card-title mb-0">
-                <i className="bi bi-target me-2"></i>
-                精度に関する注意
-              </h3>
-            </div>
-            <div className="card-body">
-              <div className="row">
-                <div className="col-md-6">
-                  <h5>価格データの精度</h5>
-                  <ul>
-                    <li>為替レートの変動により誤差が生じる場合</li>
-                    <li>地域別価格の違い</li>
-                    <li>バンドル価格と単品価格の混在</li>
-                    <li>セール終了直後の価格反映遅延</li>
-                  </ul>
-                </div>
-                <div className="col-md-6">
-                  <h5>通知の遅延</h5>
-                  <ul>
-                    <li>最短10分〜最大監視間隔の遅延</li>
-                    <li>API障害時の通知停止</li>
-                    <li>手動更新による即座の確認を推奨</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* データ取得エラー */}
-      <div className="row mb-5">
-        <div className="col-12">
-          <div className="card border-danger">
-            <div className="card-header bg-danger text-white">
-              <h3 className="card-title mb-0">
-                <i className="bi bi-exclamation-octagon me-2"></i>
-                データ取得エラーについて
-              </h3>
-            </div>
-            <div className="card-body">
-              <div className="alert alert-danger mb-3">
-                <i className="bi bi-exclamation-triangle me-2"></i>
-                <strong>重要:</strong> 一部のゲームでは正確な価格データが取得できない場合があります。
-              </div>
-              
-              <h5>エラーが発生しやすいゲーム</h5>
-              <div className="row mb-4">
-                <div className="col-md-6">
-                  <div className="card border h-100">
-                    <div className="card-body">
-                      <h6 className="card-title">
-                        <i className="bi bi-puzzle me-2 text-warning"></i>
-                        特殊なゲームタイプ
-                      </h6>
-                      <ul className="mb-0">
-                        <li>DLC・アドオン類</li>
-                        <li>ソフトウェア・ツール類</li>
-                        <li>古いゲーム（データベース未登録）</li>
-                        <li>地域限定販売ゲーム</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-                <div className="col-md-6">
-                  <div className="card border h-100">
-                    <div className="card-body">
-                      <h6 className="card-title">
-                        <i className="bi bi-server me-2 text-warning"></i>
-                        API側の問題
-                      </h6>
-                      <ul className="mb-0">
-                        <li>Steam App IDの誤認識</li>
-                        <li>価格データベースの不整合</li>
-                        <li>APIサーバーの一時的障害</li>
-                        <li>レート制限による取得失敗</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <h5>間違ったデータの例</h5>
-              <div className="row mb-4">
-                <div className="col-md-4">
-                  <div className="text-center p-3 border rounded">
-                    <i className="bi bi-currency-yen text-danger" style={{ fontSize: '2rem' }}></i>
-                    <h6 className="mt-2">価格の誤表示</h6>
-                    <small className="text-muted">¥0や異常に高い価格</small>
-                  </div>
-                </div>
-                <div className="col-md-4">
-                  <div className="text-center p-3 border rounded">
-                    <i className="bi bi-graph-down text-danger" style={{ fontSize: '2rem' }}></i>
-                    <h6 className="mt-2">最安値の誤認</h6>
-                    <small className="text-muted">実際より高い・低い価格</small>
-                  </div>
-                </div>
-                <div className="col-md-4">
-                  <div className="text-center p-3 border rounded">
-                    <i className="bi bi-patch-question text-danger" style={{ fontSize: '2rem' }}></i>
-                    <h6 className="mt-2">ゲーム名の不一致</h6>
-                    <small className="text-muted">別ゲームのデータを取得</small>
-                  </div>
-                </div>
-              </div>
-
-              <div className="alert alert-warning">
-                <h6><i className="bi bi-shield-exclamation me-2"></i>対処法</h6>
-                <ul className="mb-0">
-                  <li><strong>購入前には必ずSteamストアで価格を確認</strong>してください</li>
-                  <li>異常な価格が表示された場合は手動更新を試してください</li>
-                  <li>データ取得失敗が続く場合は、そのゲームの監視を一時停止することを推奨</li>
-                  <li>複数の価格比較サイト（SteamDB、IsThereAnyDeal等）で確認することを強く推奨</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 推奨事項 */}
-      <div className="row mb-5">
-        <div className="col-12">
-          <div className="card border-success">
-            <div className="card-header bg-success text-white">
-              <h3 className="card-title mb-0">
-                <i className="bi bi-check-circle me-2"></i>
-                推奨使用方法
-              </h3>
-            </div>
-            <div className="card-body">
-              <div className="alert alert-success">
-                <h5><i className="bi bi-hand-thumbs-up me-2"></i>効果的な使用方法</h5>
-              </div>
-              
-              <div className="row">
-                <div className="col-md-6">
-                  <h6>監視設定</h6>
-                  <ul>
-                    <li>✅ <strong>監視ゲーム数を50-100タイトル以下</strong>に抑える</li>
-                    <li>✅ <strong>監視間隔は1-2時間</strong>に設定</li>
-                    <li>✅ 不要なゲームは定期的に削除</li>
-                    <li>✅ 価格閾値を適切に設定</li>
-                  </ul>
-                </div>
-                <div className="col-md-6">
-                  <h6>価格判断</h6>
-                  <ul>
-                    <li>✅ <strong>購入前に必ずSteamで確認</strong></li>
-                    <li>✅ 歴代最安値は参考程度に活用</li>
-                    <li>✅ 複数のセール比較サイトを併用</li>
-                    <li>✅ セール期間の終了日時を確認</li>
-                    <li>✅ <strong>異常な価格は疑って再確認</strong></li>
-                    <li>✅ データ取得失敗ゲームは監視を一時停止</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 最終更新日 */}
-      <div className="row">
-        <div className="col-12">
-          <div className="text-center text-muted">
-            <small>
-              <i className="bi bi-calendar3 me-1"></i>
-              最終更新: 2025年6月27日
-            </small>
-          </div>
-        </div>
-      </div>
-    </div>
+      </Space>
     </div>
   )
 }
