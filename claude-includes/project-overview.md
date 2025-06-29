@@ -4,17 +4,24 @@
 
 * **プロジェクト名**: SteamSentinel
 * **リポジトリ名**: `SteamSentinel`
-* **説明**: Steamゲームのセール時における過去最安値更新を検知し、WebサイトとDiscord通知で情報提供するシステム。
+* **説明**: Steamゲームの価格監視、Epic Games無料ゲーム検知、出費追跡・予算管理を統合した包括的なゲーム財務管理システム。WebサイトとDiscord通知で情報提供。
 * **由来**: Steam（Steam）+ Sentinel（見張り番）= ゲーム価格の忠実な見張り役。
 
 ## 監視対象とデータソース
 
-* **監視対象**: Steam App IDに基づくゲームリスト (JSON設定ファイルで管理)。
+### Steam価格監視
+* **監視対象**: Steam App IDに基づくゲームリスト (データベース管理)。
     * 有名なゲーム50-100タイトルのプリセットリストを内蔵。
     * ゲームの動的な追加・削除機能。
 * **データソース**:
     * **メイン**: IsThereAnyDeal API (地域: 日本、通貨: JPY)
     * **サブ**: Steam Store API (地域: 日本)
+
+### Epic Games無料ゲーム監視
+* **監視対象**: Epic Games Store無料配布ゲーム
+* **データソース**:
+    * **メイン**: epic-free-games パッケージ (Epic Games API経由)
+    * **サブ**: IsThereAnyDeal API (Epic Games Store フィルタ)
 
 ## アラート条件と頻度
 

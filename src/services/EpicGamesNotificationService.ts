@@ -107,15 +107,48 @@ export class EpicGamesNotificationService {
       const result = await this.epicFreeGames.getGames();
       const games: EpicFreeGame[] = [];
       
+      // デバッグ: APIレスポンスの構造をログ出力
+      logger.info('Epic Games API response structure:', JSON.stringify(result, null, 2));
+      
       if (result && result.currentGames && Array.isArray(result.currentGames)) {
         for (const game of result.currentGames) {
           if (game && game.title) {
-            // 日付情報を解析
-            const startDate = game.effectiveDate && typeof game.effectiveDate === 'string' ? 
-                             new Date(game.effectiveDate) : new Date();
-            const endDate = game.expiryDate && typeof game.expiryDate === 'string' ? 
-                           new Date(game.expiryDate) : 
-                           new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // デフォルト1週間
+            // デバッグ: 各ゲームのデータ構造をログ出力
+            logger.info(`Game data for "${game.title}":`, JSON.stringify({
+              effectiveDate: game.effectiveDate,
+              expiryDate: game.expiryDate,
+              promotionalOffers: game.promotionalOffers,
+              upcomingPromotionalOffers: game.upcomingPromotionalOffers
+            }, null, 2));
+            
+            // 日付情報を解析 - より正確な日付フィールドを確認
+            let startDate: Date;
+            let endDate: Date;
+            
+            // 開始日の取得（複数のフィールドをチェック）
+            if (game.effectiveDate) {
+              startDate = new Date(game.effectiveDate);
+            } else if (game.promotionalOffers && game.promotionalOffers.length > 0) {
+              startDate = new Date(game.promotionalOffers[0].promotionalOffers[0].startDate);
+            } else {
+              startDate = new Date();
+            }
+            
+            // 終了日の取得（複数のフィールドをチェック）
+            if (game.expiryDate) {
+              endDate = new Date(game.expiryDate);
+            } else if (game.promotionalOffers && game.promotionalOffers.length > 0) {
+              const promo = game.promotionalOffers[0].promotionalOffers[0];
+              endDate = new Date(promo.endDate);
+            } else if (game.upcomingPromotionalOffers && game.upcomingPromotionalOffers.length > 0) {
+              const upcomingPromo = game.upcomingPromotionalOffers[0].promotionalOffers[0];
+              endDate = new Date(upcomingPromo.endDate);
+            } else {
+              // デフォルトでEpic Gamesの標準的な無料期間（木曜日から次の木曜日まで）
+              const now = new Date();
+              const daysUntilThursday = (4 - now.getDay() + 7) % 7;
+              endDate = new Date(now.getTime() + (daysUntilThursday + 7) * 24 * 60 * 60 * 1000);
+            }
             
             // ゲーム画像を取得（keyImagesから最適な画像を選択）
             let imageUrl: string | undefined;

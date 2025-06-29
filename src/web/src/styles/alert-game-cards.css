@@ -1,0 +1,45 @@
+/* セール・条件達成ゲームカード */
+.alert-game-card {
+  border: 2px solid transparent !important;
+}
+
+.alert-game-card-medium {
+  border: 2px solid #ffc107 !important;
+}
+
+.alert-game-card-high {
+  border: 2px solid #dc3545 !important;
+}
+
+/* ダークモード対応 */
+.dark-mode .alert-game-card {
+  background-color: var(--bs-dark) !important;
+  border-color: var(--bs-gray-600) !important;
+  color: var(--bs-light) !important;
+}
+
+.dark-mode .alert-game-card-medium {
+  background-color: var(--bs-dark) !important;
+  border-color: #ffc107 !important;
+  color: var(--bs-light) !important;
+}
+
+.dark-mode .alert-game-card-high {
+  background-color: var(--bs-dark) !important;
+  border-color: #dc3545 !important;
+  color: var(--bs-light) !important;
+}
+
+.dark-mode .alert-game-card .card-text {
+  color: var(--bs-gray-300) !important;
+}
+
+.dark-mode .alert-game-card .text-muted {
+  color: var(--bs-gray-400) !important;
+}
+
+/* 価格表示 */
+.alert-game-card .h4 {
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}

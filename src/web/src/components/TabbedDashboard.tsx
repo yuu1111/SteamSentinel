@@ -519,56 +519,93 @@ const AlertTargetGames: React.FC<AlertTargetGamesProps> = ({ games }) => {
   }
 
   return (
-    <div className="row">
+    <div className="row g-3">
       {alertTargetGames.map(game => {
         const latestPrice = game.latestPrice!
+        const discountPercent = latestPrice.discount_percent || 0
+        const isHighDiscount = discountPercent >= 70
+        const isMediumDiscount = discountPercent >= 50
+        const isNewRelease = !!game.was_unreleased && latestPrice.source !== 'steam_unreleased'
+        
         return (
-          <div key={game.id} className="col-md-6 col-lg-4 mb-3">
-            <div className="card h-100 border-warning">
+          <div key={game.id} className="col-md-6 col-lg-4">
+            <div className={`card h-100 shadow-sm border-0 overflow-hidden ${isHighDiscount ? 'alert-game-card-high' : isMediumDiscount ? 'alert-game-card-medium' : 'alert-game-card'}`}>
+              {/* ゲーム画像 */}
+              <div className="position-relative" style={{ height: '120px', overflow: 'hidden' }}>
+                <img 
+                  src={`https://cdn.akamai.steamstatic.com/steam/apps/${game.steam_app_id}/header.jpg`}
+                  alt={game.name}
+                  className="w-100 h-100"
+                  style={{ objectFit: 'cover', filter: 'brightness(0.8)' }}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDYwIiBoZWlnaHQ9IjIxNSIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDYwIiBoZWlnaHQ9IjIxNSIgZmlsbD0iIzFiMmQzZSIvPjxwYXRoIGQ9Ik0yMzAgODUuNWMtMTEuMDQ2IDAtMjAgOC45NTQtMjAgMjBzOC45NTQgMjAgMjAgMjAgMjAtOC45NTQgMjAtMjAtOC45NTQtMjAtMjAtMjB6bTAgMzBjLTUuNTIzIDAtMTAtNC40NzctMTAtMTBzNC40NzctMTAgMTAtMTAgMTAgNC40NzcgMTAgMTAtNC40NzcgMTAtMTAgMTB6IiBmaWxsPSIjMzQ0OTVlIi8+PC9zdmc+'
+                  }}
+                />
+                
+                {/* 割引バッジ */}
+                {discountPercent > 0 && (
+                  <div className={`position-absolute top-0 end-0 m-2 badge ${isHighDiscount ? 'bg-danger' : isMediumDiscount ? 'bg-warning' : 'bg-success'} fs-5 shadow`}>
+                    -{discountPercent}%
+                  </div>
+                )}
+                
+                {/* 新規リリースバッジ */}
+                {isNewRelease && (
+                  <div className="position-absolute top-0 start-0 m-2 badge bg-info shadow">
+                    <i className="bi bi-stars"></i> NEW
+                  </div>
+                )}
+              </div>
+              
               <div className="card-body">
-                <h6 className="card-title">
+                {/* ゲーム名 */}
+                <h6 className="card-title mb-3">
                   <a 
                     href={`https://store.steampowered.com/app/${game.steam_app_id}/`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-decoration-none"
+                    className="text-decoration-none text-dark stretched-link"
                   >
                     {game.name}
                   </a>
                 </h6>
-                <p className="card-text">
-                  <span className="badge bg-success me-2">
-                    <i className="bi bi-check-circle-fill"></i> 条件達成
-                  </span>
-                  {!!game.was_unreleased && latestPrice.source !== 'steam_unreleased' && (
-                    <span className="badge bg-info me-2">
-                      <i className="bi bi-stars"></i> 新規リリース
-                    </span>
-                  )}
-                  {latestPrice.is_on_sale && latestPrice.discount_percent && latestPrice.discount_percent > 0 && (
-                    <span className="badge bg-success me-2">
-                      {latestPrice.discount_percent}% OFF
-                    </span>
-                  )}
-                </p>
-                <p className="card-text">
-                  <small className="text-muted">
-                    現在: ¥{latestPrice.current_price.toLocaleString()}
+                
+                {/* 価格情報 */}
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                  <div>
+                    <div className="h4 mb-0 text-primary">
+                      ¥{latestPrice.current_price.toLocaleString()}
+                    </div>
                     {latestPrice.original_price > 0 && latestPrice.original_price !== latestPrice.current_price && (
-                      <> (元価格: ¥{latestPrice.original_price.toLocaleString()})</>
+                      <div className="text-muted text-decoration-line-through small">
+                        ¥{latestPrice.original_price.toLocaleString()}
+                      </div>
                     )}
-                    <br />
-                    {game.price_threshold_type === 'price' && game.price_threshold && (
-                      <>条件: ¥{game.price_threshold.toLocaleString()}以下</>
-                    )}
-                    {game.price_threshold_type === 'discount' && game.discount_threshold_percent && (
-                      <>条件: {game.discount_threshold_percent}%以上割引</>
-                    )}
-                    {game.price_threshold_type === 'any_sale' && (
-                      <>条件: セール開始時</>
-                    )}
-                  </small>
-                </p>
+                  </div>
+                  {latestPrice.historical_low && latestPrice.current_price <= latestPrice.historical_low && (
+                    <span className="badge bg-danger">
+                      <i className="bi bi-graph-down"></i> 歴代最安値
+                    </span>
+                  )}
+                </div>
+                
+                {/* 条件情報 */}
+                <div className="border-top pt-2">
+                  <div className="d-flex align-items-center small text-muted">
+                    <i className="bi bi-check-circle-fill text-success me-2"></i>
+                    <span>
+                      {game.price_threshold_type === 'price' && game.price_threshold && (
+                        <>条件: ¥{game.price_threshold.toLocaleString()}以下</>
+                      )}
+                      {game.price_threshold_type === 'discount' && game.discount_threshold_percent && (
+                        <>条件: {game.discount_threshold_percent}%以上割引</>
+                      )}
+                      {game.price_threshold_type === 'any_sale' && (
+                        <>条件: セール開始時</>
+                      )}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

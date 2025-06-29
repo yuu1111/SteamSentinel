@@ -2,6 +2,7 @@ import app from './app';
 import database from './db/database';
 import { SchedulerService } from './services/SchedulerService';
 import { MonitoringController } from './controllers/MonitoringController';
+import epicGamesNotificationService from './services/EpicGamesNotificationService';
 import { config, validateRequiredConfig, getFeatureStatus } from './config';
 import logger from './utils/logger';
 
@@ -22,6 +23,9 @@ class SteamSentinelApp {
 
       // スケジューラー初期化
       await this.initializeScheduler();
+
+      // Epic Gamesサービス初期化
+      await this.initializeEpicGamesService();
 
       // Webサーバー起動
       await this.startWebServer();
@@ -82,6 +86,20 @@ class SteamSentinelApp {
     this.schedulerService.start();
     
     logger.info('✅ Scheduler initialized and started');
+  }
+
+  private async initializeEpicGamesService(): Promise<void> {
+    logger.info('🎮 Initializing Epic Games service...');
+    
+    try {
+      // Epic Gamesサービスの定期チェック開始
+      epicGamesNotificationService.startPeriodicCheck();
+      
+      logger.info('✅ Epic Games service initialized and started');
+    } catch (error) {
+      logger.warn('⚠️ Epic Games service initialization failed:', error);
+      // Epic Gamesサービスの失敗はアプリケーション全体の起動を止めない
+    }
   }
 
   private async startWebServer(): Promise<void> {

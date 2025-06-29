@@ -86,7 +86,8 @@ export const AddGameModal: React.FC<AddGameModalProps> = ({ show, onHide, onGame
       } else {
         showError('ゲームの追加に失敗しました: ' + response.error)
       }
-    } catch {
+    } catch (error) {
+      console.error('Game addition error:', error)
       showError('ゲームの追加中にエラーが発生しました')
     } finally {
       setLoading(false)

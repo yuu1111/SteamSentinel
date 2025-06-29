@@ -57,7 +57,7 @@ GET /api/games/dashboard
 }
 ```
 
-### 出費データ取得 (実装予定)
+### 出費データ取得
 ```
 GET /api/games/expenses
 ```
@@ -365,6 +365,111 @@ POST /api/system/test-price-alert
   steamAppId: number,
   alertType: 'new_low' | 'sale_start' | 'threshold_met' | 'free_game',
   testPrice?: number
+}
+```
+
+## 予算管理 API
+
+### 予算一覧取得
+```
+GET /api/budgets
+GET /api/budgets/active
+GET /api/budgets/summaries
+```
+
+**レスポンス:**
+```typescript
+{
+  success: true,
+  data: Budget[]
+}
+```
+
+### 予算作成
+```
+POST /api/budgets
+POST /api/budgets/monthly
+POST /api/budgets/yearly
+```
+
+**リクエストボディ:**
+```typescript
+{
+  name: string,
+  period_type: 'monthly' | 'yearly' | 'custom',
+  budget_amount: number,
+  start_date?: string,
+  end_date?: string,
+  category_filter?: string
+}
+```
+
+### 予算管理
+```
+GET /api/budgets/:id
+PUT /api/budgets/:id
+DELETE /api/budgets/:id
+```
+
+### 支出記録管理
+```
+GET /api/budgets/:id/expenses
+POST /api/budgets/:id/expenses
+DELETE /api/budgets/:id/expenses/:expenseId
+```
+
+**支出記録リクエストボディ:**
+```typescript
+{
+  steam_app_id?: number,
+  game_name: string,
+  amount: number,
+  purchase_date: string,
+  category?: string
+}
+```
+
+## Epic Games API
+
+### Epic Games無料ゲーム管理
+```
+GET /api/epic-games
+POST /api/epic-games/refresh
+PUT /api/epic-games/:id/claim
+GET /api/epic-games/current
+GET /api/epic-games/stats
+```
+
+**Epic Games レスポンス:**
+```typescript
+{
+  success: true,
+  data: EpicFreeGame[]
+}
+
+interface EpicFreeGame {
+  id: number
+  title: string
+  description?: string
+  epic_url?: string
+  image_url?: string
+  start_date?: string
+  end_date?: string
+  is_claimed: boolean
+  claimed_date?: string
+  discovered_at: string
+}
+```
+
+### Epic Games受け取り状況更新
+```
+PUT /api/epic-games/:id/claim
+```
+
+**リクエストボディ:**
+```typescript
+{
+  is_claimed: boolean
 }
 ```
 

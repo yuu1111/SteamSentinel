@@ -28,7 +28,9 @@ const Games: React.FC = () => {
     loadAllGames()
   }, [])
 
-  const loadAllGames = async () => {
+  const loadAllGames = async (preserveScroll = false) => {
+    const scrollPosition = preserveScroll ? window.scrollY : 0
+    
     try {
       setLoading(true)
       const response = await api.get('/games?enabled=all')
@@ -42,6 +44,13 @@ const Games: React.FC = () => {
       showError('ゲーム一覧の読み込み中にエラーが発生しました')
     } finally {
       setLoading(false)
+      
+      // スクロール位置を復元
+      if (preserveScroll && scrollPosition > 0) {
+        requestAnimationFrame(() => {
+          window.scrollTo(0, scrollPosition)
+        })
+      }
     }
   }
 
@@ -60,7 +69,7 @@ const Games: React.FC = () => {
       
       if (response.success) {
         showSuccess(`${gameToDelete.name} を削除しました`)
-        await loadAllGames()
+        await loadAllGames(true)
       } else {
         showError('ゲームの削除に失敗しました: ' + response.error)
       }
@@ -91,7 +100,7 @@ const Games: React.FC = () => {
       
       if (response.success) {
         showSuccess('価格情報を更新しました')
-        await loadAllGames()
+        await loadAllGames(true)
       } else {
         showError('価格更新に失敗しました: ' + response.error)
       }
@@ -140,7 +149,7 @@ const Games: React.FC = () => {
                   </button>
                   <button 
                     className="btn btn-info"
-                    onClick={loadAllGames}
+                    onClick={() => loadAllGames(true)}
                   >
                     <i className="bi bi-arrow-clockwise"></i> 更新
                   </button>
@@ -312,12 +321,7 @@ const Games: React.FC = () => {
           setEditingGame(null)
         }}
         onGameUpdated={() => {
-          // ゲーム更新後は画面をスクロールしないよう、現在の位置を保持
-          const scrollPosition = window.scrollY;
-          loadAllGames().then(() => {
-            // データ読み込み後に元の位置に戻す
-            setTimeout(() => window.scrollTo(0, scrollPosition), 0);
-          });
+          loadAllGames(true)
         }}
       />
 

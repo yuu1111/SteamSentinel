@@ -27,6 +27,11 @@
 - **ReportSection**: レポートセクション
 - **DataBackup**: バックアップデータ
 
+### Epic Games統合型
+- **EpicFreeGame**: Epic Games無料ゲーム情報
+- **EpicGameStatus**: ゲーム受け取り状況
+- **EpicGameStats**: Epic Games統計情報
+
 ## データベース構造
 
 ## ゲーム情報テーブル (`games`)
@@ -83,9 +88,60 @@
 | `created_at`         | TIMESTAMP     |                            | 作成日時                             |
 | `release_date`       | TEXT          |                            | リリース通知の場合のリリース日       |
 
+## 予算管理テーブル (`budgets`)
+
+| カラム名         | 型      | 制約                     | 説明                                    |
+| :-------------- | :------ | :----------------------- | :-------------------------------------- |
+| `id`            | INTEGER | PRIMARY KEY AUTOINCREMENT |                                         |
+| `name`          | TEXT    | NOT NULL                 | 予算名                                  |
+| `period_type`   | TEXT    | CHECK(period_type IN ('monthly', 'yearly', 'custom')) | 期間タイプ |
+| `budget_amount` | REAL    | NOT NULL                 | 予算金額                                |
+| `start_date`    | DATE    |                          | 開始日                                  |
+| `end_date`      | DATE    |                          | 終了日                                  |
+| `category_filter` | TEXT  |                          | カテゴリフィルター                      |
+| `is_active`     | BOOLEAN | DEFAULT 1                | アクティブフラグ                        |
+| `created_at`    | DATETIME | DEFAULT CURRENT_TIMESTAMP | 作成日時                               |
+| `updated_at`    | DATETIME | DEFAULT CURRENT_TIMESTAMP | 更新日時                               |
+
+## 支出記録テーブル (`budget_expenses`)
+
+| カラム名         | 型      | 制約                     | 説明                                    |
+| :-------------- | :------ | :----------------------- | :-------------------------------------- |
+| `id`            | INTEGER | PRIMARY KEY AUTOINCREMENT |                                         |
+| `budget_id`     | INTEGER | NOT NULL, FOREIGN KEY    | 予算ID (budgets.id参照)                 |
+| `steam_app_id`  | INTEGER |                          | Steam App ID (オプション)               |
+| `game_name`     | TEXT    |                          | ゲーム名                                |
+| `amount`        | REAL    | NOT NULL                 | 支出金額                                |
+| `purchase_date` | DATE    | NOT NULL                 | 購入日                                  |
+| `category`      | TEXT    |                          | カテゴリ                                |
+| `created_at`    | DATETIME | DEFAULT CURRENT_TIMESTAMP | 記録作成日時                           |
+
+## Epic Games無料ゲームテーブル (`epic_free_games`)
+
+| カラム名         | 型      | 制約                     | 説明                                    |
+| :-------------- | :------ | :----------------------- | :-------------------------------------- |
+| `id`            | INTEGER | PRIMARY KEY AUTOINCREMENT |                                         |
+| `title`         | TEXT    | NOT NULL                 | ゲームタイトル                          |
+| `description`   | TEXT    |                          | ゲーム説明                              |
+| `epic_url`      | TEXT    |                          | Epic Store URL                          |
+| `image_url`     | TEXT    |                          | ゲーム画像URL                           |
+| `start_date`    | TEXT    |                          | 配布開始日 (ISO 8601形式)               |
+| `end_date`      | TEXT    |                          | 配布終了日 (ISO 8601形式)               |
+| `is_claimed`    | BOOLEAN | DEFAULT 0                | 受け取り済みフラグ                      |
+| `claimed_date`  | TEXT    |                          | 受け取り日 (ISO 8601形式)               |
+| `discovered_at` | DATETIME | DEFAULT CURRENT_TIMESTAMP | 発見日時                               |
+
+## システム設定テーブル (`system_settings`)
+
+| カラム名     | 型      | 制約                     | 説明                                    |
+| :---------- | :------ | :----------------------- | :-------------------------------------- |
+| `key`       | TEXT    | PRIMARY KEY              | 設定キー                                |
+| `value`     | TEXT    |                          | 設定値 (JSON形式)                       |
+| `updated_at` | DATETIME | DEFAULT CURRENT_TIMESTAMP | 更新日時                               |
+
 ## データベースバージョン管理テーブル (`db_version`)
 
 | カラム名     | 型      | 制約                | 説明                     |
 | :----------- | :------ | :------------------ | :----------------------- |
-| `version`    | INTEGER | PRIMARY KEY         | データベーススキーマのバージョン |
+| `version`    | INTEGER | PRIMARY KEY         | データベーススキーマのバージョン (現在: v7) |
 | `applied_at` | DATETIME | DEFAULT CURRENT_TIMESTAMP | 適用日時                 |

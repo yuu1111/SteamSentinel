@@ -17,6 +17,7 @@ import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { AlertProvider } from './contexts/AlertContext'
 import { ViewType } from './types'
 import './styles/dashboard-cards.css'
+import './styles/alert-game-cards.css'
 
 function App() {
   const [currentView, setCurrentView] = useState<ViewType>('dashboard')

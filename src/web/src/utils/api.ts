@@ -24,7 +24,27 @@ class ApiClient {
       const response = await fetch(url, config)
       
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        // エラーレスポンスの詳細を取得
+        try {
+          const errorData = await response.json()
+          // サーバーからのエラーメッセージがある場合はそれを使用
+          if (errorData.error) {
+            throw new Error(errorData.error)
+          }
+        } catch {
+          // JSONパースエラーの場合は通常のHTTPエラー
+        }
+        
+        // HTTPステータスコードに基づくエラーメッセージ
+        if (response.status === 409) {
+          throw new Error('このゲームは既に登録されています')
+        } else if (response.status === 400) {
+          throw new Error('無効なSteam App IDまたはSteam APIに接続できません')
+        } else if (response.status === 404) {
+          throw new Error('指定されたリソースが見つかりません')
+        } else {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
       }
 
       const data = await response.json()

@@ -167,14 +167,42 @@ const EpicGames: React.FC = () => {
               <i className="bi bi-gift me-2"></i>
               Epic Games 無料ゲーム
             </h2>
-            <button
-              className="btn btn-outline-primary btn-sm"
-              onClick={loadGames}
-              disabled={loading}
-            >
-              <i className="bi bi-arrow-clockwise me-1"></i>
-              更新
-            </button>
+            <div className="d-flex gap-2">
+              <button
+                className="btn btn-outline-primary btn-sm"
+                onClick={loadGames}
+                disabled={loading}
+              >
+                <i className="bi bi-arrow-clockwise me-1"></i>
+                再読み込み
+              </button>
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={async () => {
+                  try {
+                    setLoading(true);
+                    const response = await fetch('/api/epic-games/refresh', { method: 'POST' });
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                      showSuccess(data.message || '新しい無料ゲームを取得しました');
+                      await loadGames();
+                    } else {
+                      showError('Epic Gamesの更新に失敗しました');
+                    }
+                  } catch (error) {
+                    console.error('Failed to refresh Epic Games:', error);
+                    showError('Epic Gamesの更新中にエラーが発生しました');
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                disabled={loading}
+              >
+                <i className="bi bi-cloud-download me-1"></i>
+                最新データ取得
+              </button>
+            </div>
           </div>
 
           {/* フィルター */}
