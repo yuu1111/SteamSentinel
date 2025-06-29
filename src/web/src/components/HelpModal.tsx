@@ -1,13 +1,25 @@
-import React from 'react';
+import React from 'react'
+import { Modal, Row, Col, Typography, Space, Divider, Card } from 'antd'
+import { 
+  QuestionCircleOutlined, 
+  InfoCircleOutlined,
+  BarChartOutlined,
+  GiftOutlined,
+  SettingOutlined,
+  KeyOutlined,
+  WalletOutlined,
+  CommentOutlined,
+  FileTextOutlined
+} from '@ant-design/icons'
+
+const { Title, Text, Paragraph } = Typography
 
 interface HelpModalProps {
-  show: boolean;
-  onHide: () => void;
+  show: boolean
+  onHide: () => void
 }
 
 const HelpModal: React.FC<HelpModalProps> = ({ show, onHide }) => {
-  if (!show) return null;
-
   const shortcuts = [
     {
       key: 'Ctrl/Cmd + R',
@@ -59,164 +71,169 @@ const HelpModal: React.FC<HelpModalProps> = ({ show, onHide }) => {
       description: '設定に移動',
       section: 'ナビゲーション'
     }
-  ];
+  ]
 
   const features = [
     {
       title: 'ゲーム価格監視',
       description: 'Steamゲームの価格を定期的に監視し、セールや最安値更新を通知します。',
-      icon: 'bi-graph-down-arrow'
+      icon: <BarChartOutlined style={{ color: '#1890ff' }} />
     },
     {
       title: '予算管理',
       description: '月間・年間の購入予算を設定し、支出状況を追跡・分析できます。',
-      icon: 'bi-wallet'
+      icon: <WalletOutlined style={{ color: '#52c41a' }} />
     },
     {
       title: 'Discord通知',
       description: '価格変動やセール情報をDiscordに自動通知します。',
-      icon: 'bi-chat-square-text'
+      icon: <CommentOutlined style={{ color: '#722ed1' }} />
     },
     {
       title: 'Epic Games無料ゲーム',
       description: 'Epic Games Storeの無料ゲーム情報を取得し、受け取り状況を管理できます。',
-      icon: 'bi-gift'
+      icon: <GiftOutlined style={{ color: '#fa8c16' }} />
     },
     {
       title: 'データ分析',
       description: 'ROI分析、価格トレンド、購入パターンの分析機能を提供します。',
-      icon: 'bi-bar-chart'
+      icon: <BarChartOutlined style={{ color: '#13c2c2' }} />
     },
     {
       title: 'レポート出力',
       description: 'CSV、JSON、PDF形式での包括的なレポート生成が可能です。',
-      icon: 'bi-file-earmark-text'
+      icon: <FileTextOutlined style={{ color: '#eb2f96' }} />
     }
-  ];
+  ]
 
   const groupedShortcuts = shortcuts.reduce((acc, shortcut) => {
     if (!acc[shortcut.section]) {
-      acc[shortcut.section] = [];
+      acc[shortcut.section] = []
     }
-    acc[shortcut.section].push(shortcut);
-    return acc;
-  }, {} as Record<string, typeof shortcuts>);
+    acc[shortcut.section].push(shortcut)
+    return acc
+  }, {} as Record<string, typeof shortcuts>)
 
   return (
-    <div className="modal fade show d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-      <div className="modal-dialog modal-lg">
-        <div className="modal-content">
-          <div className="modal-header">
-            <h5 className="modal-title">
-              <i className="bi bi-question-circle me-2"></i>
-              SteamSentinel ヘルプ
-            </h5>
-            <button type="button" className="btn-close" onClick={onHide}></button>
-          </div>
-          <div className="modal-body">
-            {/* 機能説明 */}
-            <div className="mb-4">
-              <h6 className="text-primary mb-3">
-                <i className="bi bi-info-circle me-2"></i>
-                主要機能
-              </h6>
-              <div className="row">
-                {features.map((feature, index) => (
-                  <div key={index} className="col-md-6 mb-3">
-                    <div className="d-flex align-items-start">
-                      <i className={`${feature.icon} text-primary me-2 mt-1`}></i>
-                      <div>
-                        <div className="fw-bold">{feature.title}</div>
-                        <small className="text-muted">{feature.description}</small>
-                      </div>
+    <Modal
+      title={
+        <Space>
+          <QuestionCircleOutlined />
+          SteamSentinel ヘルプ
+        </Space>
+      }
+      open={show}
+      onCancel={onHide}
+      footer={null}
+      width={800}
+      style={{ top: 20 }}
+    >
+      <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        {/* 機能説明 */}
+        <div>
+          <Title level={4}>
+            <InfoCircleOutlined style={{ marginRight: 8, color: '#1890ff' }} />
+            主要機能
+          </Title>
+          <Row gutter={[16, 16]}>
+            {features.map((feature, index) => (
+              <Col key={index} xs={24} md={12}>
+                <Card size="small" hoverable>
+                  <Space align="start">
+                    {feature.icon}
+                    <div>
+                      <Text strong>{feature.title}</Text>
+                      <Paragraph style={{ margin: 0, marginTop: 4 }}>
+                        <Text type="secondary" style={{ fontSize: 13 }}>
+                          {feature.description}
+                        </Text>
+                      </Paragraph>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* キーボードショートカット */}
-            <div className="mb-4">
-              <h6 className="text-primary mb-3">
-                <i className="bi bi-keyboard me-2"></i>
-                キーボードショートカット
-              </h6>
-              {Object.entries(groupedShortcuts).map(([section, sectionShortcuts]) => (
-                <div key={section} className="mb-3">
-                  <h6 className="text-secondary mb-2">{section}</h6>
-                  <div className="row">
-                    {sectionShortcuts.map((shortcut, index) => (
-                      <div key={index} className="col-md-6 mb-2">
-                        <div className="d-flex justify-content-between align-items-center">
-                          <span className="badge bg-light text-dark">{shortcut.key}</span>
-                          <span className="text-muted flex-grow-1 ms-2">{shortcut.description}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* 使い方のヒント */}
-            <div className="mb-4">
-              <h6 className="text-primary mb-3">
-                <i className="bi bi-lightbulb me-2"></i>
-                使い方のヒント
-              </h6>
-              <div className="alert alert-info">
-                <ul className="mb-0">
-                  <li><strong>ゲーム追加：</strong> Steam StoreのURLまたはApp IDを使用してゲームを追加できます</li>
-                  <li><strong>価格閾値：</strong> 特定の価格以下になった時に通知を受け取れます</li>
-                  <li><strong>予算設定：</strong> 月間・年間予算を設定して支出をコントロールできます</li>
-                  <li><strong>データ分析：</strong> ダッシュボードで詳細な購入分析を確認できます</li>
-                  <li><strong>一括操作：</strong> CSV形式でゲームデータのインポート・エクスポートが可能です</li>
-                </ul>
-              </div>
-            </div>
-
-            {/* システム情報 */}
-            <div>
-              <h6 className="text-primary mb-3">
-                <i className="bi bi-gear me-2"></i>
-                システム情報
-              </h6>
-              <div className="row">
-                <div className="col-md-6">
-                  <small className="text-muted">
-                    <strong>バージョン:</strong> SteamSentinel v2.0<br />
-                    <strong>データベース:</strong> SQLite v7<br />
-                    <strong>フロントエンド:</strong> React + Bootstrap 5
-                  </small>
-                </div>
-                <div className="col-md-6">
-                  <small className="text-muted">
-                    <strong>APIサポート:</strong> Steam Store, IsThereAnyDeal<br />
-                    <strong>通知:</strong> Discord Webhook<br />
-                    <strong>レポート:</strong> CSV, JSON, PDF
-                  </small>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="modal-footer">
-            <button type="button" className="btn btn-secondary" onClick={onHide}>
-              閉じる
-            </button>
-            <a 
-              href="https://github.com/your-repo/steam-sentinel" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="btn btn-primary"
-            >
-              <i className="bi bi-github me-1"></i>
-              GitHub
-            </a>
-          </div>
+                  </Space>
+                </Card>
+              </Col>
+            ))}
+          </Row>
         </div>
-      </div>
-    </div>
-  );
-};
 
-export default HelpModal;
+        <Divider />
+
+        {/* キーボードショートカット */}
+        <div>
+          <Title level={4}>
+            <KeyOutlined style={{ marginRight: 8, color: '#52c41a' }} />
+            キーボードショートカット
+          </Title>
+          <Row gutter={[24, 16]}>
+            {Object.entries(groupedShortcuts).map(([section, sectionShortcuts]) => (
+              <Col key={section} xs={24} md={12}>
+                <Card 
+                  title={section} 
+                  size="small"
+                  headStyle={{ fontSize: 14 }}
+                >
+                  <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                    {sectionShortcuts.map((shortcut, index) => (
+                      <Row key={index} justify="space-between" align="middle">
+                        <Col>
+                          <Text strong style={{ fontSize: 13 }}>
+                            {shortcut.key}
+                          </Text>
+                        </Col>
+                        <Col flex="auto" style={{ textAlign: 'right' }}>
+                          <Text type="secondary" style={{ fontSize: 12 }}>
+                            {shortcut.description}
+                          </Text>
+                        </Col>
+                      </Row>
+                    ))}
+                  </Space>
+                </Card>
+              </Col>
+            ))}
+          </Row>
+        </div>
+
+        <Divider />
+
+        {/* 使用方法 */}
+        <div>
+          <Title level={4}>
+            <SettingOutlined style={{ marginRight: 8, color: '#fa8c16' }} />
+            使用方法
+          </Title>
+          <Card>
+            <Space direction="vertical" size="middle">
+              <div>
+                <Text strong>1. ゲームの追加</Text>
+                <Paragraph style={{ margin: 0, marginTop: 4 }}>
+                  ゲーム管理ページで「ゲームを追加」ボタンをクリックし、Steam App IDまたはゲーム名を入力してください。
+                </Paragraph>
+              </div>
+              <div>
+                <Text strong>2. アラート設定</Text>
+                <Paragraph style={{ margin: 0, marginTop: 4 }}>
+                  各ゲームに対して価格閾値、割引率、セール開始時のアラート条件を設定できます。
+                </Paragraph>
+              </div>
+              <div>
+                <Text strong>3. Discord連携</Text>
+                <Paragraph style={{ margin: 0, marginTop: 4 }}>
+                  環境変数DISCORD_WEBHOOK_URLを設定することで、アラートをDiscordに自動送信できます。
+                </Paragraph>
+              </div>
+              <div>
+                <Text strong>4. 監視の開始</Text>
+                <Paragraph style={{ margin: 0, marginTop: 4 }}>
+                  システムは自動的に価格を監視します。手動での監視実行も可能です。
+                </Paragraph>
+              </div>
+            </Space>
+          </Card>
+        </div>
+      </Space>
+    </Modal>
+  )
+}
+
+export default HelpModal

@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react'
+import { Row, Col, Typography, Space, Button, Spin } from 'antd'
+import { HomeOutlined, SettingOutlined, FileTextOutlined, DatabaseOutlined } from '@ant-design/icons'
 import { TabDashboardData } from '../types'
 import { api } from '../utils/api'
 import { useAlert } from '../contexts/AlertContext'
 import { TabbedDashboard } from '../components/TabbedDashboard'
+
+const { Title } = Typography
 
 const Dashboard: React.FC = () => {
   const [dashboardData, setDashboardData] = useState<TabDashboardData | null>(null)
@@ -37,47 +41,52 @@ const Dashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="text-center py-5 loading-immediate">
-        <div className="spinner-border text-primary spinner-border-fast" role="status" style={{ width: '3rem', height: '3rem' }}>
-          <span className="visually-hidden">読み込み中...</span>
-        </div>
-        <p className="mt-3 text-muted">ダッシュボードを読み込み中...</p>
+      <div style={{ textAlign: 'center', padding: '80px 0' }}>
+        <Spin size="large" />
+        <p style={{ marginTop: 16, color: '#666' }}>ダッシュボードを読み込み中...</p>
       </div>
     )
   }
 
   return (
-    <div className="container-fluid">
-      <div className="row mb-4">
-        <div className="col-12">
-          <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
-            <h1 className="mb-0">
-              <i className="bi bi-house-door me-2"></i>
+    <div style={{ padding: '0 24px' }}>
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Col span={24}>
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 16
+          }}>
+            <Title level={2} style={{ margin: 0 }}>
+              <HomeOutlined style={{ marginRight: 8 }} />
               ダッシュボード
-            </h1>
-            <div className="d-flex flex-wrap gap-2">
-              <button className="btn btn-outline-primary btn-sm">
-                <i className="bi bi-gear me-1"></i>カスタマイズ
-              </button>
-              <button className="btn btn-outline-secondary btn-sm">
-                <i className="bi bi-file-earmark me-1"></i>レポート
-              </button>
-              <button className="btn btn-outline-info btn-sm">
-                <i className="bi bi-database me-1"></i>データ管理
-              </button>
-            </div>
+            </Title>
+            <Space wrap>
+              <Button icon={<SettingOutlined />} size="middle">
+                カスタマイズ
+              </Button>
+              <Button icon={<FileTextOutlined />} size="middle">
+                レポート
+              </Button>
+              <Button icon={<DatabaseOutlined />} size="middle" type="primary">
+                データ管理
+              </Button>
+            </Space>
           </div>
-        </div>
-      </div>
+        </Col>
+      </Row>
 
-      <div className="row">
-        <div className="col-12">
+      <Row gutter={[16, 16]}>
+        <Col span={24}>
           <TabbedDashboard 
             dashboardData={dashboardData}
             loading={loading}
+            onRefresh={loadDashboardData}
           />
-        </div>
-      </div>
+        </Col>
+      </Row>
     </div>
   )
 }

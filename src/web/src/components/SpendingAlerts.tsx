@@ -1,4 +1,16 @@
 import React, { useState, useEffect } from 'react'
+import { Card, Alert, Button, Space, Typography, Row, Col, List, Badge, Statistic } from 'antd'
+import { 
+  BellOutlined, 
+  WarningOutlined, 
+  ExclamationCircleOutlined, 
+  CloseCircleOutlined, 
+  TrophyOutlined, 
+  CheckOutlined, 
+  CloseOutlined,
+  StopOutlined,
+  UnorderedListOutlined
+} from '@ant-design/icons'
 import { SpendingAlert, ExpenseData, BudgetData } from '../types'
 import { formatRelativeTime } from '../utils/dateUtils'
 
@@ -155,21 +167,11 @@ export const SpendingAlerts: React.FC<SpendingAlertsProps> = ({
 
   const getAlertIcon = (type: SpendingAlert['type']) => {
     switch (type) {
-      case 'unusual_spending': return 'exclamation-triangle'
-      case 'budget_warning': return 'exclamation-circle'
-      case 'budget_exceeded': return 'x-circle'
-      case 'savings_milestone': return 'trophy'
-      default: return 'info-circle'
-    }
-  }
-
-  const getSeverityColor = (severity: SpendingAlert['severity']) => {
-    switch (severity) {
-      case 'success': return 'success'
-      case 'info': return 'info'
-      case 'warning': return 'warning'
-      case 'danger': return 'danger'
-      default: return 'secondary'
+      case 'unusual_spending': return <WarningOutlined />
+      case 'budget_warning': return <ExclamationCircleOutlined />
+      case 'budget_exceeded': return <CloseCircleOutlined />
+      case 'savings_milestone': return <TrophyOutlined />
+      default: return <BellOutlined />
     }
   }
 
@@ -188,164 +190,175 @@ export const SpendingAlerts: React.FC<SpendingAlertsProps> = ({
 
   if (!expenseData) {
     return (
-      <div className="row">
-        <div className="col-12">
-          <div className="alert alert-info">
-            <i className="bi bi-info-circle me-2"></i>
-            支出アラートデータを読み込み中...
-          </div>
-        </div>
-      </div>
+      <Alert
+        type="info"
+        message="支出アラートデータを読み込み中..."
+        icon={<BellOutlined />}
+        showIcon
+      />
     )
   }
 
   return (
-    <div className="row">
-      <div className="col-12 mb-4">
-        <div className="d-flex justify-content-between align-items-center">
-          <h4>
-            <i className="bi bi-bell me-2"></i>支出アラート
-            {unreadCount > 0 && (
-              <span className="badge bg-danger ms-2">{unreadCount}</span>
-            )}
-          </h4>
-          {alerts.length > 5 && (
-            <button 
-              className="btn btn-outline-primary btn-sm"
-              onClick={() => setShowAll(!showAll)}
-            >
-              {showAll ? '折りたたむ' : `すべて表示 (${alerts.length})`}
-            </button>
+    <Space direction="vertical" size="large" style={{ width: '100%' }}>
+      {/* Header */}
+      <Space size="middle" style={{ width: '100%', justifyContent: 'space-between' }}>
+        <Typography.Title level={3} style={{ margin: 0 }}>
+          <BellOutlined style={{ marginRight: 8 }} />
+          支出アラート
+          {unreadCount > 0 && (
+            <Badge count={unreadCount} style={{ marginLeft: 8 }} />
           )}
-        </div>
-      </div>
+        </Typography.Title>
+        {alerts.length > 5 && (
+          <Button 
+            type="link"
+            onClick={() => setShowAll(!showAll)}
+          >
+            {showAll ? '折りたたむ' : `すべて表示 (${alerts.length})`}
+          </Button>
+        )}
+      </Space>
 
       {/* Alert Summary */}
-      <div className="col-12 mb-4">
-        <div className="row">
-          <div className="col-md-3">
-            <div className="card text-center">
-              <div className="card-body">
-                <i className="bi bi-bell-fill display-4 text-primary mb-2"></i>
-                <h5>{alerts.length}</h5>
-                <small className="text-muted">総アラート数</small>
-              </div>
-            </div>
-          </div>
-          <div className="col-md-3">
-            <div className="card text-center">
-              <div className="card-body">
-                <i className="bi bi-exclamation-triangle-fill display-4 text-danger mb-2"></i>
-                <h5>{alerts.filter(a => a.severity === 'danger').length}</h5>
-                <small className="text-muted">重要</small>
-              </div>
-            </div>
-          </div>
-          <div className="col-md-3">
-            <div className="card text-center">
-              <div className="card-body">
-                <i className="bi bi-exclamation-circle-fill display-4 text-warning mb-2"></i>
-                <h5>{alerts.filter(a => a.severity === 'warning').length}</h5>
-                <small className="text-muted">警告</small>
-              </div>
-            </div>
-          </div>
-          <div className="col-md-3">
-            <div className="card text-center">
-              <div className="card-body">
-                <i className="bi bi-trophy-fill display-4 text-success mb-2"></i>
-                <h5>{alerts.filter(a => a.type === 'savings_milestone').length}</h5>
-                <small className="text-muted">達成</small>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <Row gutter={[16, 16]}>
+        <Col xs={12} sm={6}>
+          <Card>
+            <Statistic
+              title="総アラート数"
+              value={alerts.length}
+              prefix={<BellOutlined style={{ color: '#1890ff' }} />}
+            />
+          </Card>
+        </Col>
+        <Col xs={12} sm={6}>
+          <Card>
+            <Statistic
+              title="重要"
+              value={alerts.filter(a => a.severity === 'danger').length}
+              prefix={<WarningOutlined style={{ color: '#ff4d4f' }} />}
+            />
+          </Card>
+        </Col>
+        <Col xs={12} sm={6}>
+          <Card>
+            <Statistic
+              title="警告"
+              value={alerts.filter(a => a.severity === 'warning').length}
+              prefix={<ExclamationCircleOutlined style={{ color: '#faad14' }} />}
+            />
+          </Card>
+        </Col>
+        <Col xs={12} sm={6}>
+          <Card>
+            <Statistic
+              title="達成"
+              value={alerts.filter(a => a.type === 'savings_milestone').length}
+              prefix={<TrophyOutlined style={{ color: '#52c41a' }} />}
+            />
+          </Card>
+        </Col>
+      </Row>
 
       {/* Alerts List */}
-      <div className="col-12">
-        <div className="card">
-          <div className="card-header">
-            <h5 className="mb-0">
-              <i className="bi bi-list-ul me-2"></i>アラート一覧
-            </h5>
-          </div>
-          <div className="card-body">
-            {displayedAlerts.length > 0 ? (
-              <div className="list-group list-group-flush">
-                {displayedAlerts.map(alert => (
-                  <div 
-                    key={alert.id} 
-                    className={`list-group-item ${!alert.isRead ? 'list-group-item-action border-start border-3 border-primary' : ''}`}
-                  >
-                    <div className="d-flex justify-content-between align-items-start">
-                      <div className="flex-grow-1">
-                        <div className="d-flex align-items-center mb-2">
-                          <i className={`bi bi-${getAlertIcon(alert.type)} text-${getSeverityColor(alert.severity)} me-2`}></i>
-                          <h6 className="mb-0">{alert.title}</h6>
-                          {!alert.isRead && (
-                            <span className="badge bg-primary ms-2">NEW</span>
-                          )}
-                        </div>
-                        <p className="mb-1 text-muted">{alert.message}</p>
-                        <small className="text-muted">
-                          {formatRelativeTime(alert.created_at)}
-                        </small>
-                      </div>
-                      <div className="btn-group btn-group-sm">
-                        {!alert.isRead && (
-                          <button 
-                            className="btn btn-outline-primary"
-                            onClick={() => markAsRead(alert.id)}
-                            title="既読にする"
-                          >
-                            <i className="bi bi-check"></i>
-                          </button>
-                        )}
-                        <button 
-                          className="btn btn-outline-danger"
-                          onClick={() => dismissAlert(alert.id)}
-                          title="削除"
-                        >
-                          <i className="bi bi-x"></i>
-                        </button>
-                      </div>
-                    </div>
-                    
-                    {/* Alert Details */}
-                    {alert.type === 'unusual_spending' && alert.data?.purchase && (
-                      <div className="mt-2 p-2 bg-light rounded">
-                        <small>
-                          <strong>購入詳細:</strong> {alert.data.purchase.game_name} - 
-                          ¥{alert.data.purchase.trigger_price.toLocaleString()} 
-                          ({alert.data.purchase.discount_percent}% OFF)
-                        </small>
-                      </div>
-                    )}
-                    
-                    {alert.type === 'budget_warning' && alert.data?.budget && (
-                      <div className="mt-2 p-2 bg-light rounded">
-                        <small>
-                          <strong>予算詳細:</strong> {alert.data.budget.name} - 
-                          ¥{alert.data.budget.spent.toLocaleString()} / ¥{alert.data.budget.amount.toLocaleString()}
-                        </small>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-4">
-                <i className="bi bi-bell-slash display-1 text-muted mb-3"></i>
-                <p className="text-muted">現在アラートはありません。</p>
-                <small className="text-muted">
-                  支出パターンや予算の変化を監視してアラートを生成します。
-                </small>
-              </div>
+      <Card
+        title={
+          <Space>
+            <UnorderedListOutlined />
+            アラート一覧
+          </Space>
+        }
+      >
+        {displayedAlerts.length > 0 ? (
+          <List
+            dataSource={displayedAlerts}
+            renderItem={(alert) => (
+              <List.Item
+                key={alert.id}
+                actions={[
+                  !alert.isRead && (
+                    <Button
+                      type="text"
+                      icon={<CheckOutlined />}
+                      onClick={() => markAsRead(alert.id)}
+                      title="既読にする"
+                    />
+                  ),
+                  <Button
+                    type="text"
+                    danger
+                    icon={<CloseOutlined />}
+                    onClick={() => dismissAlert(alert.id)}
+                    title="削除"
+                  />
+                ].filter(Boolean)}
+                style={{
+                  borderLeft: !alert.isRead ? '3px solid #1890ff' : 'none',
+                  paddingLeft: !alert.isRead ? 16 : 0
+                }}
+              >
+                <List.Item.Meta
+                  avatar={getAlertIcon(alert.type)}
+                  title={
+                    <Space>
+                      {alert.title}
+                      {!alert.isRead && <Badge status="processing" text="NEW" />}
+                    </Space>
+                  }
+                  description={
+                    <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                      <Typography.Text>{alert.message}</Typography.Text>
+                      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                        {formatRelativeTime(alert.created_at)}
+                      </Typography.Text>
+                      
+                      {/* Alert Details */}
+                      {alert.type === 'unusual_spending' && alert.data?.purchase && (
+                        <Alert
+                          type="info"
+                          message={
+                            <Typography.Text style={{ fontSize: 12 }}>
+                              <strong>購入詳細:</strong> {alert.data.purchase.game_name} - 
+                              ¥{alert.data.purchase.trigger_price.toLocaleString()} 
+                              ({alert.data.purchase.discount_percent}% OFF)
+                            </Typography.Text>
+                          }
+                          showIcon={false}
+                          style={{ marginTop: 8 }}
+                        />
+                      )}
+                      
+                      {alert.type === 'budget_warning' && alert.data?.budget && (
+                        <Alert
+                          type="warning"
+                          message={
+                            <Typography.Text style={{ fontSize: 12 }}>
+                              <strong>予算詳細:</strong> {alert.data.budget.name} - 
+                              ¥{alert.data.budget.spent.toLocaleString()} / ¥{alert.data.budget.amount.toLocaleString()}
+                            </Typography.Text>
+                          }
+                          showIcon={false}
+                          style={{ marginTop: 8 }}
+                        />
+                      )}
+                    </Space>
+                  }
+                />
+              </List.Item>
             )}
+          />
+        ) : (
+          <div style={{ textAlign: 'center', padding: '64px 0' }}>
+            <StopOutlined style={{ fontSize: 64, color: '#d9d9d9', marginBottom: 16 }} />
+            <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
+              現在アラートはありません。
+            </Typography.Text>
+            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              支出パターンや予算の変化を監視してアラートを生成します。
+            </Typography.Text>
           </div>
-        </div>
-      </div>
-    </div>
+        )}
+      </Card>
+    </Space>
   )
 }

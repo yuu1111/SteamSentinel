@@ -1,4 +1,17 @@
 import React from 'react'
+import { Space, Button, Typography, theme, Flex } from 'antd'
+import { 
+  HomeOutlined, 
+  AppstoreOutlined, 
+  BellOutlined, 
+  LineChartOutlined, 
+  GiftOutlined, 
+  ExperimentOutlined,
+  SafetyOutlined,
+  QuestionCircleOutlined,
+  SunOutlined,
+  MoonOutlined
+} from '@ant-design/icons'
 import { ViewType } from '../types'
 
 interface NavigationProps {
@@ -14,82 +27,94 @@ const Navigation: React.FC<NavigationProps> = ({
   isDarkMode,
   onToggleDarkMode
 }) => {
+  const { token } = theme.useToken()
+  
   const navItems = [
-    { id: 'dashboard' as ViewType, label: 'ダッシュボード', icon: 'house-door' },
-    { id: 'games' as ViewType, label: 'ゲーム管理', icon: 'collection' },
-    { id: 'alerts' as ViewType, label: 'アラート履歴', icon: 'bell' },
-    { id: 'monitoring' as ViewType, label: '監視状況', icon: 'activity' },
-    { id: 'epic' as ViewType, label: 'Epic Games', icon: 'gift' },
-    { id: 'test' as ViewType, label: 'テスト', icon: 'flask' },
+    { key: 'dashboard', label: 'ダッシュボード', icon: <HomeOutlined /> },
+    { key: 'games', label: 'ゲーム管理', icon: <AppstoreOutlined /> },
+    { key: 'alerts', label: 'アラート履歴', icon: <BellOutlined /> },
+    { key: 'monitoring', label: '監視状況', icon: <LineChartOutlined /> },
+    { key: 'epic', label: 'Epic Games', icon: <GiftOutlined /> },
+    { key: 'test', label: 'テスト', icon: <ExperimentOutlined /> },
   ]
 
+
   return (
-    <nav className="navbar navbar-expand-lg navbar-dark bg-primary">
-      <div className="container-fluid">
-        <a className="navbar-brand d-flex align-items-center" href="#" onClick={(e) => { e.preventDefault(); onViewChange('dashboard') }}>
-          <i className="bi bi-shield-check me-2"></i>
-          <span className="d-none d-sm-inline">SteamSentinel</span>
-        </a>
-
-        <button
-          className="navbar-toggler"
-          type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#navbarNav"
-          aria-controls="navbarNav"
-          aria-expanded="false"
-          aria-label="Toggle navigation"
+    <div style={{ 
+      background: token.colorPrimary,
+      padding: '0 16px', // パディングを削減
+      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+      minHeight: 72 // 高さを増加
+    }}>
+      <Flex justify="space-between" align="center" gap={16} style={{ height: 72 }}>
+        {/* Brand */}
+        <Flex 
+          align="center" 
+          gap={8}
+          style={{ cursor: 'pointer' }}
+          onClick={() => onViewChange('dashboard')}
         >
-          <span className="navbar-toggler-icon"></span>
-        </button>
+          <SafetyOutlined style={{ color: 'white', fontSize: 20 }} />
+          <Typography.Text 
+            strong 
+            style={{ 
+              color: 'white', 
+              fontSize: 18, // 20→18に戻す
+              margin: 0,
+              display: window.innerWidth >= 768 ? 'block' : 'none', // タブレット以上で表示
+              fontWeight: 600,
+              whiteSpace: 'nowrap'
+            }}
+          >
+            SteamSentinel
+          </Typography.Text>
+        </Flex>
 
-        <div className="collapse navbar-collapse" id="navbarNav">
-          <ul className="navbar-nav me-auto">
-            {navItems.map(item => (
-              <li key={item.id} className="nav-item">
-                <a
-                  className={`nav-link ${currentView === item.id ? 'active' : ''}`}
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    onViewChange(item.id)
-                  }}
-                >
-                  <i className={`bi bi-${item.icon} me-1`}></i>
-                  <span className="d-lg-inline d-none">{item.label}</span>
-                  <span className="d-lg-none">{item.label.split('')[0]}</span>
-                  {(item as any).badge && (
-                    <span className="badge bg-warning text-dark ms-1">{(item as any).badge}</span>
-                  )}
-                </a>
-              </li>
-            ))}
-          </ul>
-
-          <div className="d-flex align-items-center">
-            <button
-              className="btn btn-outline-light btn-sm me-2"
-              onClick={() => {
-                const event = new CustomEvent('showHelpModal');
-                window.dispatchEvent(event);
+        {/* Navigation Menu */}
+        <div style={{ flex: 1, marginLeft: 24, marginRight: 24, display: 'flex', alignItems: 'center' }}>
+          {navItems.map(item => (
+            <Button
+              key={item.key}
+              type={currentView === item.key ? "primary" : "text"}
+              icon={item.icon}
+              onClick={() => onViewChange(item.key as ViewType)}
+              style={{
+                color: currentView === item.key ? undefined : 'white',
+                marginRight: 16,
+                height: 48,
+                fontSize: 16,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8
               }}
-              title="ヘルプ"
             >
-              <i className="bi bi-question-circle"></i>
-            </button>
-            
-            <button
-              className="btn btn-outline-light btn-sm me-2"
-              onClick={onToggleDarkMode}
-              title={isDarkMode ? 'ライトモードに切り替え' : 'ダークモードに切り替え'}
-            >
-              <i className={`bi bi-${isDarkMode ? 'sun' : 'moon'}`}></i>
-            </button>
-
-          </div>
+              {item.label}
+            </Button>
+          ))}
         </div>
-      </div>
-    </nav>
+
+        {/* Action Buttons */}
+        <Space>
+          <Button
+            type="text"
+            icon={<QuestionCircleOutlined />}
+            style={{ color: 'white' }}
+            onClick={() => {
+              const event = new CustomEvent('showHelpModal')
+              window.dispatchEvent(event)
+            }}
+            title="ヘルプ"
+          />
+          <Button
+            type="text"
+            icon={isDarkMode ? <SunOutlined /> : <MoonOutlined />}
+            style={{ color: 'white' }}
+            onClick={onToggleDarkMode}
+            title={isDarkMode ? 'ライトモードに切り替え' : 'ダークモードに切り替え'}
+          />
+        </Space>
+      </Flex>
+    </div>
   )
 }
 

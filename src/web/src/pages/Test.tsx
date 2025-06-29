@@ -65,7 +65,7 @@ const Test: React.FC = () => {
   const [games, setGames] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [testLoading, setTestLoading] = useState<string | null>(null)
-  const { showError, showSuccess, showInfo } = useAlert()
+  const { showError, showSuccess, showInfo, showNotification, showGameAlert, showSpendingAlert } = useAlert()
   const [form] = Form.useForm()
 
   useEffect(() => {
@@ -256,6 +256,81 @@ const Test: React.FC = () => {
       </Title>
 
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        {/* Notification System Test */}
+        <Card
+          title={
+            <Space>
+              <BellOutlined />
+              通知システムテスト
+            </Space>
+          }
+        >
+          <Row gutter={[16, 16]}>
+            <Col span={24}>
+              <Space wrap>
+                <Button type="primary" onClick={() => {
+                  console.log('Working notification test!')
+                  showSuccess('✅ 通知システムは正常に動作しています！')
+                  showNotification('success', '動作確認完了', 'AlertContext経由で通知が正常に表示されました')
+                }}>
+                  🔥 動作する通知テスト
+                </Button>
+                <Button onClick={() => {
+                  console.log('Testing all notification types...')
+                  showSuccess('成功通知')
+                  setTimeout(() => showError('エラー通知'), 500)
+                  setTimeout(() => showInfo('情報通知'), 1000)
+                  setTimeout(() => showNotification('warning', '警告通知', '複数の通知を順次表示中'), 1500)
+                }}>
+                  📢 全種類テスト
+                </Button>
+              </Space>
+            </Col>
+            <Col span={24}>
+              <Alert 
+                type="info" 
+                message="通知が表示されない場合は、ブラウザの開発者ツール（F12）でコンソールを確認してください。" 
+                showIcon 
+              />
+            </Col>
+            <Col span={24}>
+              <Space wrap>
+                <Button onClick={() => showSuccess('成功メッセージのテスト')}>
+                  Context: 成功
+                </Button>
+                <Button onClick={() => showError('エラーメッセージのテスト')}>
+                  Context: エラー
+                </Button>
+                <Button onClick={() => showInfo('情報メッセージのテスト')}>
+                  Context: 情報
+                </Button>
+                <Button onClick={() => showNotification('success', 'リッチ通知テスト', 'これは詳細な通知のテストです')}>
+                  Context: リッチ通知
+                </Button>
+                <Button onClick={() => showGameAlert({
+                  name: 'Cyberpunk 2077',
+                  steamAppId: 1091500,
+                  alertType: 'new_low',
+                  price: 2980,
+                  discount: 50,
+                  previousLow: 3500
+                })}>
+                  Context: ゲームアラート
+                </Button>
+                <Button onClick={() => showSpendingAlert({
+                  type: 'budget_warning',
+                  title: '予算警告テスト',
+                  amount: 8000,
+                  budgetName: 'テスト予算',
+                  percentage: 80
+                })}>
+                  Context: 支出アラート
+                </Button>
+              </Space>
+            </Col>
+          </Row>
+        </Card>
+
         {/* Discord Integration Section */}
         <Card 
           title={

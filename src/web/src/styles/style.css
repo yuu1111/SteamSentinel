@@ -12,6 +12,155 @@
   --current-game-color: #1b2838;
 }
 
+/* ===== Ant Design Customizations ===== */
+
+/* Improved table row height and padding */
+.ant-table-tbody > tr > td {
+  padding: 12px 16px !important; /* デフォルトの8px 16pxから増加 */
+  font-size: 15px !important;
+  line-height: 1.6 !important;
+}
+
+.ant-table-thead > tr > th {
+  padding: 14px 16px !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+}
+
+/* Better button spacing and sizing */
+.ant-btn {
+  min-height: 36px !important; /* ボタンの最小高さ増加 */
+  padding: 6px 16px !important;
+  font-size: 15px !important;
+}
+
+.ant-btn-sm {
+  min-height: 28px !important;
+  padding: 4px 12px !important;
+  font-size: 14px !important;
+}
+
+/* Card improvements */
+.ant-card-head {
+  padding: 16px 24px !important;
+}
+
+.ant-card-body {
+  padding: 20px 24px !important;
+}
+
+.ant-card-head-title {
+  font-size: 18px !important;
+  font-weight: 600 !important;
+}
+
+/* Typography improvements */
+.ant-typography h1,
+.ant-typography h2,
+.ant-typography h3 {
+  margin-bottom: 16px !important;
+}
+
+/* Tag improvements */
+.ant-tag {
+  font-size: 14px !important;
+  padding: 4px 8px !important;
+  border-radius: 6px !important;
+}
+
+/* Menu improvements */
+.ant-menu-horizontal > .ant-menu-item,
+.ant-menu-horizontal > .ant-menu-submenu {
+  padding: 0 16px !important; /* パディングを削減して項目が収まりやすくする */
+  font-size: 15px !important; /* フォントサイズを少し小さく */
+  line-height: 72px !important; /* Navigation高さに合わせる */
+}
+
+/* Prevent menu overflow */
+.ant-menu-horizontal {
+  display: flex !important;
+  white-space: nowrap !important;
+  flex-wrap: nowrap !important;
+}
+
+.ant-menu-overflow {
+  display: none !important; /* オーバーフロー表示を完全に無効化 */
+}
+
+.ant-menu-overflow-item {
+  display: none !important;
+}
+
+/* Responsive adjustments for navigation */
+@media (max-width: 1200px) {
+  .ant-menu-horizontal > .ant-menu-item,
+  .ant-menu-horizontal > .ant-menu-submenu {
+    padding: 0 12px !important; /* さらにパディングを削減 */
+    font-size: 14px !important;
+  }
+}
+
+@media (max-width: 992px) {
+  .ant-menu-horizontal > .ant-menu-item,
+  .ant-menu-horizontal > .ant-menu-submenu {
+    padding: 0 10px !important;
+    font-size: 13px !important;
+  }
+  
+  /* ボタンのアイコンのみ表示 */
+  .ant-btn span {
+    display: none;
+  }
+  
+  .ant-btn .anticon {
+    margin: 0 !important;
+  }
+}
+
+/* Dark mode specific improvements */
+.dark-mode .ant-table-tbody > tr:hover > td {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+.dark-mode .ant-card {
+  border-color: #424242 !important;
+}
+
+/* Statistic card styling for consistent appearance */
+.ant-statistic-title {
+  color: inherit !important;
+  font-size: 16px !important;
+  margin-bottom: 8px !important;
+}
+
+.ant-statistic-content {
+  font-size: 28px !important;
+  line-height: 1.2 !important;
+}
+
+.ant-statistic-content-prefix {
+  font-size: 20px !important;
+  margin-right: 8px !important;
+}
+
+/* Consistent card shadows */
+.ant-card {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+  transition: box-shadow 0.3s ease !important;
+}
+
+.ant-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important;
+}
+
+.dark-mode .ant-card {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+}
+
+.dark-mode .ant-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
 /* Dark mode variables */
 [data-bs-theme="dark"] {
   --bs-body-bg: #1a1a1a;

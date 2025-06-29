@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react'
+import { Table, Button, Space, Typography, Avatar, Tag, Tooltip, Row, Col, Card, Spin } from 'antd'
+import { AppstoreOutlined, PlusOutlined, SyncOutlined, DownloadOutlined, UploadOutlined, EditOutlined, DeleteOutlined, BarChartOutlined, DatabaseOutlined } from '@ant-design/icons'
+import type { ColumnsType } from 'antd/es/table'
 import { Game } from '../types'
 import { api } from '../utils/api'
 import { useAlert } from '../contexts/AlertContext'
 import { AddGameModal, EditGameModal } from '../components/GameModals'
 import { ImportGamesModal, useExportGames } from '../components/ImportExportModals'
-import { useTableSort } from '../hooks/useTableSort'
 import { ConfirmationModal } from '../components/ConfirmationModal'
 import { PriceChartModal } from '../components/PriceChartModal'
 
@@ -20,9 +22,9 @@ const Games: React.FC = () => {
   const [showPriceChart, setShowPriceChart] = useState(false)
   const [chartGameId, setChartGameId] = useState<number | null>(null)
   const [chartGameName, setChartGameName] = useState('')
+  const [updatingGameId, setUpdatingGameId] = useState<number | null>(null)
   const { showError, showSuccess } = useAlert()
   const { exportGames, loading: exportLoading } = useExportGames()
-  const { sortedGames, handleSort, getSortIcon } = useTableSort(games)
 
   useEffect(() => {
     loadAllGames()
@@ -95,216 +97,247 @@ const Games: React.FC = () => {
   }
 
   const runSingleMonitoring = async (steamAppId: number) => {
+    setUpdatingGameId(steamAppId)
     try {
-      const response = await api.post(`/games/${steamAppId}/update-price`)
+      const response = await api.post(`/monitoring/run/${steamAppId}`, {})
       
       if (response.success) {
         showSuccess('価格情報を更新しました')
         await loadAllGames(true)
       } else {
-        showError('価格更新に失敗しました: ' + response.error)
+        showError('価格更新に失敗しました: ' + (response.error || '不明なエラー'))
       }
-    } catch {
-      showError('価格更新中にエラーが発生しました')
+    } catch (error: any) {
+      console.error('価格更新エラー:', error)
+      showError(`価格更新中にエラーが発生しました: ${error.message || '不明なエラー'}`)
+    } finally {
+      setUpdatingGameId(null)
     }
   }
 
   if (loading) {
     return (
-      <div className="text-center py-5">
-        <div className="spinner-border" role="status">
-          <span className="visually-hidden">読み込み中...</span>
-        </div>
+      <div style={{ textAlign: 'center', padding: '80px 0' }}>
+        <Spin size="large" />
+        <Typography.Text style={{ display: 'block', marginTop: 16, color: '#666' }}>
+          読み込み中...
+        </Typography.Text>
       </div>
     )
   }
 
-  return (
-    <>
-      <div className="row">
-        <div className="col-12">
-          <h2><i className="bi bi-collection me-2"></i>ゲーム管理</h2>
-        </div>
-        
-        <div className="col-12">
-          <div className="card">
-            <div className="card-header">
-              <div className="d-flex justify-content-between align-items-center">
-                <h5 className="mb-0">
-                  <i className="bi bi-gear me-2"></i>全ゲーム一覧 ({games.length}件)
-                </h5>
-                <div className="d-flex gap-2">
-                  <button 
-                    className="btn btn-success"
-                    onClick={exportGames}
-                    disabled={exportLoading}
-                  >
-                    <i className="bi bi-download"></i> エクスポート
-                  </button>
-                  <button 
-                    className="btn btn-warning"
-                    onClick={() => setShowImportModal(true)}
-                  >
-                    <i className="bi bi-upload"></i> インポート
-                  </button>
-                  <button 
-                    className="btn btn-info"
-                    onClick={() => loadAllGames(true)}
-                  >
-                    <i className="bi bi-arrow-clockwise"></i> 更新
-                  </button>
-                  <button 
-                    className="btn btn-primary"
-                    onClick={() => setShowAddModal(true)}
-                  >
-                    <i className="bi bi-plus-lg"></i> ゲームを追加
-                  </button>
-                </div>
-              </div>
-            </div>
-            
-            <div className="card-body">
-              {games.length > 0 ? (
-                <div className="table-responsive">
-                  <table className="table table-hover">
-                    <thead>
-                      <tr>
-                        <th className="sortable" style={{ whiteSpace: 'nowrap' }} onClick={() => handleSort('name')}>
-                          ゲーム名 <i className={getSortIcon('name')}></i>
-                        </th>
-                        <th className="sortable" style={{ whiteSpace: 'nowrap' }} onClick={() => handleSort('enabled')}>
-                          監視状態 <i className={getSortIcon('enabled')}></i>
-                        </th>
-                        <th className="sortable" style={{ whiteSpace: 'nowrap' }} onClick={() => handleSort('alertCondition')}>
-                          アラート条件 <i className={getSortIcon('alertCondition')}></i>
-                        </th>
-                        <th className="sortable" style={{ whiteSpace: 'nowrap' }} onClick={() => handleSort('alertEnabled')}>
-                          アラート <i className={getSortIcon('alertEnabled')}></i>
-                        </th>
-                        <th className="sortable" style={{ whiteSpace: 'nowrap' }} onClick={() => handleSort('purchased')}>
-                          購入状況 <i className={getSortIcon('purchased')}></i>
-                        </th>
-                        <th style={{ whiteSpace: 'nowrap' }}>操作</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {sortedGames.map(game => {
-                        // 監視状態
-                        const monitoringStatus = game.enabled ? 
-                          <span className="badge bg-success">有効</span> : 
-                          <span className="badge bg-secondary">無効</span>
-                        
-                        // アラート条件
-                        let alertCondition = '-'
-                        if (game.price_threshold_type === 'price' && game.price_threshold) {
-                          alertCondition = `¥${game.price_threshold.toLocaleString()}以下`
-                        } else if (game.price_threshold_type === 'discount' && game.discount_threshold_percent) {
-                          alertCondition = `${game.discount_threshold_percent}%以上割引`
-                        } else if (game.price_threshold_type === 'any_sale') {
-                          alertCondition = 'セール開始時'
-                        }
-                        
-                        // アラート状態
-                        const alertStatus = game.alert_enabled ? 
-                          <span className="badge bg-primary">有効</span> : 
-                          <span className="badge bg-secondary">無効</span>
-                        
-                        // 購入状況
-                        const purchaseStatus = game.is_purchased ? 
-                          <span className="badge bg-info">購入済み</span> : 
-                          <span className="badge bg-light text-dark">未購入</span>
-                        
-                        return (
-                          <tr key={game.id}>
-                            <td>
-                              <div className="d-flex align-items-center">
-                                <img 
-                                  src={`https://cdn.akamai.steamstatic.com/steam/apps/${game.steam_app_id}/header.jpg`}
-                                  alt={game.name}
-                                  className="me-3"
-                                  style={{ width: '60px', height: '28px', objectFit: 'cover' }}
-                                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
-                                />
-                                <div>
-                                  <a 
-                                    href={`https://store.steampowered.com/app/${game.steam_app_id}/`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-decoration-none"
-                                  >
-                                    {game.name}
-                                  </a>
-                                  <br />
-                                  <small className="text-muted">ID: {game.steam_app_id}</small>
-                                </div>
-                              </div>
-                            </td>
-                            <td>{monitoringStatus}</td>
-                            <td>{alertCondition}</td>
-                            <td>{alertStatus}</td>
-                            <td>{purchaseStatus}</td>
-                            <td>
-                              <div className="action-buttons">
-                                <button 
-                                  className="action-btn"
-                                  onClick={() => handleShowChart(game.steam_app_id, game.name)}
-                                  title="価格推移"
-                                >
-                                  <i className="bi bi-graph-up"></i>
-                                </button>
-                                <button 
-                                  className="action-btn d-none d-md-inline-block"
-                                  onClick={() => openSteamDB(game.steam_app_id)}
-                                  title="SteamDB"
-                                >
-                                  <i className="bi bi-database"></i>
-                                </button>
-                                <button 
-                                  className="action-btn"
-                                  onClick={() => handleEditGame(game)}
-                                  title="編集"
-                                >
-                                  <i className="bi bi-pencil"></i>
-                                </button>
-                                <button 
-                                  className="action-btn d-none d-sm-inline-block"
-                                  onClick={() => runSingleMonitoring(game.steam_app_id)}
-                                  title="手動更新"
-                                >
-                                  <i className="bi bi-arrow-clockwise"></i>
-                                </button>
-                                <button 
-                                  className="action-btn danger"
-                                  onClick={() => handleDeleteGame(game.id, game.name)}
-                                  title="削除"
-                                >
-                                  <i className="bi bi-trash"></i>
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="text-center py-5">
-                  <i className="bi bi-collection display-1 text-muted d-block mb-3"></i>
-                  <h5 className="text-muted">ゲームが登録されていません</h5>
-                  <p className="text-muted">最初のゲームを追加して監視を開始してください。</p>
-                  <button 
-                    className="btn btn-primary"
-                    onClick={() => setShowAddModal(true)}
-                  >
-                    <i className="bi bi-plus-lg"></i> ゲームを追加
-                  </button>
-                </div>
-              )}
-            </div>
+  const columns: ColumnsType<Game> = [
+    {
+      title: 'ゲーム名',
+      dataIndex: 'name',
+      key: 'name',
+      sorter: (a, b) => a.name.localeCompare(b.name),
+      render: (name: string, record: Game) => (
+        <Space>
+          <Avatar 
+            src={`https://cdn.akamai.steamstatic.com/steam/apps/${record.steam_app_id}/header.jpg`}
+            size={40}
+            shape="square"
+          />
+          <div>
+            <Typography.Link 
+              href={`https://store.steampowered.com/app/${record.steam_app_id}/`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {name}
+            </Typography.Link>
+            <br />
+            <Typography.Text type="secondary" style={{ fontSize: '12px' }}>
+              ID: {record.steam_app_id}
+            </Typography.Text>
           </div>
-        </div>
-      </div>
+        </Space>
+      )
+    },
+    {
+      title: '監視状態',
+      dataIndex: 'enabled',
+      key: 'enabled',
+      sorter: (a, b) => Number(b.enabled) - Number(a.enabled),
+      render: (enabled: boolean) => (
+        <Tag color={enabled ? 'green' : 'default'}>
+          {enabled ? '有効' : '無効'}
+        </Tag>
+      )
+    },
+    {
+      title: 'アラート条件',
+      dataIndex: 'price_threshold_type',
+      key: 'alertCondition',
+      render: (_, record: Game) => {
+        if (record.price_threshold_type === 'price' && record.price_threshold) {
+          return `¥${record.price_threshold.toLocaleString()}以下`
+        } else if (record.price_threshold_type === 'discount' && record.discount_threshold_percent) {
+          return `${record.discount_threshold_percent}%以上割引`
+        } else if (record.price_threshold_type === 'any_sale') {
+          return 'セール開始時'
+        }
+        return '-'
+      }
+    },
+    {
+      title: 'アラート',
+      dataIndex: 'alert_enabled',
+      key: 'alertEnabled',
+      sorter: (a, b) => Number(b.alert_enabled) - Number(a.alert_enabled),
+      render: (alertEnabled: boolean) => (
+        <Tag color={alertEnabled ? 'blue' : 'default'}>
+          {alertEnabled ? '有効' : '無効'}
+        </Tag>
+      )
+    },
+    {
+      title: '購入状況',
+      dataIndex: 'is_purchased',
+      key: 'purchased',
+      sorter: (a, b) => Number(b.is_purchased) - Number(a.is_purchased),
+      render: (isPurchased: boolean) => (
+        <Tag color={isPurchased ? 'cyan' : 'default'}>
+          {isPurchased ? '購入済み' : '未購入'}
+        </Tag>
+      )
+    },
+    {
+      title: '操作',
+      key: 'actions',
+      width: 260, // 幅を拡大
+      render: (_, record: Game) => (
+        <Space size="small">
+          <Tooltip title="価格推移">
+            <Button
+              size="middle"
+              icon={<BarChartOutlined />}
+              onClick={() => handleShowChart(record.steam_app_id, record.name)}
+            />
+          </Tooltip>
+          <Tooltip title="SteamDB">
+            <Button
+              size="middle"
+              icon={<DatabaseOutlined />}
+              onClick={() => openSteamDB(record.steam_app_id)}
+            />
+          </Tooltip>
+          <Tooltip title="編集">
+            <Button
+              size="middle"
+              icon={<EditOutlined />}
+              onClick={() => handleEditGame(record)}
+            />
+          </Tooltip>
+          <Tooltip title="手動更新">
+            <Button
+              size="middle"
+              icon={<SyncOutlined spin={updatingGameId === record.steam_app_id} />}
+              onClick={() => runSingleMonitoring(record.steam_app_id)}
+              loading={updatingGameId === record.steam_app_id}
+              disabled={updatingGameId !== null && updatingGameId !== record.steam_app_id}
+            />
+          </Tooltip>
+          <Tooltip title="削除">
+            <Button
+              size="middle"
+              danger
+              icon={<DeleteOutlined />}
+              onClick={() => handleDeleteGame(record.id, record.name)}
+            />
+          </Tooltip>
+        </Space>
+      )
+    }
+  ]
+
+  return (
+    <div style={{ padding: '0 24px' }}>
+      <Row gutter={[16, 16]}>
+        <Col span={24}>
+          <Typography.Title level={2}>
+            <AppstoreOutlined style={{ marginRight: 8 }} />
+            ゲーム管理
+          </Typography.Title>
+        </Col>
+        
+        <Col span={24}>
+          <Card
+            title={
+              <span>
+                <AppstoreOutlined style={{ marginRight: 8 }} />
+                全ゲーム一覧 ({games.length}件)
+              </span>
+            }
+            extra={
+              <Space>
+                <Button 
+                  type="default"
+                  icon={<DownloadOutlined />}
+                  onClick={exportGames}
+                  loading={exportLoading}
+                  size="middle"
+                >
+                  エクスポート
+                </Button>
+                <Button 
+                  icon={<UploadOutlined />}
+                  onClick={() => setShowImportModal(true)}
+                  size="middle"
+                >
+                  インポート
+                </Button>
+                <Button 
+                  icon={<SyncOutlined />}
+                  onClick={() => loadAllGames(true)}
+                  size="middle"
+                >
+                  更新
+                </Button>
+                <Button 
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  onClick={() => setShowAddModal(true)}
+                  size="middle"
+                >
+                  ゲームを追加
+                </Button>
+              </Space>
+            }
+          >
+            <Table
+              columns={columns}
+              dataSource={games}
+              rowKey="id"
+              pagination={{ pageSize: 20, showSizeChanger: true }}
+              scroll={{ x: 1200 }}
+              locale={{
+                emptyText: (
+                  <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                    <AppstoreOutlined style={{ fontSize: '48px', color: '#d9d9d9', marginBottom: 16 }} />
+                    <Typography.Title level={5} type="secondary">
+                      ゲームが登録されていません
+                    </Typography.Title>
+                    <Typography.Text type="secondary">
+                      最初のゲームを追加して監視を開始してください。
+                    </Typography.Text>
+                    <br />
+                    <Button 
+                      type="primary"
+                      icon={<PlusOutlined />}
+                      style={{ marginTop: 16 }}
+                      onClick={() => setShowAddModal(true)}
+                    >
+                      ゲームを追加
+                    </Button>
+                  </div>
+                )
+              }}
+            />
+          </Card>
+        </Col>
+      </Row>
 
       {/* Modals */}
       <AddGameModal
@@ -354,7 +387,7 @@ const Games: React.FC = () => {
           setChartGameName('')
         }}
       />
-    </>
+    </div>
   )
 }
 

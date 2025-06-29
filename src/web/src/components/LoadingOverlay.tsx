@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { Spin, Typography } from 'antd'
 
 const LoadingOverlay: React.FC = () => {
   const [isVisible, setIsVisible] = useState(false)
@@ -20,14 +21,31 @@ const LoadingOverlay: React.FC = () => {
   if (!isVisible) {return null}
 
   return (
-    <div className="loading-overlay">
-      <div className="d-flex justify-content-center align-items-center h-100">
-        <div className="text-center">
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Loading...</span>
-          </div>
-          <div className="mt-2">処理中...</div>
-        </div>
+    <div 
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 9999
+      }}
+    >
+      <div style={{ textAlign: 'center' }}>
+        <Spin size="large" />
+        <Typography.Text 
+          style={{ 
+            display: 'block', 
+            marginTop: 16, 
+            color: 'white' 
+          }}
+        >
+          処理中...
+        </Typography.Text>
       </div>
     </div>
   )

@@ -1,4 +1,6 @@
-import React, { useState } from 'react'
+import React from 'react'
+import { Alert, Card, Row, Col, Typography, Space, Collapse } from 'antd'
+import { WarningOutlined, DownOutlined, UpOutlined, ExclamationCircleOutlined, GiftOutlined, ClockCircleOutlined, CloseCircleOutlined } from '@ant-design/icons'
 import { Game } from '../types'
 
 interface SpecialGameStatusProps {
@@ -13,7 +15,6 @@ interface GameCategories {
 }
 
 export const SpecialGameStatus: React.FC<SpecialGameStatusProps> = ({ games }) => {
-  const [isExpanded, setIsExpanded] = useState(false)
 
   // ゲームをカテゴリ別に分類
   const gameCategories: GameCategories = {
@@ -46,101 +47,119 @@ export const SpecialGameStatus: React.FC<SpecialGameStatusProps> = ({ games }) =
 
   if (totalSpecialGames === 0) {return null}
 
+  const getIcon = (iconType: string) => {
+    switch (iconType) {
+      case 'exclamation-octagon': return <ExclamationCircleOutlined style={{ color: '#f5222d' }} />
+      case 'gift': return <GiftOutlined style={{ color: '#52c41a' }} />
+      case 'clock': return <ClockCircleOutlined style={{ color: '#1890ff' }} />
+      case 'x-circle': return <CloseCircleOutlined style={{ color: '#8c8c8c' }} />
+      default: return <ExclamationCircleOutlined />
+    }
+  }
+
   const CategoryCard: React.FC<{ title: string; games: Game[]; bgColor: string; icon: string }> = ({
     title,
     games,
-    bgColor,
     icon
   }) => {
     if (games.length === 0) {return null}
 
     return (
-      <div className="col-md-6 mb-3">
-        <div className={`card border-${bgColor}`}>
-          <div className={`card-header bg-${bgColor} text-white`}>
-            <h6 className="mb-0">
-              <i className={`bi bi-${icon} me-2`}></i>
+      <Col xs={24} md={12}>
+        <Card
+          title={
+            <Space>
+              {getIcon(icon)}
               {title} ({games.length}件)
-            </h6>
-          </div>
-          <div className="card-body">
-            <div className="failed-games-list">
-              {games.map(game => (
-                <div key={game.id} className="mb-2">
-                  <strong>{game.name}</strong>
-                  <small className="text-muted d-block">App ID: {game.steam_app_id}</small>
-                  {game.latestPrice?.release_date && (
-                    <small className="text-info d-block">
-                      リリース予定: {game.latestPrice.release_date}
-                    </small>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
+            </Space>
+          }
+          size="small"
+          type="inner"
+        >
+          <Space direction="vertical" style={{ width: '100%' }}>
+            {games.map(game => (
+              <div key={game.id}>
+                <Typography.Text strong>{game.name}</Typography.Text>
+                <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12 }}>
+                  App ID: {game.steam_app_id}
+                </Typography.Text>
+                {game.latestPrice?.release_date && (
+                  <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12, color: '#1890ff' }}>
+                    リリース予定: {game.latestPrice.release_date}
+                  </Typography.Text>
+                )}
+              </div>
+            ))}
+          </Space>
+        </Card>
+      </Col>
     )
   }
 
-  return (
-    <div className="row mb-3">
-      <div className="col-12">
-        <div className="alert alert-warning" role="alert">
-          <div className="d-flex justify-content-between align-items-center">
-            <div>
-              <i className="bi bi-exclamation-triangle me-2"></i>
-              <strong>{totalSpecialGames}ゲームが特別な状況です：</strong>
-              価格取得失敗 {gameCategories.failed.length}件、
-              基本無料 {gameCategories.freeToPlay.length}件、
-              未リリース {gameCategories.unreleased.length}件、
-              販売終了 {gameCategories.removed.length}件
-            </div>
-            <button 
-              className="btn btn-sm btn-outline-secondary"
-              type="button"
-              onClick={() => setIsExpanded(!isExpanded)}
-              aria-expanded={isExpanded}
-            >
-              <i className={`bi bi-chevron-${isExpanded ? 'up' : 'down'}`}></i> 詳細
-            </button>
-          </div>
+  const collapseItems = [
+    {
+      key: '1',
+      label: (
+        <Space>
+          <WarningOutlined style={{ color: '#fa8c16' }} />
+          <Typography.Text strong>
+            {totalSpecialGames}ゲームが特別な状況です：
+          </Typography.Text>
+          <Typography.Text type="secondary">
+            価格取得失敗 {gameCategories.failed.length}件、
+            基本無料 {gameCategories.freeToPlay.length}件、
+            未リリース {gameCategories.unreleased.length}件、
+            販売終了 {gameCategories.removed.length}件
+          </Typography.Text>
+        </Space>
+      ),
+      children: (
+        <Row gutter={[16, 16]}>
+          <CategoryCard
+            title="価格取得失敗"
+            games={gameCategories.failed}
+            bgColor="danger"
+            icon="exclamation-octagon"
+          />
           
-          {isExpanded && (
-            <div className="mt-3">
-              <div className="row">
-                <CategoryCard
-                  title="価格取得失敗"
-                  games={gameCategories.failed}
-                  bgColor="danger"
-                  icon="exclamation-octagon"
-                />
-                
-                <CategoryCard
-                  title="基本無料ゲーム"
-                  games={gameCategories.freeToPlay}
-                  bgColor="success"
-                  icon="gift"
-                />
-                
-                <CategoryCard
-                  title="未リリースゲーム"
-                  games={gameCategories.unreleased}
-                  bgColor="info"
-                  icon="clock"
-                />
-                
-                <CategoryCard
-                  title="販売終了ゲーム"
-                  games={gameCategories.removed}
-                  bgColor="secondary"
-                  icon="x-circle"
-                />
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+          <CategoryCard
+            title="基本無料ゲーム"
+            games={gameCategories.freeToPlay}
+            bgColor="success"
+            icon="gift"
+          />
+          
+          <CategoryCard
+            title="未リリースゲーム"
+            games={gameCategories.unreleased}
+            bgColor="info"
+            icon="clock"
+          />
+          
+          <CategoryCard
+            title="販売終了ゲーム"
+            games={gameCategories.removed}
+            bgColor="secondary"
+            icon="x-circle"
+          />
+        </Row>
+      )
+    }
+  ]
+
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <Alert
+        type="warning"
+        showIcon
+        message={
+          <Collapse
+            items={collapseItems}
+            ghost
+            expandIcon={({ isActive }) => isActive ? <UpOutlined /> : <DownOutlined />}
+          />
+        }
+      />
     </div>
   )
 }

@@ -1,4 +1,6 @@
 import React from 'react'
+import { Modal, Typography } from 'antd'
+import { ExclamationCircleOutlined } from '@ant-design/icons'
 
 interface ConfirmationModalProps {
   show: boolean
@@ -26,37 +28,31 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
     onCancel() // Close modal after confirm
   }
 
-  if (!show) {
-    return null
-  }
-
-  const buttonClass = {
-    danger: 'btn-danger',
-    warning: 'btn-warning', 
-    primary: 'btn-primary'
+  const buttonProps = {
+    danger: { type: 'primary' as const, danger: true },
+    warning: { type: 'primary' as const },
+    primary: { type: 'primary' as const }
   }[variant]
 
   return (
-    <div className="modal fade show d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-      <div className="modal-dialog modal-dialog-centered">
-        <div className="modal-content">
-          <div className="modal-header">
-            <h5 className="modal-title">{title}</h5>
-            <button type="button" className="btn-close" onClick={onCancel}></button>
-          </div>
-          <div className="modal-body">
-            <p className="mb-0" style={{ whiteSpace: 'pre-wrap' }}>{message}</p>
-          </div>
-          <div className="modal-footer">
-            <button type="button" className="btn btn-secondary" onClick={onCancel}>
-              {cancelText}
-            </button>
-            <button type="button" className={`btn ${buttonClass}`} onClick={handleConfirm}>
-              {confirmText}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <Modal
+      open={show}
+      title={
+        <span>
+          <ExclamationCircleOutlined style={{ marginRight: 8, color: variant === 'danger' ? '#ff4d4f' : '#faad14' }} />
+          {title}
+        </span>
+      }
+      onCancel={onCancel}
+      cancelText={cancelText}
+      okText={confirmText}
+      onOk={handleConfirm}
+      okButtonProps={buttonProps}
+      centered
+    >
+      <Typography.Text style={{ whiteSpace: 'pre-wrap' }}>
+        {message}
+      </Typography.Text>
+    </Modal>
   )
 }

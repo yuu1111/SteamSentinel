@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react'
+import { Tabs, Card, Row, Col, Statistic, Spin, Typography, Tag, Space } from 'antd'
+import { HomeOutlined, WalletOutlined, ShoppingCartOutlined, BellOutlined, PercentageOutlined, CalendarOutlined, TrophyOutlined, StarOutlined } from '@ant-design/icons'
 import { TabDashboardData, Statistics, ExpenseData, Game } from '../types'
 import { api } from '../utils/api'
 import { useAlert } from '../contexts/AlertContext'
@@ -13,11 +15,13 @@ import { formatDateJP } from '../utils/dateUtils'
 interface TabbedDashboardProps {
   dashboardData: TabDashboardData | null
   loading: boolean
+  onRefresh?: () => void
 }
 
 export const TabbedDashboard: React.FC<TabbedDashboardProps> = ({
   dashboardData,
-  loading
+  loading,
+  onRefresh
 }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'expenses'>('overview')
   const [expenseData, setExpenseData] = useState<ExpenseData | null>(null)
@@ -25,10 +29,17 @@ export const TabbedDashboard: React.FC<TabbedDashboardProps> = ({
   const { showError } = useAlert()
 
   useEffect(() => {
-    if (activeTab === 'expenses' && !expenseData) {
+    if ((activeTab === 'expenses' || activeTab === 'overview') && !expenseData) {
       loadExpenseData()
     }
   }, [activeTab])
+
+  // 初回ロード時に出費データも読み込む（概要タブで購入ゲーム数表示のため）
+  useEffect(() => {
+    if (!expenseData) {
+      loadExpenseData()
+    }
+  }, [])
 
   const loadExpenseData = async () => {
     try {
@@ -47,67 +58,57 @@ export const TabbedDashboard: React.FC<TabbedDashboardProps> = ({
     }
   }
 
-  const getTabClass = (tab: string) => {
-    return `nav-link ${activeTab === tab ? 'active' : ''}`
-  }
-
   if (loading) {
     return (
-      <div className="text-center py-5">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">読み込み中...</span>
-        </div>
-        <p className="mt-3 text-muted">ダッシュボードを読み込み中...</p>
+      <div style={{ textAlign: 'center', padding: '40px 0' }}>
+        <Spin size="large" />
+        <Typography.Text style={{ display: 'block', marginTop: 16, color: '#666' }}>
+          ダッシュボードを読み込み中...
+        </Typography.Text>
       </div>
     )
   }
 
+  const tabItems = [
+    {
+      key: 'overview',
+      label: (
+        <span>
+          <HomeOutlined />
+          概要
+        </span>
+      ),
+      children: (
+        <OverviewDashboard 
+          dashboardData={dashboardData}
+          expenseData={expenseData}
+          onRefresh={onRefresh}
+        />
+      )
+    },
+    {
+      key: 'expenses',
+      label: (
+        <span>
+          <WalletOutlined />
+          出費分析
+        </span>
+      ),
+      children: (
+        <ExpensesDashboard 
+          expenseData={expenseData}
+          loading={expenseLoading}
+        />
+      )
+    }
+  ]
+
   return (
-    <div>
-      {/* Tab Navigation */}
-      <ul className="nav nav-tabs mb-4" id="dashboardTabs" role="tablist">
-        <li className="nav-item" role="presentation">
-          <button
-            className={getTabClass('overview')}
-            onClick={() => setActiveTab('overview')}
-            type="button"
-            role="tab"
-          >
-            <i className="bi bi-grid-3x3 me-2"></i>概要
-          </button>
-        </li>
-        <li className="nav-item" role="presentation">
-          <button
-            className={getTabClass('expenses')}
-            onClick={() => setActiveTab('expenses')}
-            type="button"
-            role="tab"
-          >
-            <i className="bi bi-wallet2 me-2"></i>出費分析
-          </button>
-        </li>
-      </ul>
-
-      {/* Tab Content */}
-      <div className="tab-content">
-        {/* Overview Tab */}
-        {activeTab === 'overview' && (
-          <OverviewDashboard 
-            dashboardData={dashboardData}
-            expenseData={expenseData}
-          />
-        )}
-
-
-        {/* Expenses Tab */}
-        {activeTab === 'expenses' && (
-          <ExpensesDashboard 
-            expenseData={expenseData}
-            loading={expenseLoading}
-          />
-        )}
-      </div>
-    </div>
+    <Tabs 
+      defaultActiveKey="overview"
+      items={tabItems}
+      onChange={(key) => setActiveTab(key as 'overview' | 'expenses')}
+    />
   )
 }
 
@@ -115,11 +116,13 @@ export const TabbedDashboard: React.FC<TabbedDashboardProps> = ({
 interface OverviewDashboardProps {
   dashboardData: TabDashboardData | null
   expenseData: ExpenseData | null
+  onRefresh?: () => void
 }
 
 const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
   dashboardData,
-  expenseData
+  expenseData,
+  onRefresh
 }) => {
   // Filter games for special status display
   const specialGames = dashboardData?.games?.filter(game => {
@@ -136,7 +139,7 @@ const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
   }) || []
 
   return (
-    <div className="row">
+    <Row gutter={[16, 16]}>
       {/* Integrated Statistics Cards */}
       <IntegratedStatisticsCards 
         statistics={dashboardData?.statistics}
@@ -145,82 +148,82 @@ const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
       
       {/* Special Game Status Alert */}
       {dashboardData?.games && specialGames.length > 0 && (
-        <div className="col-12 mb-4">
+        <Col span={24}>
           <SpecialGameStatus games={specialGames} />
-        </div>
+        </Col>
       )}
       
       {/* Quick Summary Section */}
-      <div className="col-12 mb-4">
-        <div className="card">
-          <div className="card-header">
-            <h5 className="mb-0">
-              <i className="bi bi-speedometer2 me-2"></i>クイックサマリー
-            </h5>
-          </div>
-          <div className="card-body">
-            <div className="row">
-              <div className="col-md-4">
-                <h6>監視状況</h6>
-                <p className="text-muted mb-0">
-                  {dashboardData?.statistics.gamesTracked || 0}ゲーム監視中、
-                  {dashboardData?.statistics.gamesOnSale || 0}ゲームがセール中
-                </p>
-              </div>
-              <div className="col-md-4">
-                <h6>出費状況</h6>
-                <p className="text-muted mb-0">
-                  {expenseData?.summary.totalGames || 0}ゲーム購入済み、
-                  総額¥{expenseData?.summary.totalExpenses?.toLocaleString() || 0}
-                </p>
-              </div>
-              <div className="col-md-4">
-                <h6>節約効果</h6>
-                <p className="text-muted mb-0">
-                  ¥{expenseData?.summary.totalSavings?.toLocaleString() || 0}の節約
-                  ({expenseData?.summary.savingsRate?.toFixed(1) || 0}%)
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <Col span={24}>
+        <Card 
+          title={
+            <span>
+              <TrophyOutlined style={{ marginRight: 8 }} />
+              クイックサマリー
+            </span>
+          }
+        >
+          <Row gutter={[16, 16]}>
+            <Col xs={24} md={8}>
+              <Typography.Title level={5}>監視状況</Typography.Title>
+              <Typography.Text type="secondary">
+                {dashboardData?.statistics.gamesTracked || 0}ゲーム監視中、
+                {dashboardData?.statistics.gamesOnSale || 0}ゲームがセール中
+              </Typography.Text>
+            </Col>
+            <Col xs={24} md={8}>
+              <Typography.Title level={5}>出費状況</Typography.Title>
+              <Typography.Text type="secondary">
+                {expenseData?.summary.totalGames || 0}ゲーム購入済み、
+                総額¥{expenseData?.summary.totalExpenses?.toLocaleString() || 0}
+              </Typography.Text>
+            </Col>
+            <Col xs={24} md={8}>
+              <Typography.Title level={5}>節約効果</Typography.Title>
+              <Typography.Text type="secondary">
+                ¥{expenseData?.summary.totalSavings?.toLocaleString() || 0}の節約
+                ({expenseData?.summary.savingsRate?.toFixed(1) || 0}%)
+              </Typography.Text>
+            </Col>
+          </Row>
+        </Card>
+      </Col>
       
       {/* Alert Target Games Section */}
-      <div className="col-12 mb-4">
-        <div className="card">
-          <div className="card-header">
-            <h5 className="mb-0">
-              <i className="bi bi-check-circle-fill me-2"></i>セール・条件達成ゲーム
-            </h5>
-          </div>
-          <div className="card-body">
-            {dashboardData?.games && (
-              <AlertTargetGames games={dashboardData.games} />
-            )}
-          </div>
-        </div>
-      </div>
+      <Col span={24}>
+        <Card 
+          title={
+            <span>
+              <StarOutlined style={{ marginRight: 8 }} />
+              セール・条件達成ゲーム
+            </span>
+          }
+        >
+          {dashboardData?.games && (
+            <AlertTargetGames games={dashboardData.games} />
+          )}
+        </Card>
+      </Col>
       
       {/* Monitoring Progress Section */}
-      <div className="col-12 mb-4">
-        <MonitoringProgress onMonitoringComplete={() => window.location.reload()} />
-      </div>
+      <Col span={24}>
+        <MonitoringProgress onMonitoringComplete={onRefresh ? onRefresh : () => {}} />
+      </Col>
       
       {/* Monitoring Details Section */}
-      <div className="col-12 mb-4">
-        <div className="card">
-          <div className="card-header">
-            <h5 className="mb-0">
-              <i className="bi bi-activity me-2"></i>監視詳細統計
-            </h5>
-          </div>
-          <div className="card-body">
-            <MonitoringDetails games={dashboardData?.games} />
-          </div>
-        </div>
-      </div>
-    </div>
+      <Col span={24}>
+        <Card 
+          title={
+            <span>
+              <BellOutlined style={{ marginRight: 8 }} />
+              監視詳細統計
+            </span>
+          }
+        >
+          <MonitoringDetails games={dashboardData?.games} />
+        </Card>
+      </Col>
+    </Row>
   )
 }
 
@@ -237,16 +240,17 @@ const ExpensesDashboard: React.FC<ExpensesDashboardProps> = ({
 }) => {
   if (loading) {
     return (
-      <div className="text-center py-5">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">出費データ読み込み中...</span>
-        </div>
+      <div style={{ textAlign: 'center', padding: '40px 0' }}>
+        <Spin size="large" />
+        <Typography.Text style={{ display: 'block', marginTop: 16, color: '#666' }}>
+          出費データ読み込み中...
+        </Typography.Text>
       </div>
     )
   }
 
   return (
-    <div className="row">
+    <Row gutter={[16, 16]}>
       {/* Expense-specific Statistics */}
       <ExpenseStatisticsCards expenseData={expenseData} />
       
@@ -264,58 +268,59 @@ const ExpensesDashboard: React.FC<ExpensesDashboardProps> = ({
       
       {/* Recent Purchases */}
       {expenseData && (
-        <div className="col-12 mb-4">
-          <div className="card">
-            <div className="card-header">
-              <h5 className="mb-0">
-                <i className="bi bi-clock-history me-2"></i>最近の購入履歴
-              </h5>
-            </div>
-            <div className="card-body">
-              {expenseData.recentPurchases.length > 0 ? (
-                <div className="table-responsive">
-                  <table className="table table-sm">
-                    <thead>
-                      <tr>
-                        <th>ゲーム名</th>
-                        <th>購入価格</th>
-                        <th>割引率</th>
-                        <th>購入日</th>
+        <Col span={24}>
+          <Card 
+            title={
+              <span>
+                <CalendarOutlined style={{ marginRight: 8 }} />
+                最近の購入履歴
+              </span>
+            }
+          >
+            {expenseData.recentPurchases.length > 0 ? (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', fontSize: '14px' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
+                      <th style={{ padding: '8px', textAlign: 'left' }}>ゲーム名</th>
+                      <th style={{ padding: '8px', textAlign: 'left' }}>購入価格</th>
+                      <th style={{ padding: '8px', textAlign: 'left' }}>割引率</th>
+                      <th style={{ padding: '8px', textAlign: 'left' }}>購入日</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {expenseData.recentPurchases.slice(0, 5).map((purchase, index) => (
+                      <tr key={index} style={{ borderBottom: '1px solid #f9f9f9' }}>
+                        <td style={{ padding: '8px' }}>
+                          <Typography.Link 
+                            href={`https://store.steampowered.com/app/${purchase.steam_app_id}/`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            {purchase.game_name}
+                          </Typography.Link>
+                        </td>
+                        <td style={{ padding: '8px' }}>¥{purchase.trigger_price.toLocaleString()}</td>
+                        <td style={{ padding: '8px' }}>
+                          <Tag color={purchase.discount_percent > 50 ? 'green' : purchase.discount_percent > 20 ? 'orange' : 'default'}>
+                            {purchase.discount_percent}% OFF
+                          </Tag>
+                        </td>
+                        <td style={{ padding: '8px' }}>{formatDateJP(purchase.created_at, 'date')}</td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {expenseData.recentPurchases.slice(0, 5).map((purchase, index) => (
-                        <tr key={index}>
-                          <td>
-                            <a 
-                              href={`https://store.steampowered.com/app/${purchase.steam_app_id}/`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-decoration-none"
-                            >
-                              {purchase.game_name}
-                            </a>
-                          </td>
-                          <td>¥{purchase.trigger_price.toLocaleString()}</td>
-                          <td>
-                            <span className={`badge ${purchase.discount_percent > 50 ? 'bg-success' : purchase.discount_percent > 20 ? 'bg-warning' : 'bg-secondary'}`}>
-                              {purchase.discount_percent}% OFF
-                            </span>
-                          </td>
-                          <td>{formatDateJP(purchase.created_at, 'date')}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <p className="text-muted">まだ購入履歴がありません。</p>
-              )}
-            </div>
-          </div>
-        </div>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <Typography.Text type="secondary">
+                まだ購入履歴がありません。
+              </Typography.Text>
+            )}
+          </Card>
+        </Col>
       )}
-    </div>
+    </Row>
   )
 }
 
@@ -332,80 +337,87 @@ const IntegratedStatisticsCards: React.FC<IntegratedStatisticsCardsProps> = ({
   return (
     <>
       {/* Row 1: Core Metrics */}
-      <div className="col-lg-3 col-md-6 mb-3">
-        <div className="card stats-card info">
-          <div className="card-body text-center">
-            <i className="bi bi-collection display-4 mb-2"></i>
-            <h3 className="display-4">{statistics?.gamesTracked || 0}</h3>
-            <p className="mb-0">監視中のゲーム</p>
-          </div>
-        </div>
-      </div>
-      <div className="col-lg-3 col-md-6 mb-3">
-        <div className="card stats-card success">
-          <div className="card-body text-center">
-            <i className="bi bi-tag display-4 mb-2"></i>
-            <h3 className="display-4">{statistics?.gamesOnSale || 0}</h3>
-            <p className="mb-0">セール中</p>
-          </div>
-        </div>
-      </div>
-      <div className="col-lg-3 col-md-6 mb-3">
-        <div className="card stats-card primary">
-          <div className="card-body text-center">
-            <i className="bi bi-cart-check display-4 mb-2"></i>
-            <h3 className="display-4">{expenseData?.summary.totalGames || 0}</h3>
-            <p className="mb-0">購入ゲーム数</p>
-          </div>
-        </div>
-      </div>
-      <div className="col-lg-3 col-md-6 mb-3">
-        <div className="card stats-card danger">
-          <div className="card-body text-center">
-            <i className="bi bi-wallet2 display-4 mb-2"></i>
-            <h3 className="display-4">¥{(expenseData?.summary.totalExpenses || 0).toLocaleString()}</h3>
-            <p className="mb-0">総支出額</p>
-          </div>
-        </div>
-      </div>
+      <Col xs={24} sm={12} lg={6}>
+        <Card>
+          <Statistic
+            title="監視中のゲーム"
+            value={statistics?.gamesTracked || 0}
+            prefix={<ShoppingCartOutlined style={{ color: '#1890ff' }} />}
+          />
+        </Card>
+      </Col>
+      <Col xs={24} sm={12} lg={6}>
+        <Card>
+          <Statistic
+            title="セール中"
+            value={statistics?.gamesOnSale || 0}
+            prefix={<Tag style={{ color: '#52c41a' }} />}
+          />
+        </Card>
+      </Col>
+      <Col xs={24} sm={12} lg={6}>
+        <Card>
+          <Statistic
+            title="購入ゲーム数"
+            value={expenseData?.summary.totalGames || 0}
+            prefix={<TrophyOutlined style={{ color: '#722ed1' }} />}
+          />
+        </Card>
+      </Col>
+      <Col xs={24} sm={12} lg={6}>
+        <Card>
+          <Statistic
+            title="総支出額"
+            value={expenseData?.summary.totalExpenses || 0}
+            prefix="¥"
+            precision={0}
+            valueStyle={{ color: '#f5222d' }}
+          />
+        </Card>
+      </Col>
 
       {/* Row 2: Secondary Metrics */}
-      <div className="col-lg-3 col-md-6 mb-3">
-        <div className="card stats-card warning">
-          <div className="card-body text-center">
-            <i className="bi bi-bell display-4 mb-2"></i>
-            <h3 className="display-4">{statistics?.totalAlerts || 0}</h3>
-            <p className="mb-0">総アラート数</p>
-          </div>
-        </div>
-      </div>
-      <div className="col-lg-3 col-md-6 mb-3">
-        <div className="card stats-card">
-          <div className="card-body text-center">
-            <i className="bi bi-percent display-4 mb-2"></i>
-            <h3 className="display-4">{statistics?.averageDiscount || 0}%</h3>
-            <p className="mb-0">平均割引率</p>
-          </div>
-        </div>
-      </div>
-      <div className="col-lg-3 col-md-6 mb-3">
-        <div className="card stats-card info">
-          <div className="card-body text-center">
-            <i className="bi bi-currency-yen display-4 mb-2"></i>
-            <h3 className="display-4">¥{(expenseData?.summary.averagePrice || 0).toLocaleString()}</h3>
-            <p className="mb-0">平均購入価格</p>
-          </div>
-        </div>
-      </div>
-      <div className="col-lg-3 col-md-6 mb-3">
-        <div className="card stats-card success">
-          <div className="card-body text-center">
-            <i className="bi bi-piggy-bank display-4 mb-2"></i>
-            <h3 className="display-4">¥{(expenseData?.summary.totalSavings || 0).toLocaleString()}</h3>
-            <p className="mb-0">節約額</p>
-          </div>
-        </div>
-      </div>
+      <Col xs={24} sm={12} lg={6}>
+        <Card>
+          <Statistic
+            title="総アラート数"
+            value={statistics?.totalAlerts || 0}
+            prefix={<BellOutlined style={{ color: '#fa8c16' }} />}
+          />
+        </Card>
+      </Col>
+      <Col xs={24} sm={12} lg={6}>
+        <Card>
+          <Statistic
+            title="平均割引率"
+            value={statistics?.averageDiscount || 0}
+            suffix="%"
+            prefix={<PercentageOutlined />}
+          />
+        </Card>
+      </Col>
+      <Col xs={24} sm={12} lg={6}>
+        <Card>
+          <Statistic
+            title="平均購入価格"
+            value={expenseData?.summary.averagePrice || 0}
+            prefix="¥"
+            precision={0}
+            valueStyle={{ color: '#1890ff' }}
+          />
+        </Card>
+      </Col>
+      <Col xs={24} sm={12} lg={6}>
+        <Card>
+          <Statistic
+            title="節約額"
+            value={expenseData?.summary.totalSavings || 0}
+            prefix="¥"
+            precision={0}
+            valueStyle={{ color: '#52c41a' }}
+          />
+        </Card>
+      </Col>
     </>
   )
 }
@@ -421,62 +433,70 @@ const ExpenseStatisticsCards: React.FC<ExpenseStatisticsCardsProps> = ({
 }) => {
   return (
     <>
-      <div className="col-lg-3 col-md-6 mb-3">
-        <div className="card stats-card primary">
-          <div className="card-body text-center">
-            <i className="bi bi-cart-check display-4 mb-2"></i>
-            <h3 className="h4" style={{ fontSize: 'clamp(1rem, 2vw, 1.5rem)', lineHeight: '1.1', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{expenseData?.summary.totalGames || 0}</h3>
-            <p className="mb-0">購入ゲーム数</p>
-          </div>
-        </div>
-      </div>
-      <div className="col-lg-3 col-md-6 mb-3">
-        <div className="card stats-card danger">
-          <div className="card-body text-center">
-            <i className="bi bi-wallet2 display-4 mb-2"></i>
-            <h3 className="h4" style={{ fontSize: 'clamp(1rem, 2vw, 1.5rem)', lineHeight: '1.1', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>¥{(expenseData?.summary.totalExpenses || 0).toLocaleString()}</h3>
-            <p className="mb-0">総支出額</p>
-          </div>
-        </div>
-      </div>
-      <div className="col-lg-3 col-md-6 mb-3">
-        <div className="card stats-card info">
-          <div className="card-body text-center">
-            <i className="bi bi-currency-yen display-4 mb-2"></i>
-            <h3 className="h4" style={{ fontSize: 'clamp(1rem, 2vw, 1.5rem)', lineHeight: '1.1', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>¥{(expenseData?.summary.averagePrice || 0).toLocaleString()}</h3>
-            <p className="mb-0">平均購入価格</p>
-          </div>
-        </div>
-      </div>
-      <div className="col-lg-3 col-md-6 mb-3">
-        <div className="card stats-card success">
-          <div className="card-body text-center">
-            <i className="bi bi-piggy-bank display-4 mb-2"></i>
-            <h3 className="h4" style={{ fontSize: 'clamp(1rem, 2vw, 1.5rem)', lineHeight: '1.1', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>¥{(expenseData?.summary.totalSavings || 0).toLocaleString()}</h3>
-            <p className="mb-0">節約額</p>
-          </div>
-        </div>
-      </div>
+      <Col xs={24} sm={12} lg={6}>
+        <Card>
+          <Statistic
+            title="購入ゲーム数"
+            value={expenseData?.summary.totalGames || 0}
+            prefix={<ShoppingCartOutlined style={{ color: '#722ed1' }} />}
+          />
+        </Card>
+      </Col>
+      <Col xs={24} sm={12} lg={6}>
+        <Card>
+          <Statistic
+            title="総支出額"
+            value={expenseData?.summary.totalExpenses || 0}
+            prefix="¥"
+            precision={0}
+            valueStyle={{ color: '#f5222d' }}
+          />
+        </Card>
+      </Col>
+      <Col xs={24} sm={12} lg={6}>
+        <Card>
+          <Statistic
+            title="平均購入価格"
+            value={expenseData?.summary.averagePrice || 0}
+            prefix="¥"
+            precision={0}
+            valueStyle={{ color: '#1890ff' }}
+          />
+        </Card>
+      </Col>
+      <Col xs={24} sm={12} lg={6}>
+        <Card>
+          <Statistic
+            title="節約額"
+            value={expenseData?.summary.totalSavings || 0}
+            prefix="¥"
+            precision={0}
+            valueStyle={{ color: '#52c41a' }}
+          />
+        </Card>
+      </Col>
       
       {/* Additional expense-specific metrics */}
-      <div className="col-lg-3 col-md-6 mb-3">
-        <div className="card stats-card warning">
-          <div className="card-body text-center">
-            <i className="bi bi-percent display-4 mb-2"></i>
-            <h3 className="display-4">{(expenseData?.summary.savingsRate || 0).toFixed(1)}%</h3>
-            <p className="mb-0">節約率</p>
-          </div>
-        </div>
-      </div>
-      <div className="col-lg-3 col-md-6 mb-3">
-        <div className="card stats-card">
-          <div className="card-body text-center">
-            <i className="bi bi-calendar-month display-4 mb-2"></i>
-            <h3 className="display-4">{expenseData?.monthlyTrends?.expenses?.length || 0}</h3>
-            <p className="mb-0">購入期間（月）</p>
-          </div>
-        </div>
-      </div>
+      <Col xs={24} sm={12} lg={6}>
+        <Card>
+          <Statistic
+            title="節約率"
+            value={expenseData?.summary.savingsRate || 0}
+            suffix="%"
+            precision={1}
+            prefix={<PercentageOutlined style={{ color: '#fa8c16' }} />}
+          />
+        </Card>
+      </Col>
+      <Col xs={24} sm={12} lg={6}>
+        <Card>
+          <Statistic
+            title="購入期間（月）"
+            value={expenseData?.monthlyTrends?.expenses?.length || 0}
+            prefix={<CalendarOutlined style={{ color: '#13c2c2' }} />}
+          />
+        </Card>
+      </Col>
     </>
   )
 }
@@ -515,11 +535,15 @@ const AlertTargetGames: React.FC<AlertTargetGamesProps> = ({ games }) => {
   })
 
   if (alertTargetGames.length === 0) {
-    return <p className="text-muted">現在、設定した条件を満たしているゲームはありません。</p>
+    return (
+      <Typography.Text type="secondary">
+        現在、設定した条件を満たしているゲームはありません。
+      </Typography.Text>
+    )
   }
 
   return (
-    <div className="row g-3">
+    <Row gutter={[16, 16]}>
       {alertTargetGames.map(game => {
         const latestPrice = game.latestPrice!
         const discountPercent = latestPrice.discount_percent || 0
@@ -528,72 +552,75 @@ const AlertTargetGames: React.FC<AlertTargetGamesProps> = ({ games }) => {
         const isNewRelease = !!game.was_unreleased && latestPrice.source !== 'steam_unreleased'
         
         return (
-          <div key={game.id} className="col-md-6 col-lg-4">
-            <div className={`card h-100 shadow-sm border-0 overflow-hidden ${isHighDiscount ? 'alert-game-card-high' : isMediumDiscount ? 'alert-game-card-medium' : 'alert-game-card'}`}>
-              {/* ゲーム画像 */}
-              <div className="position-relative" style={{ height: '120px', overflow: 'hidden' }}>
-                <img 
-                  src={`https://cdn.akamai.steamstatic.com/steam/apps/${game.steam_app_id}/header.jpg`}
-                  alt={game.name}
-                  className="w-100 h-100"
-                  style={{ objectFit: 'cover', filter: 'brightness(0.8)' }}
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDYwIiBoZWlnaHQ9IjIxNSIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDYwIiBoZWlnaHQ9IjIxNSIgZmlsbD0iIzFiMmQzZSIvPjxwYXRoIGQ9Ik0yMzAgODUuNWMtMTEuMDQ2IDAtMjAgOC45NTQtMjAgMjBzOC45NTQgMjAgMjAgMjAgMjAtOC45NTQgMjAtMjAtOC45NTQtMjAtMjAtMjB6bTAgMzBjLTUuNTIzIDAtMTAtNC40NzctMTAtMTBzNC40NzctMTAgMTAtMTAgMTAgNC40NzcgMTAgMTAtNC40NzcgMTAtMTAgMTB6IiBmaWxsPSIjMzQ0OTVlIi8+PC9zdmc+'
-                  }}
-                />
-                
-                {/* 割引バッジ */}
-                {discountPercent > 0 && (
-                  <div className={`position-absolute top-0 end-0 m-2 badge ${isHighDiscount ? 'bg-danger' : isMediumDiscount ? 'bg-warning' : 'bg-success'} fs-5 shadow`}>
-                    -{discountPercent}%
-                  </div>
-                )}
-                
-                {/* 新規リリースバッジ */}
-                {isNewRelease && (
-                  <div className="position-absolute top-0 start-0 m-2 badge bg-info shadow">
-                    <i className="bi bi-stars"></i> NEW
-                  </div>
-                )}
-              </div>
-              
-              <div className="card-body">
-                {/* ゲーム名 */}
-                <h6 className="card-title mb-3">
-                  <a 
+          <Col key={game.id} xs={24} sm={12} lg={8}>
+            <Card
+              hoverable
+              cover={
+                <div style={{ position: 'relative', height: '120px', overflow: 'hidden' }}>
+                  <img 
+                    src={`https://cdn.akamai.steamstatic.com/steam/apps/${game.steam_app_id}/header.jpg`}
+                    alt={game.name}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'brightness(0.8)' }}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDYwIiBoZWlnaHQ9IjIxNSIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDYwIiBoZWlnaHQ9IjIxNSIgZmlsbD0iIzFiMmQzZSIvPjxwYXRoIGQ9Ik0yMzAgODUuNWMtMTEuMDQ2IDAtMjAgOC45NTQtMjAgMjBzOC45NTQgMjAgMjAgMjAgMjAtOC45NTQgMjAtMjAtOC45NTQtMjAtMjAtMjB6bTAgMzBjLTUuNTIzIDAtMTAtNC40NzctMTAtMTBzNC40NzctMTAgMTAtMTAgMTAgNC40NzcgMTAgMTAtNC40NzcgMTAtMTAgMTB6IiBmaWxsPSIjMzQ0OTVlIi8+PC9zdmc+'
+                    }}
+                  />
+                  
+                  {/* 割引バッジ */}
+                  {discountPercent > 0 && (
+                    <div style={{ position: 'absolute', top: 8, right: 8 }}>
+                      <Tag color={isHighDiscount ? 'red' : isMediumDiscount ? 'orange' : 'green'} style={{ fontSize: 14 }}>
+                        -{discountPercent}%
+                      </Tag>
+                    </div>
+                  )}
+                  
+                  {/* 新規リリースバッジ */}
+                  {isNewRelease && (
+                    <div style={{ position: 'absolute', top: 8, left: 8 }}>
+                      <Tag color="blue">
+                        NEW
+                      </Tag>
+                    </div>
+                  )}
+                </div>
+              }
+              style={{ height: '100%' }}
+            >
+              <Card.Meta
+                title={
+                  <Typography.Link 
                     href={`https://store.steampowered.com/app/${game.steam_app_id}/`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-decoration-none text-dark stretched-link"
+                    style={{ fontSize: 14 }}
                   >
                     {game.name}
-                  </a>
-                </h6>
-                
-                {/* 価格情報 */}
-                <div className="d-flex justify-content-between align-items-center mb-3">
-                  <div>
-                    <div className="h4 mb-0 text-primary">
-                      ¥{latestPrice.current_price.toLocaleString()}
-                    </div>
-                    {latestPrice.original_price > 0 && latestPrice.original_price !== latestPrice.current_price && (
-                      <div className="text-muted text-decoration-line-through small">
-                        ¥{latestPrice.original_price.toLocaleString()}
+                  </Typography.Link>
+                }
+                description={
+                  <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                    {/* 価格情報 */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <Typography.Title level={4} style={{ margin: 0, color: '#1890ff' }}>
+                          ¥{latestPrice.current_price.toLocaleString()}
+                        </Typography.Title>
+                        {latestPrice.original_price > 0 && latestPrice.original_price !== latestPrice.current_price && (
+                          <Typography.Text delete type="secondary" style={{ fontSize: 12 }}>
+                            ¥{latestPrice.original_price.toLocaleString()}
+                          </Typography.Text>
+                        )}
                       </div>
-                    )}
-                  </div>
-                  {latestPrice.historical_low && latestPrice.current_price <= latestPrice.historical_low && (
-                    <span className="badge bg-danger">
-                      <i className="bi bi-graph-down"></i> 歴代最安値
-                    </span>
-                  )}
-                </div>
-                
-                {/* 条件情報 */}
-                <div className="border-top pt-2">
-                  <div className="d-flex align-items-center small text-muted">
-                    <i className="bi bi-check-circle-fill text-success me-2"></i>
-                    <span>
+                      {latestPrice.historical_low && latestPrice.current_price <= latestPrice.historical_low && (
+                        <Tag color="red" icon={<StarOutlined />}>
+                          歴代最安値
+                        </Tag>
+                      )}
+                    </div>
+                    
+                    {/* 条件情報 */}
+                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                       {game.price_threshold_type === 'price' && game.price_threshold && (
                         <>条件: ¥{game.price_threshold.toLocaleString()}以下</>
                       )}
@@ -603,15 +630,15 @@ const AlertTargetGames: React.FC<AlertTargetGamesProps> = ({ games }) => {
                       {game.price_threshold_type === 'any_sale' && (
                         <>条件: セール開始時</>
                       )}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+                    </Typography.Text>
+                  </Space>
+                }
+              />
+            </Card>
+          </Col>
         )
       })}
-    </div>
+    </Row>
   )
 }
 
@@ -622,7 +649,11 @@ interface MonitoringDetailsProps {
 
 const MonitoringDetails: React.FC<MonitoringDetailsProps> = ({ games }) => {
   if (!games || games.length === 0) {
-    return <p className="text-muted">監視中のゲームがありません。</p>
+    return (
+      <Typography.Text type="secondary">
+        監視中のゲームがありません。
+      </Typography.Text>
+    )
   }
 
   const enabledGames = games.filter(g => g.enabled)
@@ -638,40 +669,40 @@ const MonitoringDetails: React.FC<MonitoringDetailsProps> = ({ games }) => {
     .slice(0, 5)
 
   return (
-    <div className="row">
-      <div className="col-md-6">
-        <h6>監視ステータス</h6>
-        <ul className="list-unstyled">
-          <li>
-            <i className="bi bi-check-circle text-success me-2"></i>
+    <Row gutter={[16, 16]}>
+      <Col xs={24} md={12}>
+        <Typography.Title level={5}>監視ステータス</Typography.Title>
+        <Space direction="vertical">
+          <Typography.Text>
+            <span style={{ color: '#52c41a', marginRight: 8 }}>✓</span>
             有効: {enabledGames.length}ゲーム
-          </li>
-          <li>
-            <i className="bi bi-x-circle text-danger me-2"></i>
+          </Typography.Text>
+          <Typography.Text>
+            <span style={{ color: '#f5222d', marginRight: 8 }}>✗</span>
             無効: {disabledGames.length}ゲーム
-          </li>
-          <li>
-            <i className="bi bi-bell text-warning me-2"></i>
+          </Typography.Text>
+          <Typography.Text>
+            <span style={{ color: '#fa8c16', marginRight: 8 }}>🔔</span>
             アラート有効: {alertEnabledGames.length}ゲーム
-          </li>
-        </ul>
-      </div>
-      <div className="col-md-6">
-        <h6>最近更新されたゲーム</h6>
+          </Typography.Text>
+        </Space>
+      </Col>
+      <Col xs={24} md={12}>
+        <Typography.Title level={5}>最近更新されたゲーム</Typography.Title>
         {recentlyUpdated.length > 0 ? (
-          <ul className="list-unstyled">
+          <Space direction="vertical" style={{ width: '100%' }}>
             {recentlyUpdated.map(game => (
-              <li key={game.id} className="mb-1">
-                <small>
-                  {game.name} - {formatDateJP(game.latestPrice!.recorded_at, 'datetime')}
-                </small>
-              </li>
+              <Typography.Text key={game.id} type="secondary" style={{ fontSize: 12 }}>
+                {game.name} - {formatDateJP(game.latestPrice!.recorded_at, 'datetime')}
+              </Typography.Text>
             ))}
-          </ul>
+          </Space>
         ) : (
-          <p className="text-muted">まだ更新されたゲームがありません。</p>
+          <Typography.Text type="secondary">
+            まだ更新されたゲームがありません。
+          </Typography.Text>
         )}
-      </div>
-    </div>
+      </Col>
+    </Row>
   )
 }
