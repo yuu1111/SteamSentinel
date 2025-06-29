@@ -223,7 +223,7 @@ const Licenses: React.FC = () => {
               フロントエンドライブラリ
             </Space>
           }
-          headStyle={{ backgroundColor: '#f6ffff', borderBottom: '1px solid #91d5ff' }}
+          headStyle={{ borderBottom: '1px solid #91d5ff' }}
         >
           <Row gutter={[16, 16]}>
             {frontendLibraries.map((lib, index) => (
@@ -242,7 +242,7 @@ const Licenses: React.FC = () => {
               バックエンドライブラリ (Node.js)
             </Space>
           }
-          headStyle={{ backgroundColor: '#f6ffed', borderBottom: '1px solid #b7eb8f' }}
+          headStyle={{ borderBottom: '1px solid #b7eb8f' }}
         >
           <Row gutter={[16, 16]}>
             {backendLibraries.map((lib, index) => (
@@ -261,7 +261,7 @@ const Licenses: React.FC = () => {
               外部API・サービス
             </Space>
           }
-          headStyle={{ backgroundColor: '#fff7e6', borderBottom: '1px solid #ffd591' }}
+          headStyle={{ borderBottom: '1px solid #ffd591' }}
         >
           <Row gutter={[16, 16]}>
             {externalAPIs.map((api, index) => (
@@ -280,7 +280,7 @@ const Licenses: React.FC = () => {
               CDNサービス
             </Space>
           }
-          headStyle={{ backgroundColor: '#e6fffb', borderBottom: '1px solid #87e8de' }}
+          headStyle={{ borderBottom: '1px solid #87e8de' }}
         >
           <Row gutter={[16, 16]}>
             <Col xs={24} md={12}>
@@ -321,7 +321,7 @@ const Licenses: React.FC = () => {
               ライセンス表記
             </Space>
           }
-          headStyle={{ backgroundColor: '#f9f0ff', borderBottom: '1px solid #d3adf7' }}
+          headStyle={{ borderBottom: '1px solid #d3adf7' }}
         >
           <Space direction="vertical" size="large" style={{ width: '100%' }}>
             <Alert
@@ -364,7 +364,7 @@ const Licenses: React.FC = () => {
               謝辞
             </Space>
           }
-          headStyle={{ backgroundColor: '#fff0f6', borderBottom: '1px solid #ffadd2' }}
+          headStyle={{ borderBottom: '1px solid #ffadd2' }}
         >
           <Space direction="vertical" size="large" style={{ width: '100%' }}>
             <Paragraph style={{ fontSize: '16px' }}>

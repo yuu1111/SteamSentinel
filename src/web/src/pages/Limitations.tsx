@@ -53,7 +53,7 @@ const Limitations: React.FC = () => {
               歴代最安値データの制限
             </Space>
           }
-          headStyle={{ backgroundColor: '#fff7e6', borderBottom: '1px solid #ffd591' }}
+          headStyle={{ borderBottom: '1px solid #ffd591' }}
         >
           <Alert
             type="warning"
@@ -144,7 +144,7 @@ const Limitations: React.FC = () => {
               API制限
             </Space>
           }
-          headStyle={{ backgroundColor: '#f6ffff', borderBottom: '1px solid #91d5ff' }}
+          headStyle={{ borderBottom: '1px solid #91d5ff' }}
         >
           <Row gutter={[24, 16]}>
             <Col xs={24} md={12}>
@@ -180,7 +180,7 @@ const Limitations: React.FC = () => {
               対応ゲームの制限
             </Space>
           }
-          headStyle={{ backgroundColor: '#f9f0ff', borderBottom: '1px solid #d3adf7' }}
+          headStyle={{ borderBottom: '1px solid #d3adf7' }}
         >
           <Title level={4}>監視が困難なゲーム</Title>
           <Row gutter={[16, 16]}>
@@ -222,7 +222,7 @@ const Limitations: React.FC = () => {
               精度に関する注意
             </Space>
           }
-          headStyle={{ backgroundColor: '#f6ffff', borderBottom: '1px solid #91d5ff' }}
+          headStyle={{ borderBottom: '1px solid #91d5ff' }}
         >
           <Row gutter={[24, 16]}>
             <Col xs={24} md={12}>
@@ -259,7 +259,7 @@ const Limitations: React.FC = () => {
               データ取得エラーについて
             </Space>
           }
-          headStyle={{ backgroundColor: '#fff2f0', borderBottom: '1px solid #ffccc7' }}
+          headStyle={{ borderBottom: '1px solid #ffccc7' }}
         >
           <Alert
             type="error"
@@ -368,7 +368,7 @@ const Limitations: React.FC = () => {
               推奨使用方法
             </Space>
           }
-          headStyle={{ backgroundColor: '#f6ffed', borderBottom: '1px solid #b7eb8f' }}
+          headStyle={{ borderBottom: '1px solid #b7eb8f' }}
         >
           <Alert
             type="success"
