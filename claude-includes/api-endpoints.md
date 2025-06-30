@@ -504,6 +504,91 @@ DELETE /api/budgets/:id/expenses/:expenseId
 }
 ```
 
+## ITAD設定管理 API
+
+### ITAD設定取得・更新
+```
+GET /api/itad/settings
+GET /api/itad/settings/filter
+GET /api/itad/settings/category/:category
+PUT /api/itad/settings/filter/config
+PUT /api/itad/settings/:name
+POST /api/itad/settings/reset
+DELETE /api/itad/settings/:name
+```
+
+**フィルタ設定取得:**
+```typescript
+GET /api/itad/settings/filter
+{
+  success: true,
+  data: {
+    min_discount: number,        // 最小割引率 (%)
+    max_price: number,          // 最大価格 (円)
+    limit: number,              // 取得件数制限
+    region: string,             // 地域設定 (JP)
+    enabled: boolean,           // 高割引検知有効化
+    notification_enabled: boolean // Discord通知有効化
+  }
+}
+```
+
+**フィルタ設定更新:**
+```typescript
+PUT /api/itad/settings/filter/config
+{
+  min_discount?: number,
+  max_price?: number,
+  limit?: number,
+  region?: string,
+  enabled?: boolean,
+  notification_enabled?: boolean
+}
+```
+
+**カテゴリ別設定取得:**
+```typescript
+GET /api/itad/settings/category/filter
+GET /api/itad/settings/category/general
+GET /api/itad/settings/category/notification
+```
+
+**個別設定更新:**
+```typescript
+PUT /api/itad/settings/:name
+{
+  value: string
+}
+```
+
+## Discord通知 API
+
+### Discord状態確認・テスト
+```
+GET /api/discord/status
+POST /api/discord/test/:testType
+POST /api/discord/test/custom
+GET /api/discord/webhook-info
+```
+
+**Discord テスト送信:**
+```typescript
+POST /api/discord/test/simple      # シンプルメッセージ
+POST /api/discord/test/rich        # リッチEmbed
+POST /api/discord/test/price-alert # 価格アラート
+POST /api/discord/test/error       # エラー通知
+POST /api/discord/test/game-alert  # ゲームアラート
+POST /api/discord/test/spending-alert # 支出アラート
+```
+
+**カスタムテスト:**
+```typescript
+POST /api/discord/test/custom
+{
+  message: string
+}
+```
+
 ## Epic Games API
 
 ### Epic Games無料ゲーム管理
