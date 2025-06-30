@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "nodemon --exec ts-node src/index.ts",
     "dev:web": "vite",
-    "build": "tsc && npm run build:web",
+    "build": "node scripts/generateBuildInfo.js && tsc && npm run build:web",
     "build:web": "vite build",
     "preview": "vite preview",
     "copy:components": "mkdir -p public/js/components public/js/spa && cp dist/web/public/js/components/*.js public/js/components/ && cp dist/web/public/js/spa/*.js public/js/spa/",

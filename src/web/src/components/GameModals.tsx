@@ -243,10 +243,7 @@ export const EditGameModal: React.FC<EditGameModalProps> = ({ show, game, onHide
     discountThreshold: '',
     gameEnabled: true,
     alertEnabled: true,
-    manualHistoricalLow: '',
-    isPurchased: false,
-    purchasePrice: '',
-    purchaseDate: ''
+    manualHistoricalLow: ''
   })
   const [loading, setLoading] = useState(false)
   const [form] = Form.useForm()
@@ -261,10 +258,7 @@ export const EditGameModal: React.FC<EditGameModalProps> = ({ show, game, onHide
         discountThreshold: game.discount_threshold_percent?.toString() || '',
         gameEnabled: Boolean(game.enabled),
         alertEnabled: Boolean(game.alert_enabled),
-        manualHistoricalLow: game.manual_historical_low?.toString() || '',
-        isPurchased: Boolean(game.is_purchased),
-        purchasePrice: game.purchase_price?.toString() || '',
-        purchaseDate: game.purchase_date ? new Date(game.purchase_date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+        manualHistoricalLow: game.manual_historical_low?.toString() || ''
       }
       setFormData(newFormData)
       
@@ -276,10 +270,7 @@ export const EditGameModal: React.FC<EditGameModalProps> = ({ show, game, onHide
         discountThreshold: newFormData.discountThreshold ? parseInt(newFormData.discountThreshold) : undefined,
         gameEnabled: newFormData.gameEnabled,
         alertEnabled: newFormData.alertEnabled,
-        manualHistoricalLow: newFormData.manualHistoricalLow ? parseInt(newFormData.manualHistoricalLow) : undefined,
-        isPurchased: newFormData.isPurchased,
-        purchasePrice: newFormData.purchasePrice ? parseInt(newFormData.purchasePrice) : undefined,
-        purchaseDate: newFormData.purchaseDate
+        manualHistoricalLow: newFormData.manualHistoricalLow ? parseInt(newFormData.manualHistoricalLow) : undefined
       })
     }
   }, [show, game, form])
@@ -316,10 +307,7 @@ export const EditGameModal: React.FC<EditGameModalProps> = ({ show, game, onHide
         discount_threshold_percent: values.thresholdType === 'discount' ? values.discountThreshold || null : null,
         enabled: Boolean(values.gameEnabled),
         alert_enabled: Boolean(values.alertEnabled),
-        manual_historical_low: values.manualHistoricalLow || null,
-        is_purchased: Boolean(values.isPurchased),
-        purchase_price: values.isPurchased ? values.purchasePrice || null : null,
-        purchase_date: values.isPurchased ? values.purchaseDate || null : null
+        manual_historical_low: values.manualHistoricalLow || null
       })
 
       if (response.success) {
@@ -462,55 +450,6 @@ export const EditGameModal: React.FC<EditGameModalProps> = ({ show, game, onHide
           />
         </Form.Item>
 
-        <Divider orientation="left">
-          <Typography.Text strong>購入情報</Typography.Text>
-        </Divider>
-        
-        <Form.Item>
-          <Checkbox
-            checked={formData.isPurchased}
-            onChange={(e) => setFormData(prev => ({ ...prev, isPurchased: e.target.checked }))}
-          >
-            購入済みとしてマーク
-          </Checkbox>
-        </Form.Item>
-
-        {formData.isPurchased && (
-          <>
-            <Form.Item
-              label="購入価格"
-              help={
-                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  実際に購入した価格（円）
-                </Typography.Text>
-              }
-            >
-              <InputNumber
-                style={{ width: '100%' }}
-                placeholder="例: 2000"
-                min={0}
-                step={1}
-                value={formData.purchasePrice ? parseInt(formData.purchasePrice) : undefined}
-                onChange={(value) => setFormData(prev => ({ ...prev, purchasePrice: value?.toString() || '' }))}
-              />
-            </Form.Item>
-            
-            <Form.Item
-              label="購入日"
-              help={
-                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  ゲームを購入した日付
-                </Typography.Text>
-              }
-            >
-              <Input
-                type="date"
-                value={formData.purchaseDate}
-                onChange={(e) => setFormData(prev => ({ ...prev, purchaseDate: e.target.value }))}
-              />
-            </Form.Item>
-          </>
-        )}
 
         <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
           <Space>

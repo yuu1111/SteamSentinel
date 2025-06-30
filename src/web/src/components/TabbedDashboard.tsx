@@ -1,15 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import { Tabs, Card, Row, Col, Statistic, Spin, Typography, Tag, Space } from 'antd'
-import { HomeOutlined, WalletOutlined, ShoppingCartOutlined, BellOutlined, PercentageOutlined, CalendarOutlined, TrophyOutlined, StarOutlined } from '@ant-design/icons'
-import { TabDashboardData, Statistics, ExpenseData, Game } from '../types'
+import { HomeOutlined, WalletOutlined, ShoppingCartOutlined, BellOutlined, PercentageOutlined, TrophyOutlined, StarOutlined } from '@ant-design/icons'
+import { TabDashboardData, Statistics, ExpenseData, Game, DashboardLayout, UserPreferences } from '../types'
 import { api } from '../utils/api'
 import { useAlert } from '../contexts/AlertContext'
-import { ExpenseAnalyticsCharts } from './ExpenseAnalyticsCharts'
-import { ROIAnalyzer } from './ROIAnalyzer'
 import { BudgetManager } from './BudgetManager'
-import { SpendingAlerts } from './SpendingAlerts'
 import { SpecialGameStatus } from './SpecialGameStatus'
 import { MonitoringProgress } from './MonitoringProgress'
+import { HighDiscountGames } from './HighDiscountGames'
 import { formatDateJP } from '../utils/dateUtils'
 
 interface TabbedDashboardProps {
@@ -26,7 +24,40 @@ export const TabbedDashboard: React.FC<TabbedDashboardProps> = ({
   const [activeTab, setActiveTab] = useState<'overview' | 'expenses'>('overview')
   const [expenseData, setExpenseData] = useState<ExpenseData | null>(null)
   const [expenseLoading, setExpenseLoading] = useState(false)
+  const [dashboardLayout, setDashboardLayout] = useState<DashboardLayout | null>(null)
+  const [, setUserPreferences] = useState<UserPreferences | null>(null)
   const { showError } = useAlert()
+
+  // Load dashboard customization settings
+  useEffect(() => {
+    const loadSettings = () => {
+      try {
+        const savedLayout = localStorage.getItem('dashboard_layout')
+        const savedPreferences = localStorage.getItem('user_preferences')
+        
+        if (savedLayout) {
+          setDashboardLayout(JSON.parse(savedLayout))
+        }
+        if (savedPreferences) {
+          setUserPreferences(JSON.parse(savedPreferences))
+        }
+      } catch (error) {
+        console.error('Failed to load dashboard settings:', error)
+      }
+    }
+
+    loadSettings()
+
+    // Listen for dashboard layout changes
+    const handleLayoutChange = () => {
+      loadSettings()
+    }
+
+    window.addEventListener('dashboardLayoutChanged', handleLayoutChange)
+    return () => {
+      window.removeEventListener('dashboardLayoutChanged', handleLayoutChange)
+    }
+  }, [])
 
   useEffect(() => {
     if ((activeTab === 'expenses' || activeTab === 'overview') && !expenseData) {
@@ -83,6 +114,7 @@ export const TabbedDashboard: React.FC<TabbedDashboardProps> = ({
           dashboardData={dashboardData}
           expenseData={expenseData}
           onRefresh={onRefresh}
+          dashboardLayout={dashboardLayout}
         />
       )
     },
@@ -117,12 +149,14 @@ interface OverviewDashboardProps {
   dashboardData: TabDashboardData | null
   expenseData: ExpenseData | null
   onRefresh?: () => void
+  dashboardLayout?: DashboardLayout | null
 }
 
 const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
   dashboardData,
   expenseData,
-  onRefresh
+  onRefresh,
+  dashboardLayout
 }) => {
   // Filter games for special status display
   const specialGames = dashboardData?.games?.filter(game => {
@@ -138,13 +172,23 @@ const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
     return isOnSale || isFreeGame || isUnreleased || hasAlert
   }) || []
 
+  // ウィジェット表示判定関数
+  const isWidgetVisible = (widgetType: string): boolean => {
+    if (!dashboardLayout) return true; // 設定がない場合はすべて表示
+    
+    const widget = dashboardLayout.widgets.find(w => w.type === widgetType);
+    return widget?.isVisible !== false; // 明示的にfalseでない限り表示
+  }
+
   return (
     <Row gutter={[16, 16]}>
       {/* Integrated Statistics Cards */}
-      <IntegratedStatisticsCards 
-        statistics={dashboardData?.statistics}
-        expenseData={expenseData}
-      />
+      {isWidgetVisible('statistics') && (
+        <IntegratedStatisticsCards 
+          statistics={dashboardData?.statistics}
+          expenseData={expenseData}
+        />
+      )}
       
       {/* Special Game Status Alert */}
       {dashboardData?.games && specialGames.length > 0 && (
@@ -153,63 +197,83 @@ const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
         </Col>
       )}
       
+      {/* Budget Management Section */}
+      {isWidgetVisible('budget') && (
+        <Col span={24}>
+          <BudgetManager 
+            expenseData={expenseData}
+          />
+        </Col>
+      )}
+
       {/* Quick Summary Section */}
-      <Col span={24}>
-        <Card 
-          title={
-            <span>
-              <TrophyOutlined style={{ marginRight: 8 }} />
-              クイックサマリー
-            </span>
-          }
-        >
-          <Row gutter={[16, 16]}>
-            <Col xs={24} md={8}>
-              <Typography.Title level={5}>監視状況</Typography.Title>
-              <Typography.Text type="secondary">
-                {dashboardData?.statistics.gamesTracked || 0}ゲーム監視中、
-                {dashboardData?.statistics.gamesOnSale || 0}ゲームがセール中
-              </Typography.Text>
-            </Col>
-            <Col xs={24} md={8}>
-              <Typography.Title level={5}>出費状況</Typography.Title>
-              <Typography.Text type="secondary">
-                {expenseData?.summary.totalGames || 0}ゲーム購入済み、
-                総額¥{expenseData?.summary.totalExpenses?.toLocaleString() || 0}
-              </Typography.Text>
-            </Col>
-            <Col xs={24} md={8}>
-              <Typography.Title level={5}>節約効果</Typography.Title>
-              <Typography.Text type="secondary">
-                ¥{expenseData?.summary.totalSavings?.toLocaleString() || 0}の節約
-                ({expenseData?.summary.savingsRate?.toFixed(1) || 0}%)
-              </Typography.Text>
-            </Col>
-          </Row>
-        </Card>
-      </Col>
+      {isWidgetVisible('trends') && (
+        <Col span={24}>
+          <Card 
+            title={
+              <span>
+                <TrophyOutlined style={{ marginRight: 8 }} />
+                クイックサマリー
+              </span>
+            }
+          >
+            <Row gutter={[16, 16]}>
+              <Col xs={24} md={8}>
+                <Typography.Title level={5}>監視状況</Typography.Title>
+                <Typography.Text type="secondary">
+                  {dashboardData?.statistics.gamesTracked || 0}ゲーム監視中、
+                  {dashboardData?.statistics.gamesOnSale || 0}ゲームがセール中
+                </Typography.Text>
+              </Col>
+              <Col xs={24} md={8}>
+                <Typography.Title level={5}>出費状況</Typography.Title>
+                <Typography.Text type="secondary">
+                  {expenseData?.summary.totalGames || 0}ゲーム購入済み、
+                  総額¥{expenseData?.summary.totalExpenses?.toLocaleString() || 0}
+                </Typography.Text>
+              </Col>
+              <Col xs={24} md={8}>
+                <Typography.Title level={5}>節約効果</Typography.Title>
+                <Typography.Text type="secondary">
+                  ¥{expenseData?.summary.totalSavings?.toLocaleString() || 0}の節約
+                  ({expenseData?.summary.savingsRate?.toFixed(1) || 0}%)
+                </Typography.Text>
+              </Col>
+            </Row>
+          </Card>
+        </Col>
+      )}
       
       {/* Alert Target Games Section */}
-      <Col span={24}>
-        <Card 
-          title={
-            <span>
-              <StarOutlined style={{ marginRight: 8 }} />
-              セール・条件達成ゲーム
-            </span>
-          }
-        >
-          {dashboardData?.games && (
-            <AlertTargetGames games={dashboardData.games} />
-          )}
-        </Card>
-      </Col>
+      {isWidgetVisible('alerts') && (
+        <Col span={24}>
+          <Card 
+            title={
+              <span>
+                <StarOutlined style={{ marginRight: 8 }} />
+                セール・条件達成ゲーム
+              </span>
+            }
+          >
+            {dashboardData?.games && (
+              <AlertTargetGames games={dashboardData.games} />
+            )}
+          </Card>
+        </Col>
+      )}
       
       {/* Monitoring Progress Section */}
       <Col span={24}>
         <MonitoringProgress onMonitoringComplete={onRefresh ? onRefresh : () => {}} />
       </Col>
       
+      {/* High Discount Games Section */}
+      {isWidgetVisible('high_discount') && (
+        <Col span={24}>
+          <HighDiscountGames />
+        </Col>
+      )}
+
       {/* Monitoring Details Section */}
       <Col span={24}>
         <Card 
@@ -249,77 +313,58 @@ const ExpensesDashboard: React.FC<ExpensesDashboardProps> = ({
     )
   }
 
+  if (!expenseData) {
+    return (
+      <div style={{ textAlign: 'center', padding: '40px 0' }}>
+        <Typography.Text type="secondary">
+          出費データがありません
+        </Typography.Text>
+      </div>
+    )
+  }
+
   return (
     <Row gutter={[16, 16]}>
-      {/* Expense-specific Statistics */}
-      <ExpenseStatisticsCards expenseData={expenseData} />
+      {/* Essential Statistics Only - 3 Key Metrics */}
+      <Col span={24}>
+        <Row gutter={[16, 16]}>
+          <Col xs={24} lg={8}>
+            <Card>
+              <Statistic 
+                title="総支出"
+                value={expenseData.summary?.totalExpenses || 0}
+                prefix="¥"
+                formatter={(value) => value.toLocaleString()}
+                valueStyle={{ color: '#cf1322' }}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} lg={8}>
+            <Card>
+              <Statistic 
+                title="購入ゲーム数"
+                value={expenseData.summary?.totalGames || 0}
+                suffix="件"
+                valueStyle={{ color: '#1890ff' }}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} lg={8}>
+            <Card>
+              <Statistic 
+                title="節約額"
+                value={expenseData.summary?.totalSavings || 0}
+                prefix="¥"
+                formatter={(value) => value.toLocaleString()}
+                valueStyle={{ color: '#52c41a' }}
+              />
+            </Card>
+          </Col>
+        </Row>
+      </Col>
       
-      {/* Advanced Analytics Charts */}
-      <ExpenseAnalyticsCharts expenseData={expenseData} />
-      
-      {/* ROI Analysis */}
-      <ROIAnalyzer expenseData={expenseData} />
-      
-      {/* Budget Management */}
+      {/* Budget Management - Core Feature */}
       <BudgetManager expenseData={expenseData} />
-      
-      {/* Spending Alerts */}
-      <SpendingAlerts expenseData={expenseData} />
-      
-      {/* Recent Purchases */}
-      {expenseData && (
-        <Col span={24}>
-          <Card 
-            title={
-              <span>
-                <CalendarOutlined style={{ marginRight: 8 }} />
-                最近の購入履歴
-              </span>
-            }
-          >
-            {expenseData.recentPurchases.length > 0 ? (
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', fontSize: '14px' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
-                      <th style={{ padding: '8px', textAlign: 'left' }}>ゲーム名</th>
-                      <th style={{ padding: '8px', textAlign: 'left' }}>購入価格</th>
-                      <th style={{ padding: '8px', textAlign: 'left' }}>割引率</th>
-                      <th style={{ padding: '8px', textAlign: 'left' }}>購入日</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {expenseData.recentPurchases.slice(0, 5).map((purchase, index) => (
-                      <tr key={index} style={{ borderBottom: '1px solid #f9f9f9' }}>
-                        <td style={{ padding: '8px' }}>
-                          <Typography.Link 
-                            href={`https://store.steampowered.com/app/${purchase.steam_app_id}/`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            {purchase.game_name}
-                          </Typography.Link>
-                        </td>
-                        <td style={{ padding: '8px' }}>¥{purchase.trigger_price.toLocaleString()}</td>
-                        <td style={{ padding: '8px' }}>
-                          <Tag color={purchase.discount_percent > 50 ? 'green' : purchase.discount_percent > 20 ? 'orange' : 'default'}>
-                            {purchase.discount_percent}% OFF
-                          </Tag>
-                        </td>
-                        <td style={{ padding: '8px' }}>{formatDateJP(purchase.created_at, 'date')}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <Typography.Text type="secondary">
-                まだ購入履歴がありません。
-              </Typography.Text>
-            )}
-          </Card>
-        </Col>
-      )}
     </Row>
   )
 }
@@ -423,83 +468,7 @@ const IntegratedStatisticsCards: React.FC<IntegratedStatisticsCardsProps> = ({
 }
 
 
-// Expense-specific Statistics Cards
-interface ExpenseStatisticsCardsProps {
-  expenseData?: ExpenseData | null
-}
 
-const ExpenseStatisticsCards: React.FC<ExpenseStatisticsCardsProps> = ({
-  expenseData
-}) => {
-  return (
-    <>
-      <Col xs={24} sm={12} lg={6}>
-        <Card>
-          <Statistic
-            title="購入ゲーム数"
-            value={expenseData?.summary.totalGames || 0}
-            prefix={<ShoppingCartOutlined style={{ color: '#722ed1' }} />}
-          />
-        </Card>
-      </Col>
-      <Col xs={24} sm={12} lg={6}>
-        <Card>
-          <Statistic
-            title="総支出額"
-            value={expenseData?.summary.totalExpenses || 0}
-            prefix="¥"
-            precision={0}
-            valueStyle={{ color: '#f5222d' }}
-          />
-        </Card>
-      </Col>
-      <Col xs={24} sm={12} lg={6}>
-        <Card>
-          <Statistic
-            title="平均購入価格"
-            value={expenseData?.summary.averagePrice || 0}
-            prefix="¥"
-            precision={0}
-            valueStyle={{ color: '#1890ff' }}
-          />
-        </Card>
-      </Col>
-      <Col xs={24} sm={12} lg={6}>
-        <Card>
-          <Statistic
-            title="節約額"
-            value={expenseData?.summary.totalSavings || 0}
-            prefix="¥"
-            precision={0}
-            valueStyle={{ color: '#52c41a' }}
-          />
-        </Card>
-      </Col>
-      
-      {/* Additional expense-specific metrics */}
-      <Col xs={24} sm={12} lg={6}>
-        <Card>
-          <Statistic
-            title="節約率"
-            value={expenseData?.summary.savingsRate || 0}
-            suffix="%"
-            precision={1}
-            prefix={<PercentageOutlined style={{ color: '#fa8c16' }} />}
-          />
-        </Card>
-      </Col>
-      <Col xs={24} sm={12} lg={6}>
-        <Card>
-          <Statistic
-            title="購入期間（月）"
-            value={expenseData?.monthlyTrends?.expenses?.length || 0}
-            prefix={<CalendarOutlined style={{ color: '#13c2c2' }} />}
-          />
-        </Card>
-      </Col>
-    </>
-  )
-}
 
 // Alert Target Games Component
 interface AlertTargetGamesProps {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Col, Card, Typography, Progress, Row, Button, Modal, Form, Input, Select, Space, Tag, Alert, Statistic, List, Popconfirm } from 'antd'
+import { Col, Card, Typography, Progress, Row, Button, Modal, Form, Input, InputNumber, Select, Space, Tag, Alert, Statistic, List, Popconfirm } from 'antd'
 import { PlusOutlined, EditOutlined, DeleteOutlined, DollarOutlined, WarningOutlined } from '@ant-design/icons'
 import { BudgetData, BudgetSummary, ExpenseData } from '../types'
 import { useAlert } from '../contexts/AlertContext'
@@ -34,24 +34,36 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({ expenseData }) => 
       }
       
       const budgetSummaries = await response.json()
+      console.log('Budget summaries received:', budgetSummaries)
+      
+      // `/api/budgets/summaries` は直接配列を返すため、そのまま使用
       
       // バックエンドのBudgetSummaryをフロントエンドのBudgetDataに変換
-      const convertedBudgets: BudgetData[] = budgetSummaries.map((summary: any) => ({
-        id: summary.id.toString(),
-        name: summary.name,
-        type: summary.period_type as 'monthly' | 'yearly' | 'custom',
-        amount: summary.budget_amount,
-        period: summary.period_type === 'monthly' 
-          ? summary.start_date?.substring(0, 7) // YYYY-MM
-          : summary.period_type === 'yearly'
-          ? summary.start_date?.substring(0, 4) // YYYY
-          : `${summary.start_date} - ${summary.end_date}`,
-        spent: summary.spent_amount,
-        remaining: summary.remaining_amount,
-        alerts: [], // アラート機能は後で実装
-        created_at: summary.start_date,
-        updated_at: summary.start_date
-      }))
+      const convertedBudgets: BudgetData[] = budgetSummaries.map((summary: any) => {
+        console.log('Converting budget summary:', summary)
+        console.log('Budget amounts:', {
+          budget_amount: summary.budget_amount,
+          spent_amount: summary.spent_amount,
+          remaining_amount: summary.remaining_amount,
+          calculated_remaining: summary.budget_amount - summary.spent_amount
+        })
+        return {
+          id: summary.id.toString(),
+          name: summary.name,
+          type: summary.period_type as 'monthly' | 'yearly' | 'custom',
+          amount: summary.budget_amount,
+          period: summary.period_type === 'monthly' 
+            ? summary.start_date?.substring(0, 7) // YYYY-MM
+            : summary.period_type === 'yearly'
+            ? summary.start_date?.substring(0, 4) // YYYY
+            : `${summary.start_date} - ${summary.end_date}`,
+          spent: summary.spent_amount,
+          remaining: summary.remaining_amount,
+          alerts: [], // アラート機能は後で実装
+          created_at: summary.start_date,
+          updated_at: summary.start_date
+        }
+      })
       
       setBudgets(convertedBudgets)
       calculateBudgetSummary(convertedBudgets)
@@ -59,23 +71,9 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({ expenseData }) => 
       console.error('Failed to load budgets:', error)
       showError('予算データの読み込みに失敗しました')
       
-      // フォールバック用のモックデータ
-      const fallbackBudgets: BudgetData[] = [
-        {
-          id: '1',
-          name: '月間ゲーム予算',
-          type: 'monthly',
-          amount: 10000,
-          period: '2024-01',
-          spent: expenseData?.summary.totalExpenses || 0,
-          remaining: 10000 - (expenseData?.summary.totalExpenses || 0),
-          alerts: [],
-          created_at: '2024-01-01T00:00:00Z',
-          updated_at: '2024-01-01T00:00:00Z'
-        }
-      ]
-      setBudgets(fallbackBudgets)
-      calculateBudgetSummary(fallbackBudgets)
+      // フォールバック処理はskip - エラー時は空の配列を設定
+      setBudgets([])
+      calculateBudgetSummary([])
     } finally {
       setLoading(false)
     }
@@ -112,6 +110,7 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({ expenseData }) => 
           name: values.name,
           period_type: values.type,
           budget_amount: values.amount,
+          start_date: new Date().toISOString().split('T')[0], // YYYY-MM-DD形式
           is_active: true
         })
       })
@@ -207,7 +206,7 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({ expenseData }) => 
           </Space>
         }
         extra={
-          <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>
+          <Button icon={<PlusOutlined />} onClick={openCreateModal}>
             予算を追加
           </Button>
         }
@@ -326,7 +325,7 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({ expenseData }) => 
             type="info"
             showIcon
             action={
-              <Button type="primary" onClick={openCreateModal}>
+              <Button onClick={openCreateModal}>
                 予算を追加
               </Button>
             }
@@ -379,7 +378,14 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({ expenseData }) => 
               { type: 'number', min: 1, message: '1円以上を入力してください' }
             ]}
           >
-            <Input type="number" placeholder="10000" />
+            <InputNumber 
+              min={1}
+              max={10000000}
+              style={{ width: '100%' }}
+              placeholder="10000"
+              formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+              parser={value => value!.replace(/\$\s?|(,*)/g, '') as any}
+            />
           </Form.Item>
 
           <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>

@@ -48,7 +48,7 @@ const EpicGames: React.FC = () => {
 
   const toggleClaimedStatus = async (gameId: number, currentStatus: boolean) => {
     try {
-      const response = await api.put(`/epic-games/${gameId}/claimed`, {
+      const response = await api.put(`/epic-games/${gameId}/claim`, {
         is_claimed: !currentStatus,
         claimed_date: !currentStatus ? new Date().toISOString() : null
       });
@@ -67,11 +67,13 @@ const EpicGames: React.FC = () => {
         );
         showSuccess(!currentStatus ? 'ゲームを受け取り済みにマークしました' : '受け取り済みマークを解除しました');
       } else {
-        showError('受け取り状況の更新に失敗しました');
+        console.error('API response error:', response);
+        showError(response.error || '受け取り状況の更新に失敗しました');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating claimed status:', error);
-      showError('受け取り状況の更新中にエラーが発生しました');
+      const errorMessage = error?.response?.data?.error || error?.message || '受け取り状況の更新中にエラーが発生しました';
+      showError(errorMessage);
     }
   };
 

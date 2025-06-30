@@ -5,6 +5,7 @@ import { validateSteamAppId, apiLimiter } from '../middleware/security';
 import discordService from '../services/DiscordService';
 import budgetRoutes from './budgets';
 import epicGamesRoutes from './epicGames';
+import itadSettingsController from '../controllers/ITADSettingsController';
 import logger from '../utils/logger';
 
 const router = Router();
@@ -20,26 +21,32 @@ gameRoutes.get('/dashboard', (req, res) => GameController.getDashboardData(req, 
 gameRoutes.get('/expenses', (req, res) => GameController.getExpenseData(req, res));
 gameRoutes.get('/export', (req, res) => GameController.exportGames(req, res));
 gameRoutes.post('/import', (req, res) => GameController.importGames(req, res));
-gameRoutes.get('/:id', (req, res) => GameController.getGameById(req, res));
+
+// 高割引ゲーム検知 - 専用ルート
+gameRoutes.get('/highDiscount', (req, res) => GameController.getHighDiscountGames(req, res));
+gameRoutes.post('/highDiscount/detect', (req, res) => GameController.runHighDiscountDetection(req, res));
+
+gameRoutes.get('/:id(\\d+)', (req, res) => GameController.getGameById(req, res));
 gameRoutes.post('/', (req, res) => GameController.addGame(req, res));
-gameRoutes.put('/:id', (req, res) => GameController.updateGame(req, res));
-gameRoutes.delete('/:id', (req, res) => GameController.deleteGame(req, res));
-gameRoutes.get('/:appId/price-history', validateSteamAppId, (req, res) => GameController.getGamePriceHistory(req, res));
-gameRoutes.get('/:appId/reviews', validateSteamAppId, (req, res) => GameController.getGameReviews(req, res));
+gameRoutes.put('/:id(\\d+)', (req, res) => GameController.updateGame(req, res));
+gameRoutes.delete('/:id(\\d+)', (req, res) => GameController.deleteGame(req, res));
+gameRoutes.get('/:appId(\\d+)/price-history', validateSteamAppId, (req, res) => GameController.getGamePriceHistory(req, res));
+gameRoutes.get('/:appId(\\d+)/reviews', validateSteamAppId, (req, res) => GameController.getGameReviews(req, res));
 gameRoutes.post('/reviews/batch', (req, res) => GameController.getMultipleGameReviews(req, res));
-gameRoutes.get('/:appId/info', validateSteamAppId, (req, res) => GameController.getGameInfo(req, res));
+gameRoutes.get('/:appId(\\d+)/info', validateSteamAppId, (req, res) => GameController.getGameInfo(req, res));
 gameRoutes.post('/info/batch', (req, res) => GameController.getMultipleGameInfo(req, res));
 
 // 手動最安値設定
-gameRoutes.put('/:id/manual-historical-low', (req, res) => GameController.setManualHistoricalLow(req, res));
+gameRoutes.put('/:id(\\d+)/manual-historical-low', (req, res) => GameController.setManualHistoricalLow(req, res));
 
 // 購入済みマーク
-gameRoutes.put('/:id/mark-purchased', (req, res) => GameController.markAsPurchased(req, res));
-gameRoutes.put('/:id/unmark-purchased', (req, res) => GameController.unmarkAsPurchased(req, res));
+gameRoutes.put('/:id(\\d+)/mark-purchased', (req, res) => GameController.markAsPurchased(req, res));
+gameRoutes.put('/:id(\\d+)/unmark-purchased', (req, res) => GameController.unmarkAsPurchased(req, res));
 gameRoutes.get('/purchased', (req, res) => GameController.getPurchasedGames(req, res));
 
+
 // 重複チェック用API
-gameRoutes.get('/check/:appId', validateSteamAppId, (req, res) => GameController.checkGameExists(req, res));
+gameRoutes.get('/check/:appId(\\d+)', validateSteamAppId, (req, res) => GameController.checkGameExists(req, res));
 
 // 開発用：テスト特別状況ゲーム追加
 gameRoutes.post('/test/add-special-games', (req, res) => GameController.addTestSpecialGames(req, res));
@@ -52,7 +59,7 @@ const monitoringRoutes = Router();
 monitoringRoutes.get('/status', (req, res) => MonitoringController.getStatus(req, res));
 monitoringRoutes.get('/progress', (req, res) => MonitoringController.getProgress(req, res));
 monitoringRoutes.post('/run', (req, res) => MonitoringController.runManualMonitoring(req, res));
-monitoringRoutes.post('/run/:appId', validateSteamAppId, (req, res) => MonitoringController.runManualGameMonitoring(req, res));
+monitoringRoutes.post('/run/:appId(\\d+)', validateSteamAppId, (req, res) => MonitoringController.runManualGameMonitoring(req, res));
 monitoringRoutes.put('/interval', (req, res) => MonitoringController.updateMonitoringInterval(req, res));
 monitoringRoutes.get('/health', (req, res) => MonitoringController.healthCheck(req, res));
 monitoringRoutes.get('/logs', (req, res) => MonitoringController.getLogs(req, res));
@@ -218,7 +225,7 @@ systemRoutes.get('/info', (_req, res) => {
     const systemInfo = {
       nodeVersion: process.version,
       platform: process.platform,
-      databasePath: './data/steam-sentinel.db',
+      databasePath: './data/steam_sentinel.db',
       environment: process.env.NODE_ENV || 'development'
     };
     
@@ -276,6 +283,37 @@ systemRoutes.get('/discord-status', (_req, res) => {
     res.status(500).json({
       success: false,
       error: 'Discord設定状況の確認に失敗しました'
+    });
+  }
+});
+
+systemRoutes.get('/build-info', (_req, res) => {
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const buildInfoPath = path.join(__dirname, '../../build-info.json');
+    
+    if (fs.existsSync(buildInfoPath)) {
+      const buildInfo = JSON.parse(fs.readFileSync(buildInfoPath, 'utf8'));
+      res.json({
+        success: true,
+        data: buildInfo
+      });
+    } else {
+      res.json({
+        success: true,
+        data: {
+          buildTime: null,
+          buildDate: '開発モード',
+          version: process.env.npm_package_version || '1.0.0',
+          environment: process.env.NODE_ENV || 'development'
+        }
+      });
+    }
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'ビルド情報の取得に失敗しました'
     });
   }
 });
@@ -510,5 +548,18 @@ router.use('/budgets', budgetRoutes);
 
 // Epic Games関連のルート
 router.use('/epic-games', epicGamesRoutes);
+
+// ITAD設定ルート
+const itadRoutes = Router();
+itadRoutes.get('/settings', (req, res) => itadSettingsController.getAllSettings(req, res));
+itadRoutes.put('/settings', (req, res) => itadSettingsController.updateMultipleSettings(req, res));
+itadRoutes.post('/settings/reset', (req, res) => itadSettingsController.resetToDefaults(req, res));
+itadRoutes.get('/settings/filter', (req, res) => itadSettingsController.getFilterConfig(req, res));
+itadRoutes.get('/settings/:name', (req, res) => itadSettingsController.getSetting(req, res));
+itadRoutes.put('/settings/:name', (req, res) => itadSettingsController.updateSetting(req, res));
+itadRoutes.put('/settings/filter/config', (req, res) => itadSettingsController.updateFilterConfig(req, res));
+itadRoutes.get('/settings/category/:category', (req, res) => itadSettingsController.getSettingsByCategory(req, res));
+
+router.use('/itad', itadRoutes);
 
 export default router;

@@ -1,4 +1,4 @@
-export type ViewType = 'dashboard' | 'games' | 'alerts' | 'monitoring' | 'test' | 'epic' | 'limitations' | 'licenses';
+export type ViewType = 'dashboard' | 'games' | 'alerts' | 'monitoring' | 'test' | 'epic' | 'settings' | 'limitations' | 'licenses';
 
 export interface Game {
   id: number
@@ -161,6 +161,26 @@ export interface SpendingAlert {
   created_at: string
 }
 
+export interface HighDiscountGame {
+  name: string
+  steam_app_id: number
+  current_price: number
+  original_price: number
+  discount_percent: number
+  review_score?: number
+  review_count?: number
+}
+
+export interface HighDiscountData {
+  games: HighDiscountGame[]
+  lastCheck: string | null
+  statistics: {
+    lastCheckTime: string | null
+    checkInterval: number
+    isRunning: boolean
+  }
+}
+
 export interface BudgetSummary {
   totalBudgets: number
   activeBudgets: number
@@ -174,7 +194,7 @@ export interface BudgetSummary {
 // Dashboard Customization Types
 export interface DashboardWidget {
   id: string
-  type: 'statistics' | 'charts' | 'roi' | 'budget' | 'alerts' | 'purchases' | 'trends'
+  type: 'statistics' | 'charts' | 'roi' | 'budget' | 'alerts' | 'purchases' | 'trends' | 'high_discount'
   title: string
   size: 'small' | 'medium' | 'large' | 'full'
   position: { x: number; y: number; w: number; h: number }

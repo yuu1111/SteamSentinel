@@ -144,7 +144,7 @@ export const config: Config = {
   logMaxFiles: parseInt(process.env.LOG_MAX_FILES || '7', 10),
   
   // Paths
-  databasePath: path.join(process.cwd(), 'data', 'steam_sentinel.db'),
+  databasePath: process.env.DATABASE_PATH || path.join(process.cwd(), 'data', 'steam_sentinel.db'),
   logsPath: path.join(process.cwd(), 'logs'),
   publicPath: path.join(process.cwd(), 'public'),
   

@@ -5,6 +5,7 @@ import { AlertModel } from '../models/Alert';
 import { MonitoringService } from '../services/MonitoringService';
 import reviewIntegrationService from '../services/ReviewIntegrationService';
 import gameInfoService from '../services/GameInfoService';
+import { HighDiscountDetectionService } from '../services/HighDiscountDetectionService';
 import logger from '../utils/logger';
 
 export class GameController {
@@ -600,8 +601,8 @@ export class GameController {
           startDate.setMonth(startDate.getMonth() - 1);
       }
 
-      // 期間内のアラート（実際の購入として扱う）
-      const alerts = AlertModel.getByDateRange(startDate, new Date());
+      // 購入済みマークされたゲームを取得
+      const purchasedGames = GameModel.getPurchasedGames();
       
       // ゲームごとの出費計算
       const expensesByGame = new Map<number, {
@@ -614,48 +615,47 @@ export class GameController {
 
       let totalExpenses = 0;
       let totalSavings = 0;
+      let totalGames = 0;
 
-      for (const alert of alerts) {
-        const game = GameModel.getBySteamAppId(alert.steam_app_id);
-        if (!game) {continue;}
-
-        const purchasePrice = alert.trigger_price || 0;
-        const originalPrice = alert.previous_low || purchasePrice;
-        const savings = originalPrice - purchasePrice;
-
-        totalExpenses += purchasePrice;
+      // 購入済みゲームから出費を計算
+      for (const game of purchasedGames) {
+        if (!game.purchase_price || game.purchase_price <= 0) continue;
+        
+        totalGames++;
+        totalExpenses += game.purchase_price;
+        
+        // 最新の価格履歴から元の価格を取得
+        const latestPrice = PriceHistoryModel.getLatestByGameId(game.steam_app_id);
+        const originalPrice = latestPrice?.original_price || game.purchase_price * 2; // 元価格が不明な場合は購入価格の2倍と仮定
+        const savings = originalPrice - game.purchase_price;
+        const discountPercent = Math.round((1 - game.purchase_price / originalPrice) * 100);
+        
         totalSavings += savings;
 
-        if (expensesByGame.has(alert.steam_app_id)) {
-          const existing = expensesByGame.get(alert.steam_app_id)!;
-          existing.totalSpent += purchasePrice;
-          existing.purchaseCount++;
-          existing.averageDiscount = ((existing.averageDiscount * (existing.purchaseCount - 1)) + (alert.discount_percent || 0)) / existing.purchaseCount;
-          if (alert.created_at > existing.lastPurchase) {
-            existing.lastPurchase = alert.created_at;
-          }
-        } else {
-          expensesByGame.set(alert.steam_app_id, {
-            game,
-            totalSpent: purchasePrice,
-            purchaseCount: 1,
-            averageDiscount: alert.discount_percent || 0,
-            lastPurchase: alert.created_at
-          });
-        }
+        expensesByGame.set(game.steam_app_id, {
+          game,
+          totalSpent: game.purchase_price,
+          purchaseCount: 1,
+          averageDiscount: discountPercent,
+          lastPurchase: game.purchase_date ? new Date(game.purchase_date) : new Date()
+        });
       }
 
       // 月別支出統計
       const monthlyExpenses = new Map<string, number>();
       const monthlySavings = new Map<string, number>();
       
-      for (const alert of alerts) {
-        const monthKey = alert.created_at.toISOString().substring(0, 7); // YYYY-MM
-        const purchasePrice = alert.trigger_price || 0;
-        const originalPrice = alert.previous_low || purchasePrice;
-        const savings = originalPrice - purchasePrice;
+      for (const game of purchasedGames) {
+        if (!game.purchase_price || game.purchase_price <= 0) continue;
+        
+        const purchaseDate = game.purchase_date ? new Date(game.purchase_date) : new Date();
+        const monthKey = purchaseDate.toISOString().substring(0, 7); // YYYY-MM
+        
+        const latestPrice = PriceHistoryModel.getLatestByGameId(game.steam_app_id);
+        const originalPrice = latestPrice?.original_price || game.purchase_price * 2;
+        const savings = originalPrice - game.purchase_price;
 
-        monthlyExpenses.set(monthKey, (monthlyExpenses.get(monthKey) || 0) + purchasePrice);
+        monthlyExpenses.set(monthKey, (monthlyExpenses.get(monthKey) || 0) + game.purchase_price);
         monthlySavings.set(monthKey, (monthlySavings.get(monthKey) || 0) + savings);
       }
 
@@ -667,22 +667,25 @@ export class GameController {
         full_price: { count: 0, total: 0, label: '定価購入' }
       };
 
-      for (const alert of alerts) {
-        const discountPercent = alert.discount_percent || 0;
-        const price = alert.trigger_price || 0;
+      for (const game of purchasedGames) {
+        if (!game.purchase_price || game.purchase_price <= 0) continue;
+        
+        const latestPrice = PriceHistoryModel.getLatestByGameId(game.steam_app_id);
+        const originalPrice = latestPrice?.original_price || game.purchase_price * 2;
+        const discountPercent = Math.round((1 - game.purchase_price / originalPrice) * 100);
 
         if (discountPercent >= 70) {
           categories.bargain.count++;
-          categories.bargain.total += price;
+          categories.bargain.total += game.purchase_price;
         } else if (discountPercent >= 30) {
           categories.moderate.count++;
-          categories.moderate.total += price;
+          categories.moderate.total += game.purchase_price;
         } else if (discountPercent > 0) {
           categories.small.count++;
-          categories.small.total += price;
+          categories.small.total += game.purchase_price;
         } else {
           categories.full_price.count++;
-          categories.full_price.total += price;
+          categories.full_price.total += game.purchase_price;
         }
       }
 
@@ -703,7 +706,14 @@ export class GameController {
             savings: Array.from(monthlySavings.entries()).map(([month, amount]) => ({ month, amount }))
           },
           categories,
-          recentPurchases: alerts.slice(0, 10)
+          recentPurchases: purchasedGames.slice(0, 10).map(game => {
+            return {
+              game_name: game.name,
+              steam_app_id: game.steam_app_id,
+              purchase_price: game.purchase_price || 0,
+              purchase_date: game.purchase_date || new Date().toISOString()
+            };
+          })
         }
       });
     } catch (error) {
@@ -889,7 +899,7 @@ export class GameController {
   static async markAsPurchased(req: Request, res: Response): Promise<Response> {
     try {
       const gameId = parseInt(req.params.id, 10);
-      const { purchase_price, purchase_date = new Date().toISOString() } = req.body;
+      const { purchase_price, purchase_date = new Date().toISOString(), budget_id } = req.body;
 
       // 入力検証
       if (purchase_price !== null && (isNaN(purchase_price) || purchase_price < 0)) {
@@ -912,7 +922,34 @@ export class GameController {
         });
       }
 
-      logger.info(`Game marked as purchased: ${updatedGame.name} (${updatedGame.steam_app_id}) - ¥${purchase_price || 'unknown price'}`);
+      // 予算が指定されている場合は支出を記録
+      if (budget_id && purchase_price > 0) {
+        try {
+          const dbManager = await import('../db/database');
+          const db = dbManager.default.getConnection();
+          
+          // 予算支出を記録
+          const insertExpenseStmt = db.prepare(`
+            INSERT INTO budget_expenses (budget_id, steam_app_id, game_name, amount, purchase_date, category)
+            VALUES (?, ?, ?, ?, ?, ?)
+          `);
+          
+          const result = insertExpenseStmt.run(
+            budget_id,
+            updatedGame.steam_app_id,
+            updatedGame.name,
+            purchase_price,
+            purchase_date || new Date().toISOString().split('T')[0], // YYYY-MM-DD形式
+            'game'
+          );
+          
+          logger.info(`Budget expense recorded: ¥${purchase_price} for ${updatedGame.name} (Budget ID: ${budget_id}, Insert ID: ${result.lastInsertRowid}, Changes: ${result.changes})`);
+        } catch (budgetError) {
+          logger.warn(`Error recording budget expense for game ${updatedGame.name}:`, budgetError);
+        }
+      }
+
+      logger.info(`Game marked as purchased: ${updatedGame.name} (${updatedGame.steam_app_id}) - ¥${purchase_price || 'unknown price'}${budget_id ? ` (Budget ID: ${budget_id})` : ''}`);
       return res.json({
         success: true,
         data: updatedGame,
@@ -1017,6 +1054,82 @@ export class GameController {
       return res.status(500).json({
         success: false,
         error: 'Failed to retrieve purchased games'
+      });
+    }
+  }
+
+  // 高割引ゲーム取得
+  static async getHighDiscountGames(req: Request, res: Response): Promise<Response> {
+    try {
+      const { type = 'standard' } = req.query;
+      logger.info(`Getting high discount games with type: ${type}`);
+      
+      const highDiscountService = new HighDiscountDetectionService();
+      
+      let games: any[] = [];
+      try {
+        if (type === 'popular') {
+          games = await highDiscountService.detectPopularHighDiscountGames();
+        } else {
+          games = await highDiscountService.detectHighDiscountGames();
+        }
+      } catch (serviceError) {
+        logger.error('High discount service error:', serviceError);
+        // サービスエラーの場合は空の配列を返す
+        games = [];
+      }
+      
+      return res.json({
+        success: true,
+        data: {
+          games: games || [],
+          lastCheck: highDiscountService.getLastCheckTime(),
+          statistics: highDiscountService.getStatistics()
+        }
+      });
+    } catch (error) {
+      logger.error('Failed to get high discount games:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to retrieve high discount games'
+      });
+    }
+  }
+
+  // 高割引ゲーム手動検知
+  static async runHighDiscountDetection(req: Request, res: Response): Promise<Response> {
+    try {
+      const { type = 'standard' } = req.body;
+      logger.info(`Running high discount detection with type: ${type}`);
+      
+      const highDiscountService = new HighDiscountDetectionService();
+      
+      let games: any[] = [];
+      try {
+        if (type === 'popular') {
+          games = await highDiscountService.detectPopularHighDiscountGames();
+        } else {
+          games = await highDiscountService.runManualCheck();
+        }
+      } catch (serviceError) {
+        logger.error('High discount detection service error:', serviceError);
+        return res.status(500).json({
+          success: false,
+          error: 'High discount detection service failed',
+          details: serviceError instanceof Error ? serviceError.message : 'Unknown error'
+        });
+      }
+      
+      return res.json({
+        success: true,
+        data: games || [],
+        message: `${(games || []).length}件の高割引ゲームを発見しました`
+      });
+    } catch (error) {
+      logger.error('Failed to run high discount detection:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to run high discount detection'
       });
     }
   }

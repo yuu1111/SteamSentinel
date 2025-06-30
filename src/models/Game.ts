@@ -3,15 +3,76 @@ import { Game } from '../types';
 import logger from '../utils/logger';
 
 export class GameModel {
-  // 全ゲーム取得
+  // 全ゲーム取得（最新価格データを含む）
   static getAll(enabledOnly: boolean = false): Game[] {
     try {
       const db = database.getConnection();
       const query = enabledOnly 
-        ? 'SELECT * FROM games WHERE enabled = 1 ORDER BY name'
-        : 'SELECT * FROM games ORDER BY name';
+        ? `SELECT g.*, 
+             ph.current_price, ph.original_price, ph.discount_percent, ph.is_on_sale, 
+             ph.source, ph.recorded_at, ph.historical_low, ph.all_time_low
+           FROM games g
+           LEFT JOIN (
+             SELECT steam_app_id, 
+                    current_price, original_price, discount_percent, is_on_sale,
+                    source, recorded_at, historical_low, all_time_low,
+                    ROW_NUMBER() OVER (PARTITION BY steam_app_id ORDER BY recorded_at DESC) as rn
+             FROM price_history
+           ) ph ON g.steam_app_id = ph.steam_app_id AND ph.rn = 1
+           WHERE g.enabled = 1 
+           ORDER BY g.name`
+        : `SELECT g.*, 
+             ph.current_price, ph.original_price, ph.discount_percent, ph.is_on_sale,
+             ph.source, ph.recorded_at, ph.historical_low, ph.all_time_low
+           FROM games g
+           LEFT JOIN (
+             SELECT steam_app_id, 
+                    current_price, original_price, discount_percent, is_on_sale,
+                    source, recorded_at, historical_low, all_time_low,
+                    ROW_NUMBER() OVER (PARTITION BY steam_app_id ORDER BY recorded_at DESC) as rn
+             FROM price_history
+           ) ph ON g.steam_app_id = ph.steam_app_id AND ph.rn = 1
+           ORDER BY g.name`;
       
-      return db.prepare(query).all() as Game[];
+      const rawGames = db.prepare(query).all() as any[];
+      
+      // 価格データをlatestPriceとして整形
+      return rawGames.map(row => {
+        const game: Game = {
+          id: row.id,
+          steam_app_id: row.steam_app_id,
+          name: row.name,
+          enabled: !!row.enabled,
+          alert_enabled: !!row.alert_enabled,
+          price_threshold: row.price_threshold,
+          price_threshold_type: row.price_threshold_type,
+          discount_threshold_percent: row.discount_threshold_percent,
+          manual_historical_low: row.manual_historical_low,
+          is_purchased: !!row.is_purchased,
+          purchase_price: row.purchase_price,
+          purchase_date: row.purchase_date,
+          was_unreleased: !!row.was_unreleased,
+          last_known_release_date: row.last_known_release_date,
+          created_at: row.created_at,
+          updated_at: row.updated_at
+        };
+        
+        // 価格データがある場合はlatestPriceを追加
+        if (row.current_price !== null) {
+          game.latestPrice = {
+            current_price: row.current_price,
+            original_price: row.original_price,
+            discount_percent: row.discount_percent,
+            is_on_sale: !!row.is_on_sale,
+            source: row.source,
+            recorded_at: row.recorded_at,
+            historical_low: row.historical_low,
+            all_time_low: row.all_time_low
+          };
+        }
+        
+        return game;
+      });
     } catch (error) {
       logger.error('Failed to fetch games:', error);
       throw error;

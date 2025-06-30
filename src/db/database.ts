@@ -23,6 +23,10 @@ class DatabaseManager {
 
   connect(): void {
     try {
+      logger.info(`Attempting to connect to database at: ${this.dbPath}`);
+      logger.info(`Database file exists: ${require('fs').existsSync(this.dbPath)}`);
+      logger.info(`Current working directory: ${process.cwd()}`);
+      
       this.db = new Database(this.dbPath);
       // WSL環境でのWALモードの問題を回避
       try {
@@ -35,6 +39,7 @@ class DatabaseManager {
       logger.info('Database connected successfully');
     } catch (error) {
       logger.error('Database connection failed:', error);
+      logger.error(`Failed database path: ${this.dbPath}`);
       throw error;
     }
   }
@@ -356,6 +361,31 @@ class DatabaseManager {
             FOREIGN KEY (budget_id) REFERENCES budgets(id) ON DELETE CASCADE
           );
         `);
+
+        // ITAD設定テーブル
+        db.exec(`
+          CREATE TABLE IF NOT EXISTS itad_settings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            value TEXT NOT NULL,
+            description TEXT,
+            category TEXT DEFAULT 'filter',
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          );
+        `);
+
+        // ITAD設定の初期値を挿入
+        const insertDefaultSettings = db.prepare(`
+          INSERT OR IGNORE INTO itad_settings (name, value, description, category) 
+          VALUES (?, ?, ?, ?)
+        `);
+        
+        insertDefaultSettings.run('min_discount', '20', '最小割引率（%）', 'filter');
+        insertDefaultSettings.run('max_price', '5000', '最大価格（円）', 'filter');
+        insertDefaultSettings.run('limit', '50', '取得件数制限', 'filter');
+        insertDefaultSettings.run('region', 'JP', '地域設定', 'filter');
+        insertDefaultSettings.run('enabled', 'true', '高割引検知有効化', 'general');
+        insertDefaultSettings.run('notification_enabled', 'true', 'Discord通知有効化', 'notification');
         
         // Epic Games無料ゲーム管理テーブル
         db.exec(`

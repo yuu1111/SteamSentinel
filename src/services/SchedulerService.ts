@@ -1,18 +1,22 @@
 import * as cron from 'node-cron';
 import { MonitoringService } from './MonitoringService';
-import highDiscountDetectionService from './HighDiscountDetectionService';
-import epicGamesNotificationService from './EpicGamesNotificationService';
+import { EpicGamesNotificationService } from './EpicGamesNotificationService';
+import { HighDiscountDetectionService } from './HighDiscountDetectionService';
 import { config } from '../config';
 import logger from '../utils/logger';
 import database from '../db/database';
 
 export class SchedulerService {
   private monitoringService: MonitoringService;
+  private epicGamesService: EpicGamesNotificationService;
+  private highDiscountService: HighDiscountDetectionService;
   private scheduledTasks: Map<string, cron.ScheduledTask> = new Map();
   private isStarted = false;
 
   constructor() {
     this.monitoringService = new MonitoringService();
+    this.epicGamesService = new EpicGamesNotificationService();
+    this.highDiscountService = new HighDiscountDetectionService();
   }
 
   // 初期化
@@ -137,7 +141,7 @@ export class SchedulerService {
     const task = cron.schedule('0 */6 * * *', async () => {
       try {
         logger.info('Running scheduled high discount detection');
-        await highDiscountDetectionService.detectHighDiscountGames();
+        await this.highDiscountService.detectHighDiscountGames();
       } catch (error) {
         logger.error('Scheduled high discount detection failed:', error);
       }
@@ -158,7 +162,7 @@ export class SchedulerService {
     const task = cron.schedule('0 10 * * *', async () => {
       try {
         logger.info('Running scheduled Epic Games free games check');
-        await epicGamesNotificationService.checkEpicFreeGames();
+        await this.epicGamesService.checkEpicFreeGames();
       } catch (error) {
         logger.error('Scheduled Epic Games check failed:', error);
       }
@@ -251,7 +255,7 @@ export class SchedulerService {
   async runManualHighDiscountDetection(): Promise<any[]> {
     try {
       logger.info('Manual high discount detection triggered');
-      const results = await highDiscountDetectionService.detectHighDiscountGames();
+      const results = await this.highDiscountService.detectHighDiscountGames();
       logger.info(`Manual high discount detection completed: ${results.length} games found`);
       return results;
     } catch (error) {
@@ -264,7 +268,7 @@ export class SchedulerService {
   async runManualEpicGamesCheck(): Promise<any[]> {
     try {
       logger.info('Manual Epic Games check triggered');
-      const results = await epicGamesNotificationService.checkEpicFreeGames();
+      const results = await this.epicGamesService.checkEpicFreeGames();
       logger.info(`Manual Epic Games check completed: ${results.length} free games found`);
       return results;
     } catch (error) {

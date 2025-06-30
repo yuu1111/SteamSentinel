@@ -42,6 +42,13 @@ interface SystemInfo {
   environment: string
 }
 
+interface BuildInfo {
+  buildTime: string | null
+  buildDate: string
+  version: string
+  environment: string
+}
+
 interface ApiKeyStatus {
   steamApiKey: boolean
   discordWebhook: boolean
@@ -60,6 +67,7 @@ interface DiscordStatus {
 
 const Test: React.FC = () => {
   const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null)
+  const [buildInfo, setBuildInfo] = useState<BuildInfo | null>(null)
   const [apiKeyStatus, setApiKeyStatus] = useState<ApiKeyStatus | null>(null)
   const [discordStatus, setDiscordStatus] = useState<DiscordStatus | null>(null)
   const [games, setGames] = useState<any[]>([])
@@ -76,14 +84,16 @@ const Test: React.FC = () => {
     try {
       setLoading(true)
       
-      const [systemResponse, apiResponse, discordResponse, gamesResponse] = await Promise.all([
+      const [systemResponse, buildResponse, apiResponse, discordResponse, gamesResponse] = await Promise.all([
         api.get('/system/info'),
+        api.get('/system/build-info'),
         api.get('/system/api-status'),
         api.get('/system/discord-status'),
         api.get('/games?enabled=all')
       ])
 
       if (systemResponse.success) setSystemInfo(systemResponse.data)
+      if (buildResponse.success) setBuildInfo(buildResponse.data)
       if (apiResponse.success) setApiKeyStatus(apiResponse.data)
       if (discordResponse.success) setDiscordStatus(discordResponse.data)
       if (gamesResponse.success) setGames(gamesResponse.data || [])
@@ -189,6 +199,13 @@ const Test: React.FC = () => {
     { key: 'プラットフォーム', value: systemInfo.platform },
     { key: '環境', value: systemInfo.environment },
     { key: 'データベース', value: systemInfo.databasePath }
+  ] : []
+
+  const buildData = buildInfo ? [
+    { key: 'バージョン', value: buildInfo.version },
+    { key: 'ビルド日時', value: buildInfo.buildDate },
+    { key: 'ビルド環境', value: buildInfo.environment },
+    { key: 'タイムスタンプ', value: buildInfo.buildTime || '開発モード' }
   ] : []
 
   // API status data
@@ -581,6 +598,19 @@ const Test: React.FC = () => {
             </Col>
             
             <Col xs={24} lg={12}>
+              <Title level={4}>ビルド情報</Title>
+              <Table
+                columns={systemColumns}
+                dataSource={buildData}
+                pagination={false}
+                size="small"
+                bordered
+              />
+            </Col>
+          </Row>
+          
+          <Row gutter={[24, 24]} style={{ marginTop: 24 }}>
+            <Col xs={24} lg={24}>
               <Title level={4}>APIキー設定状況</Title>
               <Space direction="vertical" style={{ width: '100%' }}>
                 {apiStatusData.map(item => (

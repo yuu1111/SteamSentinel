@@ -179,8 +179,28 @@ POST /api/games/:steamAppId/update-price
 ### 購入状況管理
 ```
 PUT /api/games/:id/mark-purchased
-PUT /api/games/:id/mark-unpurchased
+PUT /api/games/:id/unmark-purchased
 GET /api/games/purchased
+```
+
+**購入済みマーク設定:**
+```typescript
+PUT /api/games/:id/mark-purchased
+{
+  purchase_price: number,
+  purchase_date: string,  // YYYY-MM-DD形式
+  budget_id?: number      // 使用予算ID (省略可)
+}
+```
+
+**購入済みマーク解除:**
+```typescript
+PUT /api/games/:id/unmark-purchased
+```
+
+**購入済みゲーム一覧:**
+```typescript
+GET /api/games/purchased?period=all|month|quarter|year
 ```
 
 ### 手動最安値設定
@@ -222,6 +242,43 @@ GET /api/games/:steamAppId/prices?days=30
 {
   success: true,
   data: PriceData[]
+}
+```
+
+## 高割引ゲーム API
+
+### 高割引ゲーム取得
+```
+GET /api/games/highDiscount
+GET /api/games/highDiscount?type=standard
+GET /api/games/highDiscount?type=popular
+```
+
+**レスポンス:**
+```typescript
+{
+  success: true,
+  data: {
+    games: HighDiscountGame[],
+    lastCheck: string | null,
+    statistics: {
+      lastCheckTime: string | null,
+      checkInterval: number,
+      isRunning: boolean
+    }
+  }
+}
+```
+
+### 高割引ゲーム手動検知
+```
+POST /api/games/highDiscount/detect
+```
+
+**リクエストボディ:**
+```typescript
+{
+  type?: 'standard' | 'popular'  // デフォルト: 'standard'
 }
 ```
 
@@ -310,6 +367,24 @@ GET /api/system/info
       used: number,
       total: number
     }
+  }
+}
+```
+
+### ビルド情報取得
+```
+GET /api/system/build-info
+```
+
+**レスポンス:**
+```typescript
+{
+  success: true,
+  data: {
+    buildTime: string | null,    // ビルド時刻 (ISO形式)
+    buildDate: string,           // ビルド日時 (日本語表記)
+    version: string,             // アプリケーションバージョン
+    environment: string          // ビルド環境
   }
 }
 ```

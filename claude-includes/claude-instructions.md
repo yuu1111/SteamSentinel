@@ -8,25 +8,27 @@
 4. **レスポンシブUI**: モバイル対応とダークモード対応を徹底する。
 5. **データ制限の明示**: ITAD APIの6ヶ月データ制限について、UI上で適切な警告表示を行う。
 6. **ライセンス遵守**: 使用中のライブラリ・サービスのライセンス情報を適切に表示する。
-7. **UIアーキテクチャ遵守**: Ant Design主体、Bootstrap通知システムのハイブリッド構成を維持する。
+7. **UIアーキテクチャ遵守**: Ant Design完全統一アーキテクチャを維持する。
 
 ## UIライブラリ使用ガイドライン
 
-### Ant Design 優先使用
-* **新規コンポーネント・ページ**: 必ずAnt Design 5.26.2を使用
-* **推奨コンポーネント**: Card, Form, Table, Button, Space, Alert, Typography
+### Ant Design 統一使用
+* **全コンポーネント・ページ**: Ant Design 5.26.2を完全採用
+* **推奨コンポーネント**: Card, Form, Table, Button, Space, notification, message, Typography
+* **通知システム**: notification/message API + useAlert Context統合
 * **アイコン**: @ant-design/icons パッケージを使用
 * **レスポンシブ**: Row/Col グリッドシステムを活用
 
-### Bootstrap 継続利用領域
-* **通知システム**: useAlert/AlertContainer (互換性重視)
-* **ナビゲーション**: 既存Bootstrap Navbarを維持
-* **レスポンシブ**: Bootstrap グリッドとの共存
+### Bootstrap完全除去完了
+* **CDN削除**: index.htmlからBootstrap CSS/JS除去済み
+* **通知システム移行**: useAlert/AlertContextはAnt Design notification API統合済み
+* **ナビゲーション**: Ant Design Menu/Layout完全移行済み
+* **依存関係除去**: package.jsonからBootstrap関連依存削除済み
 
 ### 実装時注意事項
-* **スタイル競合回避**: 両ライブラリのクラス名衝突に注意
-* **一貫性維持**: デザインシステム間での視覚的統一性確保
-* **段階的移行**: 将来的なAnt Design完全移行を視野に入れた設計
+* **Ant Design統一**: 新規実装は全てAnt Designベース
+* **デザインシステム統一**: 一貫したAnt DesignベースUI/UX維持
+* **型安全性**: TypeScript完全対応、useApp()フック活用
 
 ## APIキー管理
 

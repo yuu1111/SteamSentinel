@@ -5,12 +5,18 @@ import { TabDashboardData } from '../types'
 import { api } from '../utils/api'
 import { useAlert } from '../contexts/AlertContext'
 import { TabbedDashboard } from '../components/TabbedDashboard'
+import { DashboardCustomizer } from '../components/DashboardCustomizer'
+import { ReportGenerator } from '../components/ReportGenerator'
+import { DataManager } from '../components/DataManager'
 
 const { Title } = Typography
 
 const Dashboard: React.FC = () => {
   const [dashboardData, setDashboardData] = useState<TabDashboardData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [showDashboardCustomizer, setShowDashboardCustomizer] = useState(false)
+  const [showReportGenerator, setShowReportGenerator] = useState(false)
+  const [showDataManager, setShowDataManager] = useState(false)
   const { showError } = useAlert()
 
   useEffect(() => {
@@ -64,13 +70,25 @@ const Dashboard: React.FC = () => {
               ダッシュボード
             </Title>
             <Space wrap>
-              <Button icon={<SettingOutlined />} size="middle">
+              <Button 
+                icon={<SettingOutlined />} 
+                size="middle"
+                onClick={() => setShowDashboardCustomizer(true)}
+              >
                 カスタマイズ
               </Button>
-              <Button icon={<FileTextOutlined />} size="middle">
+              <Button 
+                icon={<FileTextOutlined />} 
+                size="middle"
+                onClick={() => setShowReportGenerator(true)}
+              >
                 レポート
               </Button>
-              <Button icon={<DatabaseOutlined />} size="middle" type="primary">
+              <Button 
+                icon={<DatabaseOutlined />} 
+                size="middle"
+                onClick={() => setShowDataManager(true)}
+              >
                 データ管理
               </Button>
             </Space>
@@ -87,6 +105,35 @@ const Dashboard: React.FC = () => {
           />
         </Col>
       </Row>
+
+      {/* Modals */}
+      <DashboardCustomizer
+        show={showDashboardCustomizer}
+        currentLayout={(() => {
+          try {
+            const saved = localStorage.getItem('dashboard_layout')
+            return saved ? JSON.parse(saved) : undefined
+          } catch {
+            return undefined
+          }
+        })()}
+        onLayoutChange={(layout) => {
+          localStorage.setItem('dashboard_layout', JSON.stringify(layout))
+          window.dispatchEvent(new CustomEvent('dashboardLayoutChanged', { detail: layout }))
+        }}
+        onClose={() => setShowDashboardCustomizer(false)}
+      />
+
+      <ReportGenerator
+        show={showReportGenerator}
+        expenseData={null}
+        onClose={() => setShowReportGenerator(false)}
+      />
+
+      <DataManager
+        show={showDataManager}
+        onClose={() => setShowDataManager(false)}
+      />
     </div>
   )
 }

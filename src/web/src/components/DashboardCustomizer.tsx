@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Modal, Card, Typography, Tabs, Row, Col, Input, Select, Switch, Button, Space, Tag } from 'antd'
-import { SettingOutlined, LayoutOutlined, AppstoreOutlined, BgColorsOutlined, SlidersFilled, SunOutlined, MoonOutlined, CheckCircleOutlined, DownloadOutlined, RedoOutlined, AlertOutlined, ShoppingCartOutlined, LineChartOutlined } from '@ant-design/icons'
+import { SettingOutlined, LayoutOutlined, AppstoreOutlined, BgColorsOutlined, SlidersFilled, SunOutlined, MoonOutlined, CheckCircleOutlined, DownloadOutlined, RedoOutlined, AlertOutlined, ShoppingCartOutlined, LineChartOutlined, FireOutlined } from '@ant-design/icons'
 import { DashboardLayout, DashboardWidget, DashboardTheme, UserPreferences } from '../types'
 import { useAlert } from '../contexts/AlertContext'
 
@@ -81,6 +81,14 @@ export const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
           title: '購入履歴',
           size: 'medium',
           position: { x: 0, y: 16, w: 12, h: 2 },
+          isVisible: true
+        },
+        {
+          id: 'high_discount',
+          type: 'high_discount',
+          title: '高割引ゲーム',
+          size: 'large',
+          position: { x: 0, y: 18, w: 12, h: 3 },
           isVisible: true
         }
       ],
@@ -185,6 +193,7 @@ export const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
       case 'alerts': return <AlertOutlined />
       case 'purchases': return <ShoppingCartOutlined />
       case 'trends': return <LineChartOutlined />
+      case 'high_discount': return <FireOutlined />
       default: return <AppstoreOutlined />
     }
   }
@@ -198,6 +207,7 @@ export const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
       case 'alerts': return '支出アラート'
       case 'purchases': return '購入履歴'
       case 'trends': return 'トレンド分析'
+      case 'high_discount': return '高割引ゲーム'
       default: return 'ウィジェット'
     }
   }

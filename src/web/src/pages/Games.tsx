@@ -1,24 +1,22 @@
 import React, { useState, useEffect } from 'react'
 import { Table, Button, Space, Typography, Avatar, Tag, Tooltip, Row, Col, Card, Spin } from 'antd'
-import { AppstoreOutlined, PlusOutlined, SyncOutlined, DownloadOutlined, UploadOutlined, EditOutlined, DeleteOutlined, BarChartOutlined, DatabaseOutlined, BookOutlined, SettingOutlined, HddOutlined, PieChartOutlined } from '@ant-design/icons'
+import { AppstoreOutlined, PlusOutlined, SyncOutlined, EditOutlined, DeleteOutlined, BarChartOutlined, DatabaseOutlined, BookOutlined, HddOutlined, PieChartOutlined, ShoppingCartOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import { Game } from '../types'
 import { api } from '../utils/api'
 import { useAlert } from '../contexts/AlertContext'
 import { AddGameModal, EditGameModal } from '../components/GameModals'
-import { ImportGamesModal, useExportGames } from '../components/ImportExportModals'
 import { ConfirmationModal } from '../components/ConfirmationModal'
 import { PriceChartModal } from '../components/PriceChartModal'
 import { DataManager } from '../components/DataManager'
-import { DashboardCustomizer } from '../components/DashboardCustomizer'
 import { ReportGenerator } from '../components/ReportGenerator'
+import { PurchaseModal } from '../components/PurchaseModal'
 
 const Games: React.FC = () => {
   const [games, setGames] = useState<Game[]>([])
   const [loading, setLoading] = useState(true)
   const [showAddModal, setShowAddModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
-  const [showImportModal, setShowImportModal] = useState(false)
   const [editingGame, setEditingGame] = useState<Game | null>(null)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [gameToDelete, setGameToDelete] = useState<{id: number, name: string} | null>(null)
@@ -27,10 +25,12 @@ const Games: React.FC = () => {
   const [chartGameName, setChartGameName] = useState('')
   const [updatingGameId, setUpdatingGameId] = useState<number | null>(null)
   const [showDataManager, setShowDataManager] = useState(false)
-  const [showDashboardCustomizer, setShowDashboardCustomizer] = useState(false)
   const [showReportGenerator, setShowReportGenerator] = useState(false)
+  const [showPurchaseModal, setShowPurchaseModal] = useState(false)
+  const [purchaseGame, setPurchaseGame] = useState<Game | null>(null)
+  const [pageSize, setPageSize] = useState(20)
+  const [currentPage, setCurrentPage] = useState(1)
   const { showError, showSuccess } = useAlert()
-  const { exportGames, loading: exportLoading } = useExportGames()
 
   useEffect(() => {
     loadAllGames()
@@ -134,6 +134,11 @@ const Games: React.FC = () => {
     }
   }
 
+  const handlePurchaseGame = (game: Game) => {
+    setPurchaseGame(game)
+    setShowPurchaseModal(true)
+  }
+
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: '80px 0' }}>
@@ -212,6 +217,69 @@ const Games: React.FC = () => {
       )
     },
     {
+      title: '現在価格',
+      key: 'currentPrice',
+      sorter: (a, b) => (a.latestPrice?.current_price || 0) - (b.latestPrice?.current_price || 0),
+      render: (_, record: Game) => {
+        const price = record.latestPrice
+        if (!price) {
+          return <Typography.Text type="secondary">-</Typography.Text>
+        }
+        
+        const isOnSale = price.is_on_sale
+        const currentPrice = price.current_price
+        const originalPrice = price.original_price
+        
+        return (
+          <div>
+            <Typography.Text 
+              strong 
+              style={{ 
+                color: isOnSale ? '#52c41a' : undefined,
+                fontSize: '14px'
+              }}
+            >
+              ¥{currentPrice.toLocaleString()}
+            </Typography.Text>
+            {isOnSale && originalPrice > currentPrice && (
+              <div>
+                <Typography.Text 
+                  delete 
+                  type="secondary" 
+                  style={{ fontSize: '12px' }}
+                >
+                  ¥{originalPrice.toLocaleString()}
+                </Typography.Text>
+              </div>
+            )}
+          </div>
+        )
+      }
+    },
+    {
+      title: '割引状況',
+      key: 'discount',
+      sorter: (a, b) => (a.latestPrice?.discount_percent || 0) - (b.latestPrice?.discount_percent || 0),
+      render: (_, record: Game) => {
+        const price = record.latestPrice
+        if (!price || !price.is_on_sale) {
+          return <Tag>通常価格</Tag>
+        }
+        
+        const discountPercent = price.discount_percent || 0
+        let color = 'green'
+        if (discountPercent >= 75) color = 'red'
+        else if (discountPercent >= 50) color = 'orange'
+        else if (discountPercent >= 25) color = 'blue'
+        
+        return (
+          <Tag color={color}>
+            -{discountPercent}%
+          </Tag>
+        )
+      }
+    },
+    {
       title: '購入状況',
       dataIndex: 'is_purchased',
       key: 'purchased',
@@ -225,9 +293,16 @@ const Games: React.FC = () => {
     {
       title: '操作',
       key: 'actions',
-      width: 300, // 幅を拡大
+      width: 350, // 幅をさらに拡大
       render: (_, record: Game) => (
         <Space size="small" wrap>
+          <Tooltip title={record.is_purchased ? "購入情報を編集" : "購入済みとしてマーク"}>
+            <Button
+              size="middle"
+              icon={<ShoppingCartOutlined style={{ color: 'white' }} />}
+              onClick={() => handlePurchaseGame(record)}
+            />
+          </Tooltip>
           <Tooltip title="価格推移">
             <Button
               size="middle"
@@ -293,7 +368,7 @@ const Games: React.FC = () => {
             title={
               <span>
                 <AppstoreOutlined style={{ marginRight: 8 }} />
-                全ゲーム一覧 ({games.length}件)
+                ゲーム一覧 ({games.length}件)
               </span>
             }
             extra={
@@ -306,34 +381,11 @@ const Games: React.FC = () => {
                   データ管理
                 </Button>
                 <Button 
-                  icon={<SettingOutlined />}
-                  onClick={() => setShowDashboardCustomizer(true)}
-                  size="middle"
-                >
-                  ダッシュボード設定
-                </Button>
-                <Button 
                   icon={<PieChartOutlined />}
                   onClick={() => setShowReportGenerator(true)}
                   size="middle"
                 >
                   レポート生成
-                </Button>
-                <Button 
-                  type="default"
-                  icon={<DownloadOutlined />}
-                  onClick={exportGames}
-                  loading={exportLoading}
-                  size="middle"
-                >
-                  エクスポート
-                </Button>
-                <Button 
-                  icon={<UploadOutlined />}
-                  onClick={() => setShowImportModal(true)}
-                  size="middle"
-                >
-                  インポート
                 </Button>
                 <Button 
                   icon={<SyncOutlined />}
@@ -357,7 +409,26 @@ const Games: React.FC = () => {
               columns={columns}
               dataSource={games}
               rowKey="id"
-              pagination={{ pageSize: 20, showSizeChanger: true }}
+              pagination={{ 
+                current: currentPage,
+                pageSize: pageSize, 
+                showSizeChanger: true,
+                showQuickJumper: true,
+                showTotal: (total, range) => `${range[0]}-${range[1]} / ${total}件`,
+                pageSizeOptions: ['10', '20', '50', '100'],
+                showLessItems: true,
+                onChange: (page, size) => {
+                  setCurrentPage(page)
+                  if (size !== pageSize) {
+                    setPageSize(size!)
+                    setCurrentPage(1) // ページサイズ変更時は1ページ目に戻る
+                  }
+                },
+                onShowSizeChange: (_, size) => {
+                  setPageSize(size)
+                  setCurrentPage(1) // ページサイズ変更時は1ページ目に戻る
+                }
+              }}
               scroll={{ x: 1200 }}
               locale={{
                 emptyText: (
@@ -405,11 +476,6 @@ const Games: React.FC = () => {
         }}
       />
 
-      <ImportGamesModal
-        show={showImportModal}
-        onHide={() => setShowImportModal(false)}
-        onImportCompleted={loadAllGames}
-      />
 
       <ConfirmationModal
         show={showDeleteModal}
@@ -440,15 +506,23 @@ const Games: React.FC = () => {
         onClose={() => setShowDataManager(false)}
       />
 
-      <DashboardCustomizer
-        show={showDashboardCustomizer}
-        onClose={() => setShowDashboardCustomizer(false)}
-      />
 
       <ReportGenerator
         show={showReportGenerator}
         expenseData={null}
         onClose={() => setShowReportGenerator(false)}
+      />
+      
+      <PurchaseModal
+        visible={showPurchaseModal}
+        game={purchaseGame}
+        onClose={() => {
+          setShowPurchaseModal(false)
+          setPurchaseGame(null)
+        }}
+        onSuccess={() => {
+          loadAllGames(true)
+        }}
       />
     </div>
   )

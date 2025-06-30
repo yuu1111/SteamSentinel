@@ -8,10 +8,16 @@ export class BudgetController {
   async getAllBudgets(_req: Request, res: Response): Promise<void> {
     try {
       const budgets = budgetModel.getAllBudgets();
-      res.json(budgets);
+      res.json({
+        success: true,
+        data: budgets
+      });
     } catch (error) {
       logger.error('Failed to get all budgets:', error);
-      res.status(500).json({ error: 'Failed to get budgets' });
+      res.status(500).json({ 
+        success: false,
+        error: 'Failed to get budgets' 
+      });
     }
   }
 
@@ -19,10 +25,16 @@ export class BudgetController {
   async getActiveBudgets(_req: Request, res: Response): Promise<void> {
     try {
       const budgets = budgetModel.getActiveBudgets();
-      res.json(budgets);
+      res.json({
+        success: true,
+        data: budgets
+      });
     } catch (error) {
       logger.error('Failed to get active budgets:', error);
-      res.status(500).json({ error: 'Failed to get active budgets' });
+      res.status(500).json({ 
+        success: false,
+        error: 'Failed to get active budgets' 
+      });
     }
   }
 

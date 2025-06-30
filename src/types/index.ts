@@ -15,6 +15,16 @@ export interface Game {
   last_known_release_date?: string;
   created_at?: Date;
   updated_at?: Date;
+  latestPrice?: {
+    current_price: number;
+    original_price: number;
+    discount_percent: number;
+    is_on_sale: boolean;
+    source: string;
+    recorded_at: string;
+    historical_low?: number;
+    all_time_low?: number;
+  };
 }
 
 export interface PriceHistory {

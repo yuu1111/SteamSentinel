@@ -13,11 +13,13 @@ interface DataManagerProps {
 }
 
 export const DataManager: React.FC<DataManagerProps> = ({ show, onClose }) => {
-  const [activeTab, setActiveTab] = useState<'backup' | 'restore' | 'import' | 'export'>('backup')
+  const [activeTab, setActiveTab] = useState<'backup' | 'restore' | 'import' | 'export' | 'games'>('backup')
   const [backups, setBackups] = useState<DataBackup[]>(getExistingBackups())
   const [selectedBackup, setSelectedBackup] = useState<DataBackup | null>(null)
   const [importing, setImporting] = useState(false)
   const [exporting, setExporting] = useState(false)
+  const [gameImporting, setGameImporting] = useState(false)
+  const [gameExporting, setGameExporting] = useState(false)
   const { showSuccess, showError, showWarning } = useAlert()
 
   function getExistingBackups(): DataBackup[] {
@@ -253,6 +255,68 @@ export const DataManager: React.FC<DataManagerProps> = ({ show, onClose }) => {
   const verifyChecksum = (backup: DataBackup): boolean => {
     if (!backup.checksum) return true
     return generateChecksum(backup.data) === backup.checksum
+  }
+
+  // ゲームデータエクスポート
+  const exportGames = async () => {
+    try {
+      setGameExporting(true)
+      const response = await fetch('/api/games/export')
+      
+      if (!response.ok) {
+        throw new Error('エクスポートに失敗しました')
+      }
+      
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `steamsentinel_games_${new Date().toISOString().split('T')[0]}.json`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      
+      showSuccess('ゲームデータをエクスポートしました')
+    } catch (error) {
+      showError('ゲームデータのエクスポートに失敗しました')
+    } finally {
+      setGameExporting(false)
+    }
+  }
+
+  // ゲームデータインポート
+  const importGames = async (file: File, mode: 'merge' | 'skip' | 'replace' = 'merge') => {
+    if (!file) return
+
+    try {
+      setGameImporting(true)
+      const fileContent = await file.text()
+      const gameData = JSON.parse(fileContent)
+      
+      const response = await fetch('/api/games/import', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          ...gameData,
+          mode
+        })
+      })
+      
+      const result = await response.json()
+      
+      if (result.success) {
+        showSuccess(result.message || 'ゲームデータをインポートしました')
+      } else {
+        showError('ゲームデータのインポートに失敗しました: ' + (result.error || '不明なエラー'))
+      }
+    } catch (error) {
+      showError('ゲームデータのインポートに失敗しました。ファイル形式を確認してください。')
+    } finally {
+      setGameImporting(false)
+    }
   }
 
   const getBackupTypeName = (type: DataBackup['type']): string => {
@@ -615,6 +679,83 @@ export const DataManager: React.FC<DataManagerProps> = ({ show, onClose }) => {
               message="情報"
               description="エクスポートされたファイルは他のデバイスでのインポートや、データ移行に使用できます。"
               type="info"
+              showIcon
+            />
+          </Space>
+        </TabPane>
+        
+        <TabPane
+          tab={
+            <Space>
+              <DownloadOutlined />
+              ゲーム管理
+            </Space>
+          }
+          key="games"
+        >
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <Alert
+              message="ゲームデータの管理"
+              description="登録されているゲームの設定をエクスポートしたり、他のインスタンスからインポートできます。"
+              type="info"
+              showIcon
+            />
+            
+            <Row gutter={[16, 16]}>
+              <Col xs={24} lg={12}>
+                <Card>
+                  <Space direction="vertical" align="center" style={{ width: '100%' }}>
+                    <DownloadOutlined style={{ fontSize: '48px', color: '#52c41a' }} />
+                    <Title level={5}>ゲームデータエクスポート</Title>
+                    <Text type="secondary" style={{ textAlign: 'center' }}>
+                      登録されているゲームの設定をJSONファイルとしてダウンロードします。
+                    </Text>
+                    <Button 
+                      type="primary" 
+                      icon={<DownloadOutlined />}
+                      onClick={exportGames}
+                      loading={gameExporting}
+                      size="large"
+                    >
+                      エクスポート
+                    </Button>
+                  </Space>
+                </Card>
+              </Col>
+              
+              <Col xs={24} lg={12}>
+                <Card>
+                  <Space direction="vertical" align="center" style={{ width: '100%' }}>
+                    <UploadOutlined style={{ fontSize: '48px', color: '#1890ff' }} />
+                    <Title level={5}>ゲームデータインポート</Title>
+                    <Text type="secondary" style={{ textAlign: 'center' }}>
+                      エクスポートされたゲーム設定ファイルをインポートします。
+                    </Text>
+                    <Upload
+                      accept=".json"
+                      beforeUpload={(file) => {
+                        importGames(file)
+                        return false
+                      }}
+                      showUploadList={false}
+                    >
+                      <Button 
+                        icon={<UploadOutlined />}
+                        loading={gameImporting}
+                        size="large"
+                      >
+                        インポート
+                      </Button>
+                    </Upload>
+                  </Space>
+                </Card>
+              </Col>
+            </Row>
+            
+            <Alert
+              message="注意事項"
+              description="インポート時は既存のゲームデータとマージされます。同じSteam App IDのゲームがある場合は上書きされます。"
+              type="warning"
               showIcon
             />
           </Space>

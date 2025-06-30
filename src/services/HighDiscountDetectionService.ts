@@ -1,6 +1,7 @@
 import { IsThereAnyDealAPI } from '../api/IsThereAnyDealAPI';
 import discordService from './DiscordService';
 import logger from '../utils/logger';
+import itadSettingsModel from '../models/ITADSettingsModel';
 // configは現在使用していないため、インポートをコメントアウト
 // import { config } from '../config';
 
@@ -26,70 +27,55 @@ export class HighDiscountDetectionService {
   // 高割引ゲーム検知の実行
   async detectHighDiscountGames(): Promise<HighDiscountGame[]> {
     try {
-      logger.info('Starting high discount game detection');
+      logger.info('Starting high discount game detection using ITAD API');
 
-      // ITAD APIから高割引ゲームを取得
-      const deals = await this.itadAPI.getHighDiscountDeals({
-        minDiscount: 80, // 80%以上の割引
-        limit: 100,
-        region: 'JP'
-      });
-
-      if (!deals || deals.length === 0) {
-        logger.info('No high discount games found');
+      // データベースから設定を取得
+      const filterConfig = itadSettingsModel.getFilterConfig();
+      logger.info('Using ITAD filter config:', filterConfig);
+      
+      // 高割引検知が無効な場合は処理をスキップ
+      if (!filterConfig.enabled) {
+        logger.info('High discount detection is disabled');
         return [];
       }
 
-      // フィルタリング条件を適用
-      const filteredDeals = deals.filter(deal => {
-        // 価格上限チェック（2000円以下）
-        if (deal.current_price > 2000) {
-          return false;
-        }
-
-        // レビュー条件チェック（1000件以上、80%以上）
-        if (deal.review_count && deal.review_score) {
-          return deal.review_count >= 1000 && deal.review_score >= 80;
-        }
-
-        // レビューデータがない場合はスキップしない（新作の可能性）
-        return true;
+      // ITAD APIから高割引ゲームを取得（設定値を使用）
+      const highDiscountGames = await this.itadAPI.getHighDiscountDeals({
+        minDiscount: filterConfig.min_discount,
+        maxPrice: filterConfig.max_price,
+        limit: filterConfig.limit,
+        region: filterConfig.region
       });
 
-      logger.info(`Found ${filteredDeals.length} high discount games after filtering`);
-
-      // Discord通知を送信（フィルタリング後のゲームが5件以上の場合）
-      if (filteredDeals.length >= 5) {
-        await this.sendHighDiscountNotification(filteredDeals.slice(0, 10));
+      logger.info(`ITAD API returned ${highDiscountGames ? highDiscountGames.length : 0} games`);
+      
+      if (!highDiscountGames || highDiscountGames.length === 0) {
+        logger.warn('No high discount games found from ITAD API - checking API response');
+        return [];
       }
 
+      logger.info(`Found ${highDiscountGames.length} high discount games from ITAD API`);
+      
+      // デバッグ: 最初の3件のゲーム詳細をログ出力
+      highDiscountGames.slice(0, 3).forEach((game, index) => {
+        logger.info(`Game ${index + 1}: ${game.name} - ${game.discount_percent}% off (¥${game.current_price})`);
+      });
       this.lastCheckTime = new Date();
-      return filteredDeals;
+      
+      // Discord通知を送信（設定が有効な場合のみ）
+      if (highDiscountGames.length > 0 && filterConfig.notification_enabled) {
+        await discordService.sendHighDiscountAlert(highDiscountGames);
+      } else if (highDiscountGames.length > 0) {
+        logger.info('Discord notifications are disabled, skipping notification');
+      }
 
+      return highDiscountGames;
     } catch (error) {
       logger.error('Failed to detect high discount games:', error);
       throw error;
     }
   }
 
-  // Discord通知送信
-  private async sendHighDiscountNotification(games: HighDiscountGame[]): Promise<void> {
-    try {
-      if (!discordService.isEnabled()) {
-        logger.info('Discord webhook not configured, skipping high discount notification');
-        return;
-      }
-
-      const success = await discordService.sendHighDiscountAlert(games);
-      if (success) {
-        logger.info(`High discount notification sent for ${games.length} games`);
-      } else {
-        logger.warn('Failed to send high discount notification');
-      }
-    } catch (error) {
-      logger.error('Error sending high discount notification:', error);
-    }
-  }
 
   // 定期実行の開始
   startPeriodicCheck(): void {
@@ -142,30 +128,19 @@ export class HighDiscountDetectionService {
       const deals = await this.itadAPI.getHighDiscountDeals({
         minDiscount: 60, // 60%以上の割引（緩和）
         limit: 200,
-        region: 'JP'
+        region: 'JP',
+        maxPrice: 5000 // 5000円以下に緩和
       });
 
       if (!deals || deals.length === 0) {
+        logger.info('No popular high discount games found from ITAD API');
         return [];
       }
 
-      // 人気ゲーム向けのフィルタリング
-      const popularDeals = deals.filter(deal => {
-        // 価格上限チェック（5000円以下に緩和）
-        if (deal.current_price > 5000) {
-          return false;
-        }
-
-        // レビュー条件（5000件以上、85%以上）
-        if (deal.review_count && deal.review_score) {
-          return deal.review_count >= 5000 && deal.review_score >= 85;
-        }
-
-        return false; // 人気ゲーム検知ではレビューデータは必須
-      });
-
-      logger.info(`Found ${popularDeals.length} popular high discount games`);
-      return popularDeals;
+      // Note: ITAD APIにはレビューデータがないため、価格と割引率のみで判定
+      // より多くのゲームを対象にして、ユーザーが選別できるようにする
+      logger.info(`Found ${deals.length} popular high discount games (relaxed criteria)`);
+      return deals;
 
     } catch (error) {
       logger.error('Failed to detect popular high discount games:', error);

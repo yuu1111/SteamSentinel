@@ -325,18 +325,32 @@ export class IsThereAnyDealAPI extends BaseAPI {
   // ヘルスチェック（新APIを使用）
   async healthCheck(): Promise<boolean> {
     try {
-      // より軽量なエンドポイントでヘルスチェック
+      logger.info('Starting ITAD API health check');
+      
+      // まず最もシンプルなパラメータで試す
       const response = await this.get<any>('/deals/v2', {
         params: {
           key: this.apiKey,
-          country: this.country,
           limit: 1
         }
       });
       
+      logger.info('ITAD health check response:', {
+        hasResponse: !!response,
+        responseType: typeof response,
+        keys: response ? Object.keys(response) : []
+      });
+      
       return !!response;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('ITAD API health check failed:', error);
+      if (error?.response) {
+        logger.error('Health check error details:', {
+          status: error.response.status,
+          statusText: error.response.statusText,
+          data: error.response.data
+        });
+      }
       return false;
     }
   }
@@ -357,32 +371,94 @@ export class IsThereAnyDealAPI extends BaseAPI {
     review_count?: number;
   }>> {
     try {
-      const response = await this.get<any>('/deals/v2', {
-        params: {
-          key: this.apiKey,
-          country: options.region || this.country,
-          shops: '61', // Steam shop ID
-          limit: options.limit || 100,
-          cut: options.minDiscount,
-          price_to: options.maxPrice,
-          sort: 'cut:desc' // 割引率順でソート
-        }
+      logger.info(`Getting high discount deals with options:`, {
+        minDiscount: options.minDiscount,
+        limit: options.limit || 100,
+        region: options.region || this.country,
+        maxPrice: options.maxPrice
       });
 
+      // より基本的なパラメータで試す
+      const params: any = {
+        key: this.apiKey,
+        limit: Math.min(options.limit || 50, 50), // 制限を50に減らす
+        offset: 0
+      };
+
+      // オプションパラメータを段階的に追加
+      if (options.minDiscount && options.minDiscount > 0) {
+        params.cut = Math.min(options.minDiscount, 90); // 最大90%に制限
+      }
+
+      // 価格制限は一時的に無効化
+      // if (options.maxPrice) {
+      //   params.price_to = options.maxPrice;
+      // }
+
+      // 地域設定を簡素化 - 常に日本に設定
+      params.country = options.region || this.country; // JP
+
+      // Steam shopのみに限定
+      params.shops = '61';
+
+      logger.debug('ITAD deals API params:', params);
+
+      const response = await this.get<any>('/deals/v2', { params });
+
+      logger.debug('ITAD deals API response structure:', {
+        hasResponse: !!response,
+        hasList: !!response?.list,
+        listLength: response?.list?.length || 0,
+        listIsArray: Array.isArray(response?.list),
+        responseKeys: response ? Object.keys(response) : []
+      });
+
+      // デバッグ: 最初の5件のrawデータを出力
+      if (response?.list && Array.isArray(response.list) && response.list.length > 0) {
+        logger.info(`ITAD API returned ${response.list.length} raw deals, showing first 5:`);
+        response.list.slice(0, 5).forEach((deal: any, index: number) => {
+          logger.info(`Raw deal ${index + 1}:`, {
+            title: deal.title,
+            shop: deal.shop,
+            plain: deal.plain,
+            priceNew: deal.price_new,
+            priceOld: deal.price_old,
+            priceCut: deal.price_cut,
+            url: deal.url
+          });
+        });
+      }
+
       if (!response?.list || !Array.isArray(response.list)) {
-        logger.warn('No deals found in ITAD response');
+        logger.warn('No deals found in ITAD response or invalid format:', response);
         return [];
       }
 
       const highDiscountGames = [];
+      let steamDealsCount = 0;
+      let otherStoresCount = 0;
+      let noPlainFieldCount = 0;
 
       for (const deal of response.list) {
         try {
+          logger.debug('Processing deal:', {
+            title: deal.title,
+            shop: deal.shop,
+            plain: deal.plain,
+            priceNew: deal.price_new,
+            priceOld: deal.price_old,
+            priceCut: deal.price_cut
+          });
+
           // Steam店舗のデータのみを処理
           if (deal.shop?.id === 61 && deal.plain) {
+            steamDealsCount++;
             // Steam App IDを抽出（app/123456形式から）
             const appIdMatch = deal.plain.match(/app\/(\d+)/);
-            if (!appIdMatch) {continue;}
+            if (!appIdMatch) {
+              logger.debug('No app ID found in plain:', deal.plain);
+              continue;
+            }
 
             const steamAppId = parseInt(appIdMatch[1], 10);
             
@@ -401,7 +477,26 @@ export class IsThereAnyDealAPI extends BaseAPI {
                 gameData.current_price > 0 && 
                 gameData.original_price > gameData.current_price) {
               highDiscountGames.push(gameData);
+              logger.debug('Added game:', gameData.name, `${gameData.discount_percent}% off`);
+            } else {
+              logger.debug('Game filtered out:', gameData.name, {
+                discountPercent: gameData.discount_percent,
+                currentPrice: gameData.current_price,
+                originalPrice: gameData.original_price,
+                meetsMinDiscount: gameData.discount_percent >= options.minDiscount,
+                validPrices: gameData.current_price > 0 && gameData.original_price > gameData.current_price
+              });
             }
+          } else {
+            if (deal.shop?.id !== 61) {
+              otherStoresCount++;
+            } else if (!deal.plain) {
+              noPlainFieldCount++;
+            }
+            logger.debug('Deal filtered out - not Steam or no plain field:', {
+              shopId: deal.shop?.id,
+              hasPlain: !!deal.plain
+            });
           }
         } catch (dealError) {
           logger.warn('Error processing deal:', dealError);
@@ -410,10 +505,16 @@ export class IsThereAnyDealAPI extends BaseAPI {
       }
 
       logger.info(`Found ${highDiscountGames.length} high discount games (${options.minDiscount}%+ off)`);
+      logger.info(`Statistics: ${steamDealsCount} Steam deals processed, ${otherStoresCount} other stores, ${noPlainFieldCount} without Steam App ID`);
       return highDiscountGames;
 
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Failed to get high discount deals:', error);
+      if (error?.response) {
+        logger.error('Response status:', error.response.status);
+        logger.error('Response headers:', error.response.headers);
+        logger.error('Response data:', error.response.data);
+      }
       throw error;
     }
   }

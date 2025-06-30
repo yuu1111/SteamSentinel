@@ -8,6 +8,7 @@ import Alerts from './pages/Alerts'
 import Monitoring from './pages/Monitoring'
 import Test from './pages/Test'
 import EpicGames from './pages/EpicGames'
+import Settings from './pages/Settings'
 import Limitations from './pages/Limitations'
 import Licenses from './pages/Licenses'
 import LoadingOverlay from './components/LoadingOverlay'
@@ -91,6 +92,8 @@ function App() {
         return <Test />
       case 'epic':
         return <EpicGames />
+      case 'settings':
+        return <Settings />
       case 'limitations':
         return <Limitations />
       case 'licenses':
