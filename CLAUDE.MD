@@ -17,14 +17,13 @@ SteamSentinelは、Steamゲームの価格を監視し、セール時の最安�
 1. [プロジェクト開発ガイドライン](#1-プロジェクト開発ガイドライン)
 2. [プロジェクト概要と機能](#2-プロジェクト概要と機能)
 3. [初回セットアップ手順](#3-初回セットアップ手順)
-4. [Webサイト機能とユーザビリティ](#4-webサイト機能とユーザビリティ)
-5. [出費追跡・予算管理システム](#5-出費追跡予算管理システム)
-6. [技術要件](#6-技術要件)
-7. [データ構造](#7-データ構造)
-8. [使用技術スタックとアーキテクチャ](#8-使用技術スタックとアーキテクチャ)
-9. [開発フェーズ - 実装状況](#9-開発フェーズ---実装状況)
-10. [API エンドポイント仕様](#10-api-エンドポイント仕様)
-11. [Claude Code 実装指示](#11-claude-code-実装指示)
+4. [機能概要](#4-機能概要)
+5. [技術スタック](#5-技術スタック)
+6. [データ構造](#6-データ構造)
+7. [実装状況](#7-実装状況)
+8. [API仕様](#8-api仕様)
+9. [開発指示](#9-開発指示)
+10. [ユーザー向けドキュメント](#10-ユーザー向けドキュメント)
 
 -----
 
@@ -42,52 +41,49 @@ SteamSentinelは、Steamゲームの価格を監視し、セール時の最安�
 
 ## 3 初回セットアップ手順
 
-@include claude-includes/setup-requirements.md
+基本セットアップは `/docs/README.md` および `/docs/configuration.md` を参照
 
 -----
 
-## 4 Webサイト機能とユーザビリティ
+## 4 機能概要
 
 @include claude-includes/functionality.md
 
 -----
 
-## 5 出費追跡・予算管理システム
-
-@include claude-includes/expense-tracking-system.md
-
------
-
-## 6 技術要件
-
-@include claude-includes/technical-specs.md
-
------
-
-## 7 データ構造
-
-@include claude-includes/data-structure.md
-
------
-
-## 8 使用技術スタックとアーキテクチャ
+## 5 技術スタック
 
 @include claude-includes/architecture.md
 
 -----
 
-## 9 開発フェーズ - 実装状況
+## 6 データ構造
 
-@include claude-includes/implementation-status.md
-
------
-
-## 10 API エンドポイント仕様
-
-@include claude-includes/api-endpoints.md
+@include claude-includes/data-structure-dev.md
 
 -----
 
-## 11 Claude Code 実装指示
+## 7 実装状況
+
+@include claude-includes/implementation-summary.md
+
+-----
+
+## 8 API仕様
+
+@include claude-includes/api-endpoints-dev.md
+
+-----
+
+## 9 開発指示
 
 @include claude-includes/claude-instructions.md
+
+-----
+
+## 10 ユーザー向けドキュメント
+
+詳細なユーザー向け仕様書は `/docs/` フォルダに分離:
+- `docs/README.md` - プロジェクト概要・セットアップ
+- `docs/user-guide.md` - 操作マニュアル
+- `docs/api-reference.md` - ユーザー向けAPI仕様
