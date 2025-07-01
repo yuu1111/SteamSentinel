@@ -19,11 +19,11 @@
 * **アイコン**: @ant-design/icons パッケージを使用
 * **レスポンシブ**: Row/Col グリッドシステムを活用
 
-### Bootstrap完全除去完了
-* **CDN削除**: index.htmlからBootstrap CSS/JS除去済み
-* **通知システム移行**: useAlert/AlertContextはAnt Design notification API統合済み
-* **ナビゲーション**: Ant Design Menu/Layout完全移行済み
-* **依存関係除去**: package.jsonからBootstrap関連依存削除済み
+### 依存関係管理
+* **UIライブラリ**: Ant Design 5.26.2単一採用（Bootstrap完全除去済み）
+* **通知システム**: Ant Design notification/message API統合
+* **ナビゲーション**: Menu/Layout コンポーネント完全移行
+* **レスポンシブ**: Row/Col グリッドシステム統一
 
 ### 実装時注意事項
 * **Ant Design統一**: 新規実装は全てAnt Designベース

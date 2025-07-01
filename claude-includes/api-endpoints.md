@@ -2,9 +2,10 @@
 
 ## 概要
 
-SteamSentinel の REST API エンドポイント一覧です。すべてのエンドポイントは `/api` プレフィックスで始まります。
+SteamSentinel REST API 完全リファレンス（70+ エンドポイント）
 
-**ベースURL**: `http://localhost:3000/api`
+**ベースURL**: `http://localhost:3000/api`  
+**API バージョン**: v1.0 (2025年6月30日更新)
 
 ## 認証
 
