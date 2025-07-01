@@ -1,0 +1,67 @@
+/* ===== Layout Styles ===== */
+
+/* General Layout */
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.main-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 15px;
+}
+
+/* Navigation */
+#navigation-container {
+  margin-top: 0;
+  padding-top: 0;
+}
+
+.main-nav {
+  margin-top: 0;
+  border-top: none;
+}
+
+.brand-logo {
+  font-weight: 600;
+  font-size: 1.5rem;
+}
+
+.nav-links .nav-item {
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.nav-links .nav-item:hover {
+  color: var(--steam-secondary) !important;
+}
+
+/* Footer */
+footer {
+  background-color: #f8f9fa;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  margin-top: auto;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Dark mode footer */
+[data-theme="dark"] footer {
+  background-color: #212529;
+  border-top-color: var(--steam-border-color);
+  color: #f8f9fa;
+}
+
+[data-theme="dark"] footer a {
+  color: var(--steam-secondary);
+}
+
+[data-theme="dark"] footer a:hover {
+  color: #f8f9fa;
+}

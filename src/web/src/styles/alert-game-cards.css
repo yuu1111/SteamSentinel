@@ -13,29 +13,29 @@
 
 /* ダークモード対応 */
 .dark-mode .alert-game-card {
-  background-color: var(--bs-dark) !important;
-  border-color: var(--bs-gray-600) !important;
-  color: var(--bs-light) !important;
+  background-color: var(--steam-card-bg, #2d2d2d) !important;
+  border-color: #6c757d !important;
+  color: var(--steam-body-color, #ffffff) !important;
 }
 
 .dark-mode .alert-game-card-medium {
-  background-color: var(--bs-dark) !important;
+  background-color: var(--steam-card-bg, #2d2d2d) !important;
   border-color: #ffc107 !important;
-  color: var(--bs-light) !important;
+  color: var(--steam-body-color, #ffffff) !important;
 }
 
 .dark-mode .alert-game-card-high {
-  background-color: var(--bs-dark) !important;
+  background-color: var(--steam-card-bg, #2d2d2d) !important;
   border-color: #dc3545 !important;
-  color: var(--bs-light) !important;
+  color: var(--steam-body-color, #ffffff) !important;
 }
 
 .dark-mode .alert-game-card .card-text {
-  color: var(--bs-gray-300) !important;
+  color: #adb5bd !important;
 }
 
 .dark-mode .alert-game-card .text-muted {
-  color: var(--bs-gray-400) !important;
+  color: #6c757d !important;
 }
 
 /* 価格表示 */

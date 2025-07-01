@@ -1,0 +1,22 @@
+/* ===== CSS Variables ===== */
+
+/* Root variables for theme support */
+:root {
+  --steam-primary: #1b2838;
+  --steam-primary-rgb: 27, 40, 56;
+  --steam-secondary: #66c0f4;
+  --steam-success: #5cb85c;
+  --steam-warning: #f0ad4e;
+  --steam-danger: #d9534f;
+  --steam-info: #5bc0de;
+  --current-game-color: #1b2838;
+}
+
+/* Dark mode variables */
+[data-theme="dark"] {
+  --steam-body-bg: #1a1a1a;
+  --steam-body-color: #ffffff;
+  --steam-card-bg: #2d2d2d;
+  --steam-border-color: #404040;
+  --current-game-color: #87ceeb;
+}

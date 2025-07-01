@@ -1,0 +1,172 @@
+/* ===== Component Styles ===== */
+
+/* Cards */
+.card {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  margin-bottom: 1.5rem;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.main-card-header {
+  background: linear-gradient(135deg, var(--steam-primary), var(--steam-secondary));
+  color: white;
+  border-bottom: none;
+  border-radius: 12px 12px 0 0 !important;
+  font-weight: 600;
+}
+
+.main-card-header .main-card-title {
+  color: white !important;
+  font-weight: 600;
+  margin-bottom: 0;
+}
+
+.main-card-title {
+  color: var(--steam-body-color, #333) !important;
+  font-weight: 600;
+}
+
+/* Dark mode card title */
+[data-theme="dark"] .main-card-title {
+  color: var(--steam-body-color) !important;
+}
+
+/* Statistics Cards */
+.stats-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 16px;
+  padding: 1.5rem;
+  text-align: center;
+  transition: transform 0.3s ease;
+}
+
+.stats-card:hover {
+  transform: scale(1.05);
+}
+
+.stats-card .display-4 {
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.stats-card.success {
+  background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
+}
+
+.stats-card.warning {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.stats-card.info {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.stats-card.danger {
+  background: linear-gradient(135deg, #fc466b 0%, #3f5efb 100%);
+}
+
+/* Price Display */
+.price {
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.price.sale {
+  color: var(--steam-success);
+}
+
+.price.original {
+  color: var(--steam-secondary);
+}
+
+.price.old {
+  text-decoration: line-through;
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+
+.price-display {
+  white-space: nowrap;
+  display: inline-block;
+  font-weight: 500;
+}
+
+/* Discount Badge */
+.discount-badge {
+  background: linear-gradient(135deg, var(--steam-success), #4caf50);
+  color: white;
+  font-weight: 600;
+  border-radius: 20px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.875rem;
+  animation: pulse 2s infinite;
+  white-space: nowrap;
+  display: inline-block;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+/* Status Badges */
+.status-badge {
+  border-radius: 20px;
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+}
+
+.status-healthy {
+  background: linear-gradient(135deg, var(--steam-success), #4caf50);
+  color: white;
+}
+
+.status-warning {
+  background: linear-gradient(135deg, var(--steam-warning), #ff9800);
+  color: white;
+}
+
+.status-error {
+  background: linear-gradient(135deg, var(--steam-danger), #f44336);
+  color: white;
+}
+
+/* Loading Overlay */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 9999;
+  backdrop-filter: blur(2px);
+}
+
+/* Loading Spinner */
+.spinner-custom {
+  width: 3rem;
+  height: 3rem;
+  border: 4px solid rgba(var(--steam-primary-rgb), 0.2);
+  border-top: 4px solid var(--steam-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

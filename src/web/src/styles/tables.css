@@ -1,0 +1,119 @@
+/* ===== Table Styles ===== */
+
+/* Tables */
+.main-table {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.main-table thead th {
+  background-color: var(--steam-primary);
+  color: white;
+  border: none;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.875rem;
+  letter-spacing: 0.5px;
+  position: relative;
+}
+
+.main-table thead th.sortable {
+  user-select: none;
+  transition: background-color 0.2s ease;
+}
+
+.main-table thead th.sortable:hover {
+  background-color: rgba(var(--steam-primary-rgb), 0.8);
+}
+
+.sort-icon {
+  margin-left: 0.5rem;
+  font-size: 0.75rem;
+  opacity: 0.6;
+  transition: all 0.2s ease;
+}
+
+.sort-icon.text-primary {
+  opacity: 1;
+  color: var(--steam-secondary) !important;
+}
+
+.main-table tbody tr {
+  transition: background-color 0.2s ease;
+}
+
+.main-table tbody tr:hover {
+  background-color: rgba(var(--steam-primary-rgb), 0.05);
+}
+
+.main-table tbody td {
+  vertical-align: middle;
+  border-color: rgba(0, 0, 0, 0.05);
+  padding: 1rem 0.75rem;
+}
+
+/* Game Item Hover Effects */
+.game-item {
+  transition: all 0.3s ease;
+}
+
+.game-item:hover {
+  background: linear-gradient(135deg, rgba(var(--steam-primary-rgb), 0.05), rgba(102, 192, 244, 0.05));
+  border-radius: 8px;
+}
+
+/* Game Header Image */
+.game-header-img {
+  width: 80px;
+  height: 38px;
+  object-fit: cover;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  flex-shrink: 0;
+}
+
+.game-header-img:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* Steam Link */
+.steam-link {
+  color: var(--steam-primary);
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s ease;
+}
+
+.steam-link:hover {
+  color: var(--steam-secondary);
+  text-decoration: underline;
+}
+
+/* Table links (including game names) */
+.main-table a {
+  color: var(--steam-primary);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.main-table a:hover {
+  color: var(--steam-secondary);
+  text-decoration: underline;
+}
+
+/* Dark mode table links */
+[data-theme="dark"] .main-table a {
+  color: var(--steam-secondary);
+}
+
+[data-theme="dark"] .main-table a:hover {
+  color: #87ceeb;
+}
+
+/* Dark mode table */
+[data-theme="dark"] .main-table tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}

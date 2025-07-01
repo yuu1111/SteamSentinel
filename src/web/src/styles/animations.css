@@ -1,0 +1,74 @@
+/* ===== Animations ===== */
+
+/* Animation Classes */
+.fade-in {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.slide-in-right {
+  animation: slideInRight 0.3s ease-in-out;
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(50px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* Immediate Loading State */
+.loading-immediate {
+  opacity: 0;
+  animation: fadeInImmediate 0.1s ease-out forwards;
+}
+
+@keyframes fadeInImmediate {
+  from { 
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to { 
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Enhanced Spinner Visibility */
+.spinner-border,
+.spinner-grow {
+  animation-duration: 0.8s;
+}
+
+.spinner-border-fast,
+.spinner-grow-fast {
+  animation-duration: 0.5s;
+}
+
+/* Info Icon Animation */
+.info-icon-hover {
+  display: inline-block;
+  transition: all 0.3s ease;
+  animation: gentle-pulse 3s ease-in-out infinite;
+}
+
+@keyframes gentle-pulse {
+  0%, 100% { 
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% { 
+    transform: scale(1.1);
+    opacity: 1;
+  }
+}
+
+.info-icon-hover:hover {
+  animation: none;
+  transform: scale(1.2) rotate(15deg);
+  color: #ffc107 !important;
+  filter: drop-shadow(0 0 8px rgba(255, 193, 7, 0.6));
+  cursor: help;
+}

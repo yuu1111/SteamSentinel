@@ -16,13 +16,13 @@ export const useKeyboardShortcuts = ({
 }: UseKeyboardShortcutsProps) => {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      // モーダルが開いている場合はESCキーのみ処理
-      const openModals = document.querySelectorAll('.modal.show')
+      // Ant Design モーダルが開いている場合はESCキーのみ処理
+      const openModals = document.querySelectorAll('.ant-modal-wrap')
       if (openModals.length > 0) {
         if (event.key === 'Escape') {
-          // Bootstrapのモーダルクローズイベントを発火
+          // Ant Design モーダルクローズイベントを発火
           openModals.forEach(modal => {
-            const closeButton = modal.querySelector('.btn-close') as HTMLButtonElement
+            const closeButton = modal.querySelector('.ant-modal-close') as HTMLButtonElement
             if (closeButton) {
               closeButton.click()
             }
