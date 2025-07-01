@@ -91,6 +91,7 @@ MIT License - 詳細は[LICENSE](../LICENSE)参照
 - **[API リファレンス](api-reference.md)** - REST API仕様・使用例
 - **[データベーススキーマ](database-schema.md)** - テーブル構造・関係性
 - **[トラブルシューティング](troubleshooting.md)** - よくある問題・解決方法
+- **[開発ガイド](development-guide.md)** - 開発環境・コーディング規約・ワークフロー
 
 ## 🔧 開発者向け
 

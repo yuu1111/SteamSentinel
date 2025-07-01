@@ -1,89 +1,25 @@
-# SteamSentinel - Steam価格監視システム 仕様書
+# SteamSentinel - 開発用仕様書
 
-## 概要
+Steam価格監視・無料ゲーム検知・予算管理システム
 
-SteamSentinelは、Steamゲームの価格を監視し、セール時の最安値更新や無料配布を検知してWebサイトとDiscordで通知する包括的な価格監視・財務管理システムです。
+## 機能
+@include claude-includes/core-features.md
 
-**核心機能:**
-- **価格監視**: リアルタイム価格追跡、歴史的最安値検知、セール通知
-- **無料ゲーム検知**: Epic Games & Steam無料ゲーム自動検知・通知・管理
-- **出費追跡**: ROI分析、予算管理、支出パターン分析
-- **ダッシュボード**: カスタマイズ可能な統合ダッシュボード
-- **レポート生成**: PDF/CSV/JSON形式での包括的レポート
-- **Discord通知**: リッチ埋め込み形式での即時通知
+## 技術構成
+@include claude-includes/tech-stack.md
 
-## 目次
+## データ構造
+@include claude-includes/data-schema.md
 
-1. [プロジェクト開発ガイドライン](#1-プロジェクト開発ガイドライン)
-2. [プロジェクト概要と機能](#2-プロジェクト概要と機能)
-3. [初回セットアップ手順](#3-初回セットアップ手順)
-4. [機能概要](#4-機能概要)
-5. [技術スタック](#5-技術スタック)
-6. [データ構造](#6-データ構造)
-7. [実装状況](#7-実装状況)
-8. [API仕様](#8-api仕様)
-9. [開発指示](#9-開発指示)
-10. [ユーザー向けドキュメント](#10-ユーザー向けドキュメント)
+## API
+@include claude-includes/api-summary.md
 
------
+## 実装状況
+@include claude-includes/status.md
 
-## 1 プロジェクト開発ガイドライン
+## 開発指示
+@include claude-includes/dev-rules.md
 
-@include claude-includes/development-guidelines.md
+## ロードマップ
+@include claude-includes/roadmap.md
 
------
-
-## 2 プロジェクト概要と機能
-
-@include claude-includes/project-overview.md
-
------
-
-## 3 初回セットアップ手順
-
-基本セットアップは `/docs/README.md` および `/docs/configuration.md` を参照
-
------
-
-## 4 機能概要
-
-@include claude-includes/functionality.md
-
------
-
-## 5 技術スタック
-
-@include claude-includes/architecture.md
-
------
-
-## 6 データ構造
-
-@include claude-includes/data-structure-dev.md
-
------
-
-## 7 実装状況
-
-@include claude-includes/implementation-summary.md
-
------
-
-## 8 API仕様
-
-@include claude-includes/api-endpoints-dev.md
-
------
-
-## 9 開発指示
-
-@include claude-includes/claude-instructions.md
-
------
-
-## 10 ユーザー向けドキュメント
-
-詳細なユーザー向け仕様書は `/docs/` フォルダに分離:
-- `docs/README.md` - プロジェクト概要・セットアップ
-- `docs/user-guide.md` - 操作マニュアル
-- `docs/api-reference.md` - ユーザー向けAPI仕様
