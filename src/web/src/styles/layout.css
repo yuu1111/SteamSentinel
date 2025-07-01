@@ -12,36 +12,6 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-.main-container {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 0 15px;
-}
-
-/* Navigation */
-#navigation-container {
-  margin-top: 0;
-  padding-top: 0;
-}
-
-.main-nav {
-  margin-top: 0;
-  border-top: none;
-}
-
-.brand-logo {
-  font-weight: 600;
-  font-size: 1.5rem;
-}
-
-.nav-links .nav-item {
-  font-weight: 500;
-  transition: color 0.2s ease;
-}
-
-.nav-links .nav-item:hover {
-  color: var(--steam-secondary) !important;
-}
 
 /* Footer */
 footer {

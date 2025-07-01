@@ -3,12 +3,6 @@
 /* Import CSS modules */
 @import url('./variables.css');
 @import url('./layout.css');
-@import url('./components.css');
-@import url('./tables.css');
-@import url('./responsive.css');
-@import url('./animations.css');
-@import url('./alert-game-cards.css');
-@import url('./dashboard-cards.css');
 
 /* ===== Ant Design Customizations ===== */
 
