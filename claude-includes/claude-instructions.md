@@ -20,7 +20,7 @@
 * **レスポンシブ**: Row/Col グリッドシステムを活用
 
 ### 依存関係管理
-* **UIライブラリ**: Ant Design 5.26.2単一採用（Bootstrap完全除去済み）
+* **UIライブラリ**: Ant Design 5.26.2単一採用
 * **通知システム**: Ant Design notification/message API統合
 * **ナビゲーション**: Menu/Layout コンポーネント完全移行
 * **レスポンシブ**: Row/Col グリッドシステム統一

@@ -24,8 +24,8 @@ class SteamSentinelApp {
       // スケジューラー初期化
       await this.initializeScheduler();
 
-      // Epic Gamesサービス初期化
-      await this.initializeEpicGamesService();
+      // 無料ゲームサービス初期化（Epic & Steam）
+      await this.initializeFreeGamesService();
 
       // Webサーバー起動
       await this.startWebServer();
@@ -88,17 +88,22 @@ class SteamSentinelApp {
     logger.info('✅ Scheduler initialized and started');
   }
 
-  private async initializeEpicGamesService(): Promise<void> {
-    logger.info('🎮 Initializing Epic Games service...');
+  private async initializeFreeGamesService(): Promise<void> {
+    logger.info('🎮 Initializing Free Games services (Epic & Steam)...');
     
     try {
-      // Epic Gamesサービスの定期チェック開始
-      epicGamesNotificationService.startPeriodicCheck();
+      // FreeGamesRSSServiceを初期化（Epic & Steam 両方を処理）
+      const { FreeGamesRSSService } = await import('./services/FreeGamesRSSService');
+      const freeGamesService = FreeGamesRSSService.getInstance();
+      await freeGamesService.initialize();
       
-      logger.info('✅ Epic Games service initialized and started');
+      // Epic Games通知サービスも初期化（データベース操作等のため）
+      await epicGamesNotificationService.initialize();
+      
+      logger.info('✅ Free Games services initialized and started');
     } catch (error) {
-      logger.warn('⚠️ Epic Games service initialization failed:', error);
-      // Epic Gamesサービスの失敗はアプリケーション全体の起動を止めない
+      logger.warn('⚠️ Free Games services initialization failed:', error);
+      // 無料ゲームサービスの失敗はアプリケーション全体の起動を止めない
     }
   }
 

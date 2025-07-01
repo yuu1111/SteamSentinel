@@ -230,10 +230,9 @@ steam-sentinel/
 - **Winston**: ログ管理
 - **Helmet.js**: セキュリティ強化
 
-#### フロントエンド（SPA完全対応）
+#### フロントエンド
 - **TypeScript SPA**: 360行のクライアントサイドルーター実装
 - **統一ナビゲーション**: 250行の動的ナビゲーション実装
-- **Bootstrap 5**: レスポンシブUIフレームワーク
 - **Chart.js**: 価格推移グラフ描画
 - **History API**: ブラウザ履歴管理
 
@@ -352,7 +351,6 @@ tail -f logs/error-$(date +%Y-%m-%d).log
 
 - [IsThereAnyDeal](https://isthereanydeal.com/) - 価格データAPI提供
 - [Steam](https://store.steampowered.com/) - ゲーム情報
-- [Bootstrap](https://getbootstrap.com/) - UIフレームワーク
 - [Chart.js](https://www.chartjs.org/) - グラフライブラリ
 
 ---

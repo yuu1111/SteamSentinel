@@ -15,7 +15,7 @@ export class SchedulerService {
 
   constructor() {
     this.monitoringService = new MonitoringService();
-    this.epicGamesService = new EpicGamesNotificationService();
+    this.epicGamesService = EpicGamesNotificationService.getInstance();
     this.highDiscountService = new HighDiscountDetectionService();
   }
 
@@ -162,7 +162,7 @@ export class SchedulerService {
     const task = cron.schedule('0 10 * * *', async () => {
       try {
         logger.info('Running scheduled Epic Games free games check');
-        await this.epicGamesService.checkEpicFreeGames();
+        await this.epicGamesService.manualCheck();
       } catch (error) {
         logger.error('Scheduled Epic Games check failed:', error);
       }
@@ -265,11 +265,11 @@ export class SchedulerService {
   }
 
   // 手動Epic Games無料ゲーム検知
-  async runManualEpicGamesCheck(): Promise<any[]> {
+  async runManualEpicGamesCheck(): Promise<number> {
     try {
       logger.info('Manual Epic Games check triggered');
-      const results = await this.epicGamesService.checkEpicFreeGames();
-      logger.info(`Manual Epic Games check completed: ${results.length} free games found`);
+      const results = await this.epicGamesService.manualCheck();
+      logger.info(`Manual Epic Games check completed: ${results} free games found`);
       return results;
     } catch (error) {
       logger.error('Manual Epic Games check failed:', error);

@@ -27,10 +27,11 @@
 - **ReportSection**: レポートセクション
 - **DataBackup**: バックアップデータ
 
-### Epic Games統合型
+### 無料ゲーム統合型
 - **EpicFreeGame**: Epic Games無料ゲーム情報
-- **EpicGameStatus**: ゲーム受け取り状況
-- **EpicGameStats**: Epic Games統計情報
+- **SteamFreeGame**: Steam無料ゲーム情報（新規追加）
+- **FreeGameStatus**: ゲーム受け取り状況（Epic & Steam共通）
+- **FreeGameStats**: 無料ゲーム統計情報（Epic & Steam分離）
 
 ## データベース構造
 
@@ -130,6 +131,20 @@
 | `is_claimed`    | BOOLEAN | DEFAULT 0                | 受け取り済みフラグ                      |
 | `claimed_date`  | TEXT    |                          | 受け取り日 (ISO 8601形式)               |
 | `discovered_at` | DATETIME | DEFAULT CURRENT_TIMESTAMP | 発見日時                               |
+
+## Steam無料ゲームテーブル (`steam_free_games`) **新規追加**
+
+| カラム名         | 型      | 制約                     | 説明                                    |
+| :-------------- | :------ | :----------------------- | :-------------------------------------- |
+| `id`            | INTEGER | PRIMARY KEY AUTOINCREMENT |                                         |
+| `app_id`        | INTEGER | NOT NULL UNIQUE          | Steam App ID                            |
+| `title`         | TEXT    | NOT NULL                 | ゲームタイトル                          |
+| `description`   | TEXT    |                          | ゲーム説明                              |
+| `steam_url`     | TEXT    | NOT NULL                 | Steam Store URL                         |
+| `is_claimed`    | BOOLEAN | DEFAULT 0                | 受け取り済みフラグ                      |
+| `claimed_date`  | TEXT    |                          | 受け取り日 (ISO 8601形式)               |
+| `discovered_at` | DATETIME | DEFAULT CURRENT_TIMESTAMP | 発見日時                               |
+| `updated_at`    | DATETIME | DEFAULT CURRENT_TIMESTAMP | 更新日時                               |
 
 ## システム設定テーブル (`system_settings`)
 

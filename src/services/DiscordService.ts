@@ -368,6 +368,34 @@ export class DiscordService {
     };
   }
 
+  // Steam無料ゲーム用Embed作成
+  private createSteamFreeGameEmbed(games: Array<{
+    title: string;
+    app_id: number;
+    description?: string;
+    url?: string;
+  }>): DiscordEmbed {
+    const title = '🎮 Steam無料ゲーム情報';
+    const description = `新しい無料ゲームが利用可能です！（${games.length}件）`;
+
+    const fields = games.slice(0, 5).map(game => ({
+      name: game.title,
+      value: `${game.description || 'Steamで無料配布中'}\n[Steamで受け取る](${game.url || `https://store.steampowered.com/app/${game.app_id}/`})`,
+      inline: false
+    }));
+
+    return {
+      title,
+      description,
+      color: 0x1B2838, // Steamブランドカラー
+      fields,
+      footer: {
+        text: 'SteamSentinel - Steam無料ゲーム監視'
+      },
+      timestamp: new Date().toISOString()
+    };
+  }
+
   // テスト用メッセージ作成メソッド
   private createTestConnectionMessage(): DiscordMessage {
     return {
@@ -495,6 +523,30 @@ export class DiscordService {
         timestamp: new Date().toISOString()
       }]
     };
+  }
+
+  // Steam無料ゲーム通知
+  async sendSteamFreeGameAlert(game: {
+    app_id: number;
+    title: string;
+    description?: string;
+    steam_url: string;
+  }): Promise<void> {
+    if (!this.isEnabled()) {
+      logger.warn('Discord webhook not configured');
+      return;
+    }
+
+    try {
+      const embed = this.createSteamFreeGameEmbed([game]);
+      const message: DiscordMessage = { embeds: [embed] };
+      
+      await this.sendMessage(message);
+      
+      logger.info(`Steam無料ゲーム通知送信: ${game.title}`);
+    } catch (error) {
+      logger.error('Steam無料ゲーム通知送信エラー:', error);
+    }
   }
 }
 

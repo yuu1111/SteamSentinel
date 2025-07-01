@@ -8,6 +8,7 @@ import { BudgetManager } from './BudgetManager'
 import { SpecialGameStatus } from './SpecialGameStatus'
 import { MonitoringProgress } from './MonitoringProgress'
 import { HighDiscountGames } from './HighDiscountGames'
+import FreeGamesWidget from './FreeGamesWidget'
 import { formatDateJP } from '../utils/dateUtils'
 
 interface TabbedDashboardProps {
@@ -197,6 +198,13 @@ const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
         </Col>
       )}
       
+      {/* Free Games Widget */}
+      {isWidgetVisible('freeGames') && (
+        <Col xs={24} lg={12}>
+          <FreeGamesWidget />
+        </Col>
+      )}
+
       {/* Budget Management Section */}
       {isWidgetVisible('budget') && (
         <Col span={24}>

@@ -5,7 +5,7 @@
 SteamSentinel REST API 完全リファレンス（70+ エンドポイント）
 
 **ベースURL**: `http://localhost:3000/api`  
-**API バージョン**: v1.0 (2025年6月30日更新)
+**API バージョン**: v1.0.0 (2025年6月30日更新)
 
 ## 認証
 
@@ -625,12 +625,68 @@ interface EpicFreeGame {
 ### Epic Games受け取り状況更新
 ```
 PUT /api/epic-games/:id/claim
+PUT /api/epic-games/:id/unclaim
 ```
 
-**リクエストボディ:**
+## Steam無料ゲーム API
+
+### Steam無料ゲーム管理
+```
+GET /api/steam-free-games
+GET /api/steam-free-games?filter=all|claimed|unclaimed
+POST /api/steam-free-games/refresh
+PUT /api/steam-free-games/:id/claim
+PUT /api/steam-free-games/:id/unclaim
+GET /api/steam-free-games/current
+GET /api/steam-free-games/stats
+```
+
+**Steam無料ゲーム レスポンス:**
 ```typescript
 {
+  success: true,
+  data: SteamFreeGame[]
+}
+
+interface SteamFreeGame {
+  id: number
+  app_id: number
+  title: string
+  description?: string
+  steam_url: string
   is_claimed: boolean
+  claimed_date?: string
+  discovered_at: string
+  updated_at?: string
+}
+```
+
+### Steam無料ゲーム手動チェック
+```
+POST /api/steam-free-games/refresh
+```
+
+**レスポンス:**
+```typescript
+{
+  message: string
+  steamCount: number
+  epicCount: number
+}
+```
+
+### Steam無料ゲーム統計
+```
+GET /api/steam-free-games/stats
+```
+
+**レスポンス:**
+```typescript
+{
+  total: number
+  claimed: number
+  unclaimed: number
+  claimRate: number
 }
 ```
 

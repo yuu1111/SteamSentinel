@@ -299,6 +299,41 @@ export class EpicGamesModel {
       throw error;
     }
   }
+
+  // 互換性メソッド - エイリアス
+  getCurrentGames(): EpicFreeGame[] {
+    return this.getActiveGames();
+  }
+
+  markAsClaimed(id: number): boolean {
+    return this.updateGame(id, { 
+      is_claimed: true, 
+      claimed_date: new Date().toISOString() 
+    });
+  }
+
+  markAsUnclaimed(id: number): boolean {
+    return this.updateGame(id, { 
+      is_claimed: false, 
+      claimed_date: undefined 
+    });
+  }
+
+  getStats() {
+    return this.getStatistics();
+  }
+
+  deleteOldUnclaimed(daysOld: number = 365): number {
+    return this.cleanupExpiredGames(daysOld);
+  }
+
+  findByTitle(title: string): EpicFreeGame | null {
+    return this.getGameByTitle(title);
+  }
+
+  create(game: Omit<EpicFreeGame, 'id' | 'discovered_at' | 'updated_at'>): number {
+    return this.addGame(game);
+  }
 }
 
 export default new EpicGamesModel();

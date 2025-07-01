@@ -26,12 +26,12 @@ router.get('/', async (_req, res) => {
 router.post('/refresh', async (_req, res) => {
   try {
     logger.info('Manual Epic Games refresh requested');
-    const newGames = await epicGamesNotificationService.runManualCheck();
+    const newGames = await epicGamesNotificationService.manualCheck();
     
     res.json({
       success: true,
       data: newGames,
-      message: `${newGames.length}件の新しい無料ゲームを発見しました`
+      message: `${newGames}件の新しい無料ゲームを発見しました`
     });
   } catch (error) {
     logger.error('Failed to refresh Epic Games:', error);
@@ -101,7 +101,7 @@ router.get('/current', async (_req, res) => {
 // Epic Games統計情報を取得
 router.get('/stats', async (_req, res) => {
   try {
-    const stats = epicGamesNotificationService.getStatistics();
+    const stats = await epicGamesNotificationService.getStats();
     const gameStats = epicGamesModel.getStatistics();
     
     res.json({

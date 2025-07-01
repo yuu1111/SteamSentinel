@@ -36,6 +36,7 @@ const Navigation: React.FC<NavigationProps> = ({
     { key: 'alerts', label: 'アラート履歴', icon: <BellOutlined /> },
     { key: 'monitoring', label: '監視状況', icon: <LineChartOutlined /> },
     { key: 'epic', label: 'Epic Games', icon: <GiftOutlined /> },
+    { key: 'steam-free', label: 'Steam無料', icon: <GiftOutlined /> },
     { key: 'settings', label: '設定', icon: <SettingOutlined /> },
     { key: 'test', label: 'テスト', icon: <ExperimentOutlined /> },
   ]

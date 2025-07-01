@@ -5,6 +5,7 @@ import { validateSteamAppId, apiLimiter } from '../middleware/security';
 import discordService from '../services/DiscordService';
 import budgetRoutes from './budgets';
 import epicGamesRoutes from './epicGames';
+import steamFreeGamesRoutes from './steamFreeGames';
 import itadSettingsController from '../controllers/ITADSettingsController';
 import logger from '../utils/logger';
 
@@ -548,6 +549,7 @@ router.use('/budgets', budgetRoutes);
 
 // Epic Games関連のルート
 router.use('/epic-games', epicGamesRoutes);
+router.use('/steam-free-games', steamFreeGamesRoutes);
 
 // ITAD設定ルート
 const itadRoutes = Router();

@@ -10,12 +10,12 @@ export class GameModel {
       const query = enabledOnly 
         ? `SELECT g.*, 
              ph.current_price, ph.original_price, ph.discount_percent, ph.is_on_sale, 
-             ph.source, ph.recorded_at, ph.historical_low, ph.all_time_low
+             ph.source, ph.recorded_at, ph.historical_low
            FROM games g
            LEFT JOIN (
              SELECT steam_app_id, 
                     current_price, original_price, discount_percent, is_on_sale,
-                    source, recorded_at, historical_low, all_time_low,
+                    source, recorded_at, historical_low,
                     ROW_NUMBER() OVER (PARTITION BY steam_app_id ORDER BY recorded_at DESC) as rn
              FROM price_history
            ) ph ON g.steam_app_id = ph.steam_app_id AND ph.rn = 1
@@ -23,12 +23,12 @@ export class GameModel {
            ORDER BY g.name`
         : `SELECT g.*, 
              ph.current_price, ph.original_price, ph.discount_percent, ph.is_on_sale,
-             ph.source, ph.recorded_at, ph.historical_low, ph.all_time_low
+             ph.source, ph.recorded_at, ph.historical_low
            FROM games g
            LEFT JOIN (
              SELECT steam_app_id, 
                     current_price, original_price, discount_percent, is_on_sale,
-                    source, recorded_at, historical_low, all_time_low,
+                    source, recorded_at, historical_low,
                     ROW_NUMBER() OVER (PARTITION BY steam_app_id ORDER BY recorded_at DESC) as rn
              FROM price_history
            ) ph ON g.steam_app_id = ph.steam_app_id AND ph.rn = 1
@@ -67,7 +67,7 @@ export class GameModel {
             source: row.source,
             recorded_at: row.recorded_at,
             historical_low: row.historical_low,
-            all_time_low: row.all_time_low
+            all_time_low: row.all_time_low || 0
           };
         }
         
