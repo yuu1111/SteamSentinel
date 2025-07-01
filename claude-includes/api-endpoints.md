@@ -2,10 +2,10 @@
 
 ## 概要
 
-SteamSentinel REST API 完全リファレンス（70+ エンドポイント）
+SteamSentinel REST API 完全リファレンス（80+ エンドポイント）
 
 **ベースURL**: `http://localhost:3000/api`  
-**API バージョン**: v1.0.0 (2025年6月30日更新)
+**API バージョン**: v1.0.0 (2025年7月1日更新)
 
 ## 認証
 

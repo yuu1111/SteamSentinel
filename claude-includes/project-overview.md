@@ -23,7 +23,7 @@
 * **データソース**:
     * **メイン**: Free Games Finders RSS フィード (steamcommunity.com/groups/freegamesfinders/rss/)
     * **カバー範囲**: Epic Games無料ゲーム、Steam無料ゲーム、その他プラットフォーム
-    * **更新頻度**: 1時間間隔の自動監視
+    * **更新頻度**: 1時間間隔の自動監視（従来24時間から大幅改善）
 * **機能拡張**:
     * Epic Games & Steam 両プラットフォーム対応
     * 受け取り状況管理（受け取り済み/未受け取り）

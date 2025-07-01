@@ -47,6 +47,7 @@
 | `price_threshold_type`   | TEXT          | DEFAULT 'price' CHECK(...)              | 閾値タイプ ('price', 'discount', 'any_sale') |
 | `discount_threshold_percent` | INTEGER   | DEFAULT NULL                            | 割引率閾値 (%)                           |
 | `alert_enabled`          | BOOLEAN       | DEFAULT 1                               | アラート通知有効/無効                    |
+| `all_time_low`           | REAL          | DEFAULT 0                               | **歴代最安値** (システム記録値)          |
 | `manual_historical_low`  | REAL          | DEFAULT NULL                            | **手動設定最安値** (ユーザー指定値)      |
 | `is_purchased`           | BOOLEAN       | DEFAULT 0                               | **購入済みフラグ**                       |
 | `purchase_price`         | REAL          | DEFAULT NULL                            | **購入価格**                             |
@@ -146,17 +147,28 @@
 | `discovered_at` | DATETIME | DEFAULT CURRENT_TIMESTAMP | 発見日時                               |
 | `updated_at`    | DATETIME | DEFAULT CURRENT_TIMESTAMP | 更新日時                               |
 
+## ITAD設定テーブル (`itad_settings`) **新規追加**
+
+| カラム名         | 型      | 制約                     | 説明                                    |
+| :-------------- | :------ | :----------------------- | :-------------------------------------- |
+| `id`            | INTEGER | PRIMARY KEY AUTOINCREMENT |                                         |
+| `name`          | TEXT    | NOT NULL UNIQUE          | 設定名                                  |
+| `value`         | TEXT    | NOT NULL                 | 設定値                                  |
+| `description`   | TEXT    |                          | 設定説明                                |
+| `category`      | TEXT    | DEFAULT 'filter'         | カテゴリ ('filter', 'general', 'notification') |
+| `updated_at`    | DATETIME | DEFAULT CURRENT_TIMESTAMP | 更新日時                               |
+
 ## システム設定テーブル (`system_settings`)
 
 | カラム名     | 型      | 制約                     | 説明                                    |
 | :---------- | :------ | :----------------------- | :-------------------------------------- |
 | `key`       | TEXT    | PRIMARY KEY              | 設定キー                                |
-| `value`     | TEXT    |                          | 設定値 (JSON形式)                       |
+| `value`     | TEXT    | NOT NULL                 | 設定値 (JSON/文字列形式)                |
 | `updated_at` | DATETIME | DEFAULT CURRENT_TIMESTAMP | 更新日時                               |
 
 ## データベースバージョン管理テーブル (`db_version`)
 
 | カラム名     | 型      | 制約                | 説明                     |
 | :----------- | :------ | :------------------ | :----------------------- |
-| `version`    | INTEGER | PRIMARY KEY         | データベーススキーマのバージョン (現在: v7) |
+| `version`    | INTEGER | PRIMARY KEY         | データベーススキーマのバージョン (現在: v1) |
 | `applied_at` | DATETIME | DEFAULT CURRENT_TIMESTAMP | 適用日時                 |
