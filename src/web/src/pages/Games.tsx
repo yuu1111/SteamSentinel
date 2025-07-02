@@ -262,7 +262,10 @@ const Games: React.FC = () => {
       sorter: (a, b) => (a.latestPrice?.discount_percent || 0) - (b.latestPrice?.discount_percent || 0),
       render: (_, record: Game) => {
         const price = record.latestPrice
-        if (!price || !price.is_on_sale) {
+        if (!price) {
+          return <Tag color="default">価格未取得</Tag>
+        }
+        if (!price.is_on_sale) {
           return <Tag>通常価格</Tag>
         }
         
