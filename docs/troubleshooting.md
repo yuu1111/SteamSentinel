@@ -211,16 +211,21 @@ curl -X POST http://localhost:3000/api/budgets \
 ### ログ場所
 ```
 logs/
-├── steam-sentinel-YYYY-MM-DD.log  # 一般ログ
-├── error-YYYY-MM-DD.log           # エラーログ
+├── steam-sentinel-YYYY-MM-DD.log  # 一般ログ（英語）
+├── error-YYYY-MM-DD.log           # エラーログ（英語）
 ├── exceptions.log                 # 例外ログ
 └── rejections.log                 # Promise拒否ログ
 ```
+
+**注意**: ログシステムは日本語から英語に変更されました。よりプロフェッショナルなログ出力で問題の特定が簡単になります。
 
 ### ログレベル
 ```bash
 # 詳細ログの有効化
 LOG_LEVEL=DEBUG npm start
+
+# 標準ログ（推奨）
+LOG_LEVEL=INFO npm start
 
 # エラーのみ
 LOG_LEVEL=ERROR npm start

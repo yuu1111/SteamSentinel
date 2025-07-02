@@ -29,8 +29,9 @@ SteamSentinelは、Steamゲームの価格を監視し、セール時の最安�
 
 - **Backend**: Node.js + TypeScript + Express.js + SQLite
 - **Frontend**: React 19.1.0 + TypeScript + Ant Design 5.26.2
-- **Build**: Vite 7.0.0 + ESLint + TypeScript strict mode
+- **Build**: Vite 7.0.0 + ESLint + TypeScript strict mode + unplugin-info
 - **APIs**: IsThereAnyDeal API, Steam Store API, RSS feeds
+- **Logging**: Winston (English logs), Steam API verification system
 
 ## 🚀 セットアップ
 
@@ -64,8 +65,15 @@ WEB_PORT=3000
 
 ### 起動
 ```bash
+# 開発モード
+npm run dev
+
+# 本番ビルド・起動
 npm run build
 npm start
+
+# ポート3000が使用中の場合
+npm run kill:3000
 ```
 
 Webサイト: http://localhost:3000

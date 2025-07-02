@@ -12,7 +12,7 @@
 git clone <repository-url>
 cd SteamSentinel
 npm install
-cp config.example.json config.json  # 必要に応じて編集
+cp .env.example .env  # 環境変数を設定
 ```
 
 ### 環境変数設定
@@ -28,6 +28,9 @@ DISCORD_WEBHOOK_URL=your_discord_webhook_url
 ```bash
 # 開発モード (ホットリロード)
 npm run dev
+
+# ポート3000が使用中の場合
+npm run kill:3000
 
 # 本番ビルド
 npm run build
@@ -61,7 +64,11 @@ src/
 │   ├── src/pages/      # ページコンポーネント
 │   └── src/styles/     # CSS
 └── utils/              # ユーティリティ
+
+vite.config.ts          # Vite設定 + unplugin-info
 ```
+
+**注意**: `scripts/` フォルダは削除されました。ビルド情報生成はunplugin-infoライブラリに統合されています。
 
 ## コーディング規約
 
@@ -104,6 +111,8 @@ interface ApiResponse<T> {
 1. `src/db/database.ts` でスキーマ更新
 2. 既存データとの互換性確認
 3. 必要に応じてマイグレーション実装
+
+**注意**: スクリプトフォルダの初期化スクリプトは削除されています。データベース初期化はアプリケーション起動時に自動実行されます。
 
 ### UI開発
 - Ant Design コンポーネント優先使用

@@ -16,9 +16,12 @@
 
 ## 🆓 無料ゲーム監視
 - Epic & Steam無料ゲーム統合検知 (RSS: Free Games Finders)
+- **Steam API検証システム**: 無料状態自動確認, ゲームタイプ判定
 - 受け取り状況管理, Steam受け取り時の自動ゲーム登録
 - 1時間間隔監視, Discord通知
 
 ## 🔧 システム機能
 - TypeScript + React SPA, Ant Design UI
 - SQLite DB, 80+ API, Discord通知, 自動スケジューラー
+- **英語ログシステム**: Winstonベース, プロフェッショナルログ出力
+- **ビルド最適化**: unplugin-info統合, scriptsフォルダ削除済み

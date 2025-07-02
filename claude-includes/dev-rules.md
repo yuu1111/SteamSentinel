@@ -17,9 +17,13 @@
 - **API**: Express.js, 既存エンドポイント拡張
 - **Frontend**: React 19.1.0, Vite 7.0.0
 - **UI**: Ant Design 5.26.2のみ使用
+- **Build**: unplugin-info統合, 手動スクリプト作成禁止
+- **Logging**: Winston英語ログ系統統一
 
 ## 禁止事項
 - Bootstrap CSS追加
 - epic-free-games依存関係復活
 - データベーススキーマ破壊的変更
 - 未承認の新依存関係追加
+- scripts/フォルダの再作成 (代わりに本体機能に統合)
+- 日本語ログメッセージの新規追加 (英語統一)
