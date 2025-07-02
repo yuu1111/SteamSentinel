@@ -53,9 +53,6 @@ coverage/
 *.backup
 *.bak
 
-# API
-API/*
-
 # Debug and test files
 debug/
 test/
