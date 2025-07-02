@@ -119,7 +119,7 @@ export class SteamStoreAPI extends BaseAPI {
 
       const priceOverview = priceInfo.data.price_overview;
       
-      // Steam APIの価格データをログ出力して確認
+      // Log Steam API price data for verification
       logger.debug(`Steam API price data for ${appId}:`, {
         currency: priceOverview.currency,
         final: priceOverview.final,

@@ -101,9 +101,9 @@ export class SteamFreeGamesModel {
           new Date().toISOString().split('T')[0]
         ]);
         
-        logger.info(`🎮 無料ゲーム「${freeGame.title}」をゲーム一覧に追加しました`);
+        logger.info(`Free game "${freeGame.title}" added to game list`);
       } catch (error) {
-        logger.error(`無料ゲームのゲーム一覧追加エラー:`, error);
+        logger.error('Error adding free game to game list:', error);
       }
     }
   }
@@ -117,6 +117,18 @@ export class SteamFreeGamesModel {
     
     const stmt = database.getConnection().prepare(sql);
     stmt.run([id]);
+  }
+
+  async markAsExpired(appId: number): Promise<void> {
+    const sql = `
+      UPDATE steam_free_games 
+      SET is_expired = 1, updated_at = CURRENT_TIMESTAMP
+      WHERE app_id = ?
+    `;
+    
+    const stmt = database.getConnection().prepare(sql);
+    stmt.run([appId]);
+    logger.info(`Steam free game marked as expired: App ID ${appId}`);
   }
 
   async findById(id: number): Promise<SteamFreeGame | null> {
