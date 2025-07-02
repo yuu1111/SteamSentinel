@@ -59,10 +59,11 @@ export class EpicGamesModel {
       const db = this.getDb();
       const stmt = db.prepare(`
         SELECT * FROM epic_free_games 
-        WHERE end_date > ? OR end_date IS NULL
+        WHERE (end_date > ? OR end_date IS NULL)
+        AND (start_date <= ? OR start_date IS NULL)
         ORDER BY discovered_at DESC
       `);
-      return stmt.all(now) as EpicFreeGame[];
+      return stmt.all(now, now) as EpicFreeGame[];
     } catch (error) {
       logger.error('Failed to get active Epic free games:', error);
       throw error;
@@ -235,14 +236,15 @@ export class EpicGamesModel {
       const activeStmt = db.prepare(`
         SELECT COUNT(*) as active 
         FROM epic_free_games 
-        WHERE end_date > ? OR end_date IS NULL
+        WHERE (end_date > ? OR end_date IS NULL)
+        AND (start_date <= ? OR start_date IS NULL)
       `);
       
       const now = new Date().toISOString();
       
       const total = (totalStmt.get() as any).total;
       const claimed = (claimedStmt.get() as any).claimed;
-      const active = (activeStmt.get(now) as any).active;
+      const active = (activeStmt.get(now, now) as any).active;
       
       return {
         total,
@@ -257,30 +259,6 @@ export class EpicGamesModel {
     }
   }
 
-  // 期限切れゲームのクリーンアップ（期限切れでも受け取り済みゲームは保持）
-  cleanupExpiredGames(daysOld: number = 365): number {
-    try {
-      const cutoffDate = new Date();
-      cutoffDate.setDate(cutoffDate.getDate() - daysOld);
-      
-      const db = this.getDb();
-      // 期限切れかつ未受け取りのゲームのみ削除（受け取り済みは履歴として保持）
-      const stmt = db.prepare(`
-        DELETE FROM epic_free_games 
-        WHERE end_date < ? 
-        AND end_date IS NOT NULL 
-        AND is_claimed = 0
-        AND discovered_at < ?
-      `);
-      
-      const result = stmt.run(cutoffDate.toISOString(), cutoffDate.toISOString());
-      logger.info(`Cleaned up ${result.changes} expired unclaimed Epic free games (keeping claimed games as history)`);
-      return result.changes;
-    } catch (error) {
-      logger.error('Failed to cleanup expired Epic free games:', error);
-      throw error;
-    }
-  }
 
   // 重複ゲームチェック
   isDuplicateGame(title: string, startDate?: string): boolean {
@@ -321,10 +299,6 @@ export class EpicGamesModel {
 
   getStats() {
     return this.getStatistics();
-  }
-
-  deleteOldUnclaimed(daysOld: number = 365): number {
-    return this.cleanupExpiredGames(daysOld);
   }
 
   findByTitle(title: string): EpicFreeGame | null {

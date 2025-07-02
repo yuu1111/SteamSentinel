@@ -75,7 +75,7 @@ export const useKeyboardShortcuts = ({
             break
           case '5':
             event.preventDefault()
-            onViewChange('epic')
+            onViewChange('free-games')
             break
           case '6':
             event.preventDefault()

@@ -40,18 +40,19 @@ router.get('/', async (req, res) => {
         const now = new Date();
         let gameStatus: 'active' | 'expired' | 'upcoming' = 'active';
         
-        if (game.end_date) {
-          const endDate = new Date(game.end_date);
-          if (endDate < now) {
-            gameStatus = 'expired';
-          }
-        }
+        // 日付ベースのステータス判定
+        const startDate = game.start_date ? new Date(game.start_date) : null;
+        const endDate = game.end_date ? new Date(game.end_date) : null;
         
-        if (game.start_date) {
-          const startDate = new Date(game.start_date);
-          if (startDate > now) {
-            gameStatus = 'upcoming';
-          }
+        if (endDate && endDate < now) {
+          // 終了日が過去の場合は配布終了
+          gameStatus = 'expired';
+        } else if (startDate && startDate > now) {
+          // 開始日が未来の場合は配布予定
+          gameStatus = 'upcoming';
+        } else {
+          // それ以外は配布中
+          gameStatus = 'active';
         }
         
         games.push({

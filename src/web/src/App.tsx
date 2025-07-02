@@ -7,8 +7,6 @@ import Games from './pages/Games'
 import Alerts from './pages/Alerts'
 import Monitoring from './pages/Monitoring'
 import Test from './pages/Test'
-import EpicGames from './pages/EpicGames'
-import SteamFreeGames from './pages/SteamFreeGames'
 import FreeGames from './pages/FreeGames'
 import Settings from './pages/Settings'
 import Limitations from './pages/Limitations'
@@ -90,10 +88,6 @@ function App() {
         return <Monitoring />
       case 'test':
         return <Test />
-      case 'epic':
-        return <EpicGames />
-      case 'steam-free':
-        return <SteamFreeGames />
       case 'free-games':
         return <FreeGames />
       case 'settings':

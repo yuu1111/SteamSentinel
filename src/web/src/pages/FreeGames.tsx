@@ -501,7 +501,7 @@ const FreeGames: React.FC = () => {
         activeKey={platform} 
         onChange={(key) => setPlatform(key as any)}
         style={{ marginBottom: 16 }}
-        size={responsive.isMobile ? 'small' : 'default'}
+        size={responsive.isMobile ? 'small' : 'large'}
         tabBarExtraContent={
           responsive.isTablet ? null : (
             <Space wrap>

@@ -34,30 +34,32 @@ export class EpicGamesNotificationService {
 
   // 現在の無料ゲームを取得
   public async getCurrentFreeGames() {
-    return await this.epicGamesModel.getCurrentGames();
+    return this.epicGamesModel.getCurrentGames();
   }
 
   // ゲームをクレーム済みにマーク
   public async markAsClaimed(id: number): Promise<void> {
-    await this.epicGamesModel.markAsClaimed(id);
+    this.epicGamesModel.markAsClaimed(id);
   }
 
   // ゲームを未クレームにマーク
   public async markAsUnclaimed(id: number): Promise<void> {
-    await this.epicGamesModel.markAsUnclaimed(id);
+    this.epicGamesModel.markAsUnclaimed(id);
   }
 
   // 統計情報を取得
   public async getStats() {
-    return await this.epicGamesModel.getStats();
+    return this.epicGamesModel.getStats();
   }
 
   // 古いゲームをクリーンアップ
+  // TODO: cleanupExpiredGames メソッドが未実装のため、一時的に無効化
   public async cleanupOldGames(): Promise<void> {
-    const deletedCount = await this.epicGamesModel.deleteOldUnclaimed();
-    if (deletedCount > 0) {
-      logger.info(`${deletedCount}件の古い未クレームゲームを削除しました`);
-    }
+    // const deletedCount = await this.epicGamesModel.deleteOldUnclaimed();
+    // if (deletedCount > 0) {
+    //   logger.info(`${deletedCount}件の古い未クレームゲームを削除しました`);
+    // }
+    logger.warn('cleanupOldGames: 機能が未実装です');
   }
 }
 

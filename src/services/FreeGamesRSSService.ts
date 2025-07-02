@@ -93,8 +93,6 @@ export class FreeGamesRSSService {
         await this.processSteamFreeGame(game);
       }
 
-      // 期限切れのEpicゲームをクリーンアップ
-      await this.cleanupExpiredEpicGames();
 
       this.lastCheckTime = new Date();
       logger.info(`✅ 無料ゲームチェック完了: Epic ${epicGames.length}件, Steam ${steamGames.length}件`);
@@ -367,24 +365,4 @@ export class FreeGamesRSSService {
     return this.lastCheckTime;
   }
 
-  // 期限切れのEpic無料ゲームをクリーンアップ
-  private async cleanupExpiredEpicGames(): Promise<void> {
-    try {
-      const now = new Date();
-      const expiredGames = await this.epicGamesModel.getAllGames();
-      
-      for (const game of expiredGames) {
-        if (game.end_date) {
-          const endDate = new Date(game.end_date);
-          if (endDate < now && !game.is_claimed) {
-            // 期限切れで未受け取りのゲームを削除
-            await this.epicGamesModel.deleteGame(game.id!);
-            logger.info(`期限切れのEpic無料ゲームを削除: ${game.title}`);
-          }
-        }
-      }
-    } catch (error) {
-      logger.error('Epic無料ゲーム クリーンアップエラー:', error);
-    }
-  }
 }
