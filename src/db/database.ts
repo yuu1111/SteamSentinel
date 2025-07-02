@@ -203,6 +203,9 @@ class DatabaseManager {
         title TEXT NOT NULL,
         description TEXT,
         steam_url TEXT NOT NULL,
+        start_date DATE,
+        end_date DATE,
+        is_expired BOOLEAN DEFAULT 0,
         is_claimed BOOLEAN DEFAULT 0,
         claimed_date DATETIME,
         discovered_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -233,6 +236,25 @@ class DatabaseManager {
       CREATE INDEX IF NOT EXISTS idx_steam_free_games_app_id ON steam_free_games(app_id);
       CREATE INDEX IF NOT EXISTS idx_steam_free_games_claimed ON steam_free_games(is_claimed);
     `);
+
+    // 既存のsteam_free_gamesテーブルをマイグレーション
+    try {
+      // カラムが存在するかチェック
+      const tableInfo = db.prepare("PRAGMA table_info(steam_free_games)").all();
+      const hasStartDate = tableInfo.some((col: any) => col.name === 'start_date');
+      
+      if (!hasStartDate) {
+        logger.info('Migrating steam_free_games table...');
+        db.exec(`
+          ALTER TABLE steam_free_games ADD COLUMN start_date DATE;
+          ALTER TABLE steam_free_games ADD COLUMN end_date DATE;
+          ALTER TABLE steam_free_games ADD COLUMN is_expired BOOLEAN DEFAULT 0;
+        `);
+        logger.info('steam_free_games table migration completed');
+      }
+    } catch (error) {
+      logger.debug('Migration check for steam_free_games:', error);
+    }
 
     // トリガーの作成
     db.exec(`

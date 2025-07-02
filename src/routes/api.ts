@@ -6,6 +6,8 @@ import discordService from '../services/DiscordService';
 import budgetRoutes from './budgets';
 import epicGamesRoutes from './epicGames';
 import steamFreeGamesRoutes from './steamFreeGames';
+import freeGamesRoutes from './freeGames';
+import epicGamesSearchRoutes from './epicGamesSearch';
 import itadSettingsController from '../controllers/ITADSettingsController';
 import logger from '../utils/logger';
 
@@ -550,6 +552,12 @@ router.use('/budgets', budgetRoutes);
 // Epic Games関連のルート
 router.use('/epic-games', epicGamesRoutes);
 router.use('/steam-free-games', steamFreeGamesRoutes);
+
+// 統合無料ゲームルート
+router.use('/free-games', freeGamesRoutes);
+
+// Epic Games検索テストルート
+router.use('/epic-search', epicGamesSearchRoutes);
 
 // ITAD設定ルート
 const itadRoutes = Router();

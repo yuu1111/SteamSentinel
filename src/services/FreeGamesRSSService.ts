@@ -4,6 +4,7 @@ import logger from '../utils/logger';
 import { DiscordService } from './DiscordService';
 import { EpicGamesModel } from '../models/EpicGamesModel';
 import { SteamFreeGamesModel } from '../models/SteamFreeGamesModel';
+// import { EpicGamesSearchService } from './EpicGamesSearchService'; // 未使用のため削除
 
 interface RSSItem {
   title: string[];
@@ -74,6 +75,10 @@ export class FreeGamesRSSService {
       }
 
       const items: RSSItem[] = result.rss.channel[0].item;
+      
+      // デバッグ用：全アイテムをチェック
+      logger.info(`📊 RSS items found: ${items.length}`);
+      
       const parsedGames = this.parseGames(items);
       
       // Epic Gamesの処理
@@ -113,6 +118,37 @@ export class FreeGamesRSSService {
         if (description.toLowerCase().includes('epic games') || 
             link.includes('epicgames.com')) {
           
+          // デバッグ用：RSSデータを詳細出力
+          logger.info(`=== Epic Games RSS Data Debug ===`);
+          logger.info(`Title: ${title}`);
+          logger.info(`Link: ${link}`);
+          logger.info(`Description (first 500 chars): ${description.substring(0, 500)}...`);
+          logger.info(`Full Description: ${description}`);
+          logger.info(`PubDate: ${item.pubDate?.[0] || ''}`);
+          
+          // 説明文からEpic Store URLを直接抽出（URLエンコード対応）
+          let epicStoreUrl = link; // デフォルトはRSSリンク
+          
+          // 通常のURLパターンをチェック
+          let epicUrlMatch = description.match(/https?:\/\/store\.epicgames\.com\/[^\s"<>]+/i);
+          
+          if (!epicUrlMatch) {
+            // URLエンコードされたパターンをチェック
+            const encodedUrlMatch = description.match(/https?%3A%2F%2Fstore\.epicgames\.com%2F[^"\s<>&]+/i);
+            if (encodedUrlMatch) {
+              epicUrlMatch = [decodeURIComponent(encodedUrlMatch[0])];
+            }
+          }
+          
+          if (epicUrlMatch) {
+            epicStoreUrl = epicUrlMatch[0];
+            logger.info(`✅ Epic Store URL found in description: ${epicStoreUrl}`);
+          } else {
+            logger.info(`❌ Epic Store URL NOT found in description`);
+            logger.info(`Using RSS link as fallback: ${link}`);
+          }
+          logger.info(`=== End Epic Games RSS Data Debug ===`);
+          
           // 終了日の抽出 - 複数のパターンに対応
           const endDateMatch = description.match(/(?:until|through)\s+(\w+\s+\d{1,2})/i);
           let endDate: Date | undefined;
@@ -128,39 +164,53 @@ export class FreeGamesRSSService {
             .replace(/\s*\|\s*Epic.*$/i, '')
             .trim();
 
-          // 期間切れチェック
-          const now = new Date();
-          if (endDate && endDate < now) {
-            // 期間切れの無料ゲームはスキップ
-            continue;
-          }
+          // 期間切れチェック（配布終了のゲームも記録する）
 
           games.push({
             title: cleanTitle,
             description,
-            url: link,
+            url: epicStoreUrl,
             type: 'epic',
             endDate,
             pubDate
           });
         }
         // Steam無料ゲーム判定
-        else if (link.includes('store.steampowered.com') && 
+        else if ((description.includes('store.steampowered.com') || 
+                  title.toLowerCase().includes('free in the steam store')) && 
                  (description.toLowerCase().includes('free') || 
                   title.toLowerCase().includes('free'))) {
+          
+          // descriptionからSteamストアURLを抽出
+          const steamUrlMatch = description.match(/store\.steampowered\.com\/app\/(\d+)[^">\s]*/);
+          if (!steamUrlMatch) {
+            continue; // SteamストアURLが見つからない場合はスキップ
+          }
+          
+          const steamStoreUrl = `https://${steamUrlMatch[0]}`;
+          
           // Steam無料ゲーム名のクリーンアップ
           const cleanSteamTitle = title
+            .replace(/\s*free in the steam store$/i, '')
             .replace(/\s*\(Steam\)/i, '')
             .replace(/\s*-\s*Free/i, '')
             .replace(/\s*(free to play|free on Steam)/i, '')
             .replace(/\s*\|\s*Steam.*$/i, '')
             .trim();
 
+          // Steam無料ゲームの期限判定
+          let endDate: Date | undefined;
+          const steamEndDateMatch = description.match(/(?:until|through|ends)\s+(?:Steam\s+Dawn\s+on\s+)?(\w+\s+\d{1,2})/i);
+          if (steamEndDateMatch) {
+            endDate = this.parseEndDate(steamEndDateMatch[1]);
+          }
+
           games.push({
             title: cleanSteamTitle,
             description,
-            url: link,
+            url: steamStoreUrl,
             type: 'steam',
+            endDate,
             pubDate
           });
         }
@@ -200,28 +250,44 @@ export class FreeGamesRSSService {
 
   private async processEpicGame(game: ParsedFreeGame): Promise<void> {
     try {
+      // デバッグ用：すべてのEpicゲームの詳細情報を出力
+      logger.info(`🎮 Processing Epic Game: ${game.title}`);
+      logger.info(`📝 Description length: ${game.description.length} chars`);
+      logger.info(`🔗 URL: ${game.url}`);
+      logger.info(`📅 Pub Date: ${game.pubDate}`);
+      logger.info(`⏰ End Date: ${game.endDate || 'なし'}`);
+      
       // 既存のゲームかチェック
       const existing = await this.epicGamesModel.findByTitle(game.title);
       
       if (!existing) {
-        // 新規ゲームとして追加
+        const now = new Date();
+        const isExpired = game.endDate && game.endDate < now;
+        
+        // Epic Games Store URLを使用（RSS処理で既に説明文から抽出済み）
+        const epicStoreUrl = game.url;
+        logger.info(`Epic Store URL: ${epicStoreUrl}`);
+        
+        // 新規ゲームとして追加（配布終了のゲームも含む）
         await this.epicGamesModel.create({
           title: game.title,
           description: game.description,
-          epic_url: game.url,
+          epic_url: epicStoreUrl,
           start_date: game.pubDate.toISOString().split('T')[0],
           end_date: game.endDate?.toISOString().split('T')[0],
           is_claimed: false
         });
         
-        // Discord通知
-        await this.discordService.sendEpicFreeGameAlert([{
-          title: game.title,
-          description: game.description,
-          url: game.url
-        }]);
+        // Discord通知（配布中のゲームのみ）
+        if (!isExpired) {
+          await this.discordService.sendEpicFreeGameAlert([{
+            title: game.title,
+            description: game.description,
+            url: epicStoreUrl
+          }]);
+        }
         
-        logger.info(`🎮 新しいEpic無料ゲーム追加: ${game.title}`);
+        logger.info(`🎮 新しいEpic無料ゲーム追加: ${game.title}${isExpired ? ' (配布終了)' : ''}`);
       }
     } catch (error) {
       logger.error(`Epic無料ゲーム処理エラー (${game.title}):`, error);
@@ -243,24 +309,32 @@ export class FreeGamesRSSService {
       const existing = await this.steamFreeGamesModel.findByAppId(appId);
       
       if (!existing) {
-        // 新規ゲームとして追加
+        const now = new Date();
+        const isExpired = game.endDate && game.endDate < now;
+        
+        // 新規ゲームとして追加（配布終了のゲームも含む）
         await this.steamFreeGamesModel.create({
           app_id: appId,
           title: game.title,
           description: game.description,
           steam_url: game.url,
+          start_date: game.pubDate.toISOString().split('T')[0],
+          end_date: game.endDate?.toISOString().split('T')[0],
+          is_expired: isExpired,
           discovered_at: game.pubDate.toISOString()
         });
         
-        // Discord通知
-        await this.discordService.sendSteamFreeGameAlert({
-          app_id: appId,
-          title: game.title,
-          description: game.description,
-          steam_url: game.url
-        });
+        // Discord通知（配布中のゲームのみ）
+        if (!isExpired) {
+          await this.discordService.sendSteamFreeGameAlert({
+            app_id: appId,
+            title: game.title,
+            description: game.description,
+            steam_url: game.url
+          });
+        }
         
-        logger.info(`🎮 新しいSteam無料ゲーム追加: ${game.title} (${appId})`);
+        logger.info(`🎮 新しいSteam無料ゲーム追加: ${game.title} (${appId})${isExpired ? ' (配布終了)' : ''}`);
       }
     } catch (error) {
       logger.error(`Steam無料ゲーム処理エラー (${game.title}):`, error);

@@ -7,6 +7,9 @@ export interface SteamFreeGame {
   title: string;
   description?: string;
   steam_url: string;
+  start_date?: string;
+  end_date?: string;
+  is_expired?: boolean;
   is_claimed?: boolean;
   claimed_date?: string;
   discovered_at?: string;
@@ -20,8 +23,8 @@ export class SteamFreeGamesModel {
 
   async create(game: SteamFreeGame): Promise<number> {
     const sql = `
-      INSERT INTO steam_free_games (app_id, title, description, steam_url, discovered_at)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO steam_free_games (app_id, title, description, steam_url, start_date, end_date, is_expired, discovered_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `;
     
     const stmt = database.getConnection().prepare(sql);
@@ -30,6 +33,9 @@ export class SteamFreeGamesModel {
       game.title,
       game.description || null,
       game.steam_url,
+      game.start_date || null,
+      game.end_date || null,
+      game.is_expired ? 1 : 0,
       game.discovered_at || new Date().toISOString()
     ]);
     
@@ -52,7 +58,7 @@ export class SteamFreeGamesModel {
   async getActiveGames(): Promise<SteamFreeGame[]> {
     const sql = `
       SELECT * FROM steam_free_games 
-      WHERE is_claimed = 0 
+      WHERE is_claimed = 0 AND is_expired = 0
       ORDER BY discovered_at DESC
     `;
     const stmt = database.getConnection().prepare(sql);
