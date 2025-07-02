@@ -1,8 +1,24 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import Info from 'unplugin-info/vite'
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    Info({
+      meta: {
+        buildDate: new Date().toLocaleDateString('ja-JP', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          timeZone: 'Asia/Tokyo'
+        })
+      }
+    })
+  ],
   root: 'src/web',
   publicDir: '../../public',
   build: {

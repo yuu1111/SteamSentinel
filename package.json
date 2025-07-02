@@ -6,13 +6,11 @@
   "scripts": {
     "dev": "nodemon --exec ts-node src/index.ts",
     "dev:web": "vite",
-    "build": "node scripts/generateBuildInfo.js && tsc && npm run build:web",
+    "build": "tsc && npm run build:web",
     "build:web": "vite build",
     "preview": "vite preview",
     "copy:components": "mkdir -p public/js/components public/js/spa && cp dist/web/public/js/components/*.js public/js/components/ && cp dist/web/public/js/spa/*.js public/js/spa/",
     "start": "node dist/index.js",
-    "db:init": "ts-node scripts/initDatabase.ts",
-    "seed:games": "ts-node scripts/seedGames.ts",
     "test": "jest",
     "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
     "lint:fix": "eslint . --ext .ts,.tsx,.js,.jsx --fix",
@@ -73,6 +71,7 @@
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.3.3",
     "typescript-eslint": "^8.35.0",
+    "unplugin-info": "^1.2.2",
     "vite": "^7.0.0"
   },
   "engines": {
