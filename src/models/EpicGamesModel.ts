@@ -334,6 +334,28 @@ export class EpicGamesModel {
   create(game: Omit<EpicFreeGame, 'id' | 'discovered_at' | 'updated_at'>): number {
     return this.addGame(game);
   }
+
+  // 期限切れの日付を修正するメソッド
+  public fixExpiredDates(): number {
+    try {
+      const db = this.getDb();
+      
+      // 2026年になっているゲームを2025年に修正
+      const stmt = db.prepare(`
+        UPDATE epic_free_games 
+        SET end_date = REPLACE(end_date, '2026-', '2025-'),
+            updated_at = datetime('now')
+        WHERE end_date LIKE '2026-%'
+      `);
+      
+      const result = stmt.run();
+      logger.info(`Fixed ${result.changes} Epic games with incorrect 2026 dates`);
+      return result.changes || 0;
+    } catch (error) {
+      logger.error('Failed to fix Epic game dates:', error);
+      throw error;
+    }
+  }
 }
 
 export default new EpicGamesModel();

@@ -237,11 +237,21 @@ export class FreeGamesRSSService {
     
     if (monthIndex !== -1 && !isNaN(day)) {
       const date = new Date(year, monthIndex, day, 23, 59, 59);
-      // 過去の日付の場合は翌年として扱う
-      if (date < now) {
-        date.setFullYear(year + 1);
+      
+      // 未来の日付の場合（例：12月など）は今年
+      // 過去の日付の場合、大幅に過去（3ヶ月以上前）なら翌年、そうでなければ期限切れとして今年
+      if (date > now) {
+        // 未来の日付はそのまま今年
+        return date;
+      } else {
+        const monthsAgo = (now.getMonth() - monthIndex + 12) % 12;
+        if (monthsAgo > 3) {
+          // 大幅に過去（3ヶ月以上前）の場合は翌年として扱う
+          date.setFullYear(year + 1);
+        }
+        // そうでなければ期限切れとして今年のまま返す
+        return date;
       }
-      return date;
     }
     
     // パースできない場合は7日後をデフォルトとする

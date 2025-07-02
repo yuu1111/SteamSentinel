@@ -56,6 +56,35 @@ interface FreeGamesStats {
   };
 }
 
+// Custom hook for responsive breakpoints
+const useResponsive = () => {
+  const [screenSize, setScreenSize] = useState({
+    width: typeof window !== 'undefined' ? window.innerWidth : 1200,
+    isMobile: typeof window !== 'undefined' ? window.innerWidth < 576 : false,
+    isTablet: typeof window !== 'undefined' ? window.innerWidth < 768 : false,
+    isDesktop: typeof window !== 'undefined' ? window.innerWidth >= 768 : true
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      const width = window.innerWidth;
+      setScreenSize({
+        width,
+        isMobile: width < 576,
+        isTablet: width < 768,
+        isDesktop: width >= 768
+      });
+    };
+
+    window.addEventListener('resize', handleResize);
+    handleResize(); // Initial call
+
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  return screenSize;
+};
+
 const FreeGames: React.FC = () => {
   const [games, setGames] = useState<UnifiedFreeGame[]>([]);
   const [allGames, setAllGames] = useState<UnifiedFreeGame[]>([]); // 全ゲームデータを保持
@@ -70,6 +99,7 @@ const FreeGames: React.FC = () => {
   const [gameDetailVisible, setGameDetailVisible] = useState(false);
   const [searchingEpicUrl, setSearchingEpicUrl] = useState<string | null>(null);
   const { showSuccess, showError } = useAlert();
+  const responsive = useResponsive();
 
   const loadGames = async () => {
     try {
@@ -236,12 +266,18 @@ const FreeGames: React.FC = () => {
     const isEpic = game.platform === 'epic';
     
     return (
-      <Col key={game.id} xs={24} sm={12} md={8} lg={6}>
+      <Col key={game.id} xs={24} sm={12} md={8} lg={6} xl={6} xxl={4}>
         <Card
           hoverable
+          style={{ 
+            height: '100%',
+            minHeight: '320px',
+            margin: '0 0 16px 0'
+          }}
           cover={
             <div style={{ 
-              height: 150, 
+              height: 120,
+              minHeight: 120,
               background: isEpic ? '#2a2a2a' : '#1b2838', 
               display: 'flex', 
               alignItems: 'center', 
@@ -250,9 +286,17 @@ const FreeGames: React.FC = () => {
             }}>
               {getPlatformIcon(game.platform)}
               {isEpic ? (
-                <Text style={{ fontSize: 48, color: '#fff', marginLeft: 8 }}>Epic</Text>
+                <Text style={{ 
+                  fontSize: responsive.isMobile ? 20 : 32, 
+                  color: '#fff', 
+                  marginLeft: 8 
+                }}>Epic</Text>
               ) : (
-                <Text style={{ fontSize: 48, color: '#fff', marginLeft: 8 }}>Steam</Text>
+                <Text style={{ 
+                  fontSize: responsive.isMobile ? 20 : 32, 
+                  color: '#fff', 
+                  marginLeft: 8 
+                }}>Steam</Text>
               )}
               <div style={{ position: 'absolute', top: 8, right: 8 }}>
                 {getStatusTag(game)}
@@ -260,54 +304,111 @@ const FreeGames: React.FC = () => {
             </div>
           }
           actions={[
-            <Checkbox
-              checked={game.is_claimed}
-              onChange={() => toggleClaimedStatus(game.id, game.is_claimed)}
-              disabled={game.status === 'expired'}
-            >
-              受け取り済み
-            </Checkbox>,
-            <Button
-              type="link"
-              size="small"
-              icon={<LinkOutlined />}
-              loading={searchingEpicUrl === game.id}
-              onClick={() => handleStoreButtonClick(game)}
-            >
-              ストアで見る
-            </Button>,
-            game.description && (
-              <Button
-                type="link"
-                size="small"
-                icon={<InfoCircleOutlined />}
-                onClick={() => showGameDetail(game)}
+            <div key="actions" style={{ width: '100%' }}>
+              <Space 
+                direction={responsive.isTablet ? 'vertical' : 'horizontal'} 
+                size="small" 
+                style={{ width: '100%', justifyContent: 'center' }}
+                wrap
               >
-                詳細
-              </Button>
-            )
-          ].filter(Boolean)}
+                <Checkbox
+                  checked={game.is_claimed}
+                  onChange={() => toggleClaimedStatus(game.id, game.is_claimed)}
+                  disabled={game.status === 'expired'}
+                  style={{ fontSize: responsive.isMobile ? 12 : 14 }}
+                >
+                  受け取り済み
+                </Checkbox>
+                <Button
+                  type="link"
+                  size={responsive.isMobile ? 'small' : 'middle'}
+                  icon={<LinkOutlined />}
+                  loading={searchingEpicUrl === game.id}
+                  onClick={() => handleStoreButtonClick(game)}
+                >
+                  ストア
+                </Button>
+                {game.description && (
+                  <Button
+                    type="link"
+                    size={responsive.isMobile ? 'small' : 'middle'}
+                    icon={<InfoCircleOutlined />}
+                    onClick={() => showGameDetail(game)}
+                  >
+                    詳細
+                  </Button>
+                )}
+              </Space>
+            </div>
+          ]}
         >
           <Card.Meta
-            title={game.title}
+            title={
+              <div style={{ 
+                fontSize: responsive.isMobile ? 14 : 16,
+                lineHeight: '1.4',
+                marginBottom: 8
+              }}>
+                {game.title}
+              </div>
+            }
             description={
-              <Space direction="vertical" style={{ width: '100%' }}>
+              <Space direction="vertical" style={{ width: '100%' }} size="small">
                 {game.description && (
-                  <Paragraph ellipsis={{ rows: 2 }}>
+                  <Paragraph 
+                    ellipsis={{ 
+                      rows: responsive.isMobile ? 1 : 2 
+                    }}
+                    style={{ 
+                      fontSize: responsive.isMobile ? 12 : 14,
+                      margin: 0,
+                      lineHeight: '1.3'
+                    }}
+                  >
                     {game.description}
                   </Paragraph>
                 )}
-                <Space wrap>
-                  {game.is_claimed && (
-                    <Tag color="success" icon={<CheckCircleOutlined />}>受け取り済み</Tag>
+                {/* 受け取り済みタグ固定領域 */}
+                <div style={{ 
+                  minHeight: responsive.isMobile ? 20 : 24, 
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  marginBottom: 4
+                }}>
+                  {game.is_claimed ? (
+                    <Tag 
+                      color="success" 
+                      icon={<CheckCircleOutlined />}
+                      style={{ fontSize: responsive.isMobile ? 10 : 12 }}
+                    >
+                      受け取り済み
+                    </Tag>
+                  ) : (
+                    <div style={{ height: responsive.isMobile ? 20 : 24 }} />
                   )}
+                </div>
+                
+                {/* ゲーム情報 */}
+                <Space direction="vertical" size="small" style={{ width: '100%' }}>
                   {game.platform === 'epic' && game.start_date && game.end_date && (
-                    <Text type="secondary" style={{ fontSize: 12 }}>
+                    <Text 
+                      type="secondary" 
+                      style={{ 
+                        fontSize: responsive.isMobile ? 10 : 12,
+                        lineHeight: '1.2'
+                      }}
+                    >
                       <CalendarOutlined /> {new Date(game.start_date).toLocaleDateString()} - {new Date(game.end_date).toLocaleDateString()}
                     </Text>
                   )}
                   {game.platform === 'steam' && game.app_id && (
-                    <Text type="secondary" style={{ fontSize: 12 }}>
+                    <Text 
+                      type="secondary" 
+                      style={{ 
+                        fontSize: responsive.isMobile ? 10 : 12,
+                        lineHeight: '1.2'
+                      }}
+                    >
                       App ID: {game.app_id}
                     </Text>
                   )}
@@ -341,43 +442,55 @@ const FreeGames: React.FC = () => {
   }
 
   return (
-    <div style={{ padding: '0 24px' }}>
+    <div style={{ padding: responsive.isMobile ? '0 12px' : '0 24px' }}>
       <Row gutter={[16, 16]}>
         <Col span={24}>
           <div style={{ 
             display: 'flex', 
+            flexDirection: responsive.isTablet ? 'column' : 'row',
             justifyContent: 'space-between', 
-            alignItems: 'center',
+            alignItems: responsive.isTablet ? 'stretch' : 'center',
+            gap: responsive.isTablet ? 16 : 0,
             marginBottom: 24
           }}>
-            <Title level={2}>
+            <Title level={responsive.isMobile ? 3 : 2}>
               <GiftOutlined style={{ marginRight: 8 }} />
               無料ゲーム
             </Title>
-            <Space>
+            <Space 
+              wrap 
+              size={responsive.isMobile ? 'small' : 'middle'}
+              style={{ 
+                justifyContent: responsive.isTablet ? 'center' : 'flex-end',
+                width: responsive.isTablet ? '100%' : 'auto'
+              }}
+            >
               <Button
                 icon={<BarChartOutlined />}
+                size={responsive.isMobile ? 'small' : 'middle'}
                 onClick={() => {
                   loadStats();
                   setStatsVisible(true);
                 }}
               >
-                統計を見る
+                {responsive.isMobile ? '統計' : '統計を見る'}
               </Button>
               <Button
                 icon={<ReloadOutlined />}
+                size={responsive.isMobile ? 'small' : 'middle'}
                 onClick={loadGames}
                 loading={loading}
               >
-                再読み込み
+                {responsive.isMobile ? '再読込' : '再読み込み'}
               </Button>
               <Button
                 type="primary"
                 icon={<SyncOutlined />}
+                size={responsive.isMobile ? 'small' : 'middle'}
                 loading={refreshing}
                 onClick={refreshGames}
               >
-                最新データ取得
+                {responsive.isMobile ? '更新' : '最新データ取得'}
               </Button>
             </Space>
           </div>
@@ -388,12 +501,60 @@ const FreeGames: React.FC = () => {
         activeKey={platform} 
         onChange={(key) => setPlatform(key as any)}
         style={{ marginBottom: 16 }}
+        size={responsive.isMobile ? 'small' : 'default'}
         tabBarExtraContent={
-          <Space wrap>
+          responsive.isTablet ? null : (
+            <Space wrap>
+              <Select
+                value={statusFilter}
+                onChange={setStatusFilter}
+                style={{ width: 120 }}
+                size={responsive.isMobile ? 'small' : 'middle'}
+                options={[
+                  { value: 'all', label: 'すべて' },
+                  { value: 'active', label: '配布中' },
+                  { value: 'expired', label: '配布終了' },
+                  { value: 'upcoming', label: '配布予定' }
+                ]}
+              />
+              <Select
+                value={claimedFilter}
+                onChange={setClaimedFilter}
+                style={{ width: 120 }}
+                size={responsive.isMobile ? 'small' : 'middle'}
+                options={[
+                  { value: 'all', label: 'すべて' },
+                  { value: 'claimed', label: '受け取り済み' },
+                  { value: 'unclaimed', label: '未受け取り' }
+                ]}
+              />
+            </Space>
+          )
+        }
+      >
+        <TabPane 
+          tab={<span>すべて <Badge count={games.length} /></span>} 
+          key="all"
+        />
+        <TabPane 
+          tab={<span><GiftOutlined /> Epic Games <Badge count={epicCount} /></span>} 
+          key="epic"
+        />
+        <TabPane 
+          tab={<span><CloudOutlined /> Steam <Badge count={steamCount} /></span>} 
+          key="steam"
+        />
+      </Tabs>
+      
+      {/* Mobile filter section */}
+      {responsive.isTablet && (
+        <div style={{ marginBottom: 16, textAlign: 'center' }}>
+          <Space wrap size="small">
             <Select
               value={statusFilter}
               onChange={setStatusFilter}
-              style={{ width: 120 }}
+              style={{ width: responsive.isMobile ? 100 : 120 }}
+              size="small"
               options={[
                 { value: 'all', label: 'すべて' },
                 { value: 'active', label: '配布中' },
@@ -404,7 +565,8 @@ const FreeGames: React.FC = () => {
             <Select
               value={claimedFilter}
               onChange={setClaimedFilter}
-              style={{ width: 120 }}
+              style={{ width: responsive.isMobile ? 100 : 120 }}
+              size="small"
               options={[
                 { value: 'all', label: 'すべて' },
                 { value: 'claimed', label: '受け取り済み' },
@@ -412,23 +574,10 @@ const FreeGames: React.FC = () => {
               ]}
             />
           </Space>
-        }
-      >
-        <TabPane 
-          tab={<span>すべて <Badge count={games.length} showZero /></span>} 
-          key="all"
-        />
-        <TabPane 
-          tab={<span><GiftOutlined /> Epic Games <Badge count={epicCount} showZero /></span>} 
-          key="epic"
-        />
-        <TabPane 
-          tab={<span><CloudOutlined /> Steam <Badge count={steamCount} showZero /></span>} 
-          key="steam"
-        />
-      </Tabs>
+        </div>
+      )}
       
-      <Row gutter={[16, 16]}>
+      <Row gutter={responsive.isMobile ? [8, 8] : [16, 16]}>
         {games.length === 0 ? (
           <Col span={24}>
             <Card>

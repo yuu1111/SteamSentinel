@@ -274,6 +274,27 @@ router.get('/rss-debug', async (_req, res) => {
   }
 });
 
+// Epic Gamesの日付修正
+router.post('/fix-epic-dates', async (_req, res) => {
+  try {
+    const { EpicGamesModel } = await import('../models/EpicGamesModel');
+    const epicModel = new EpicGamesModel();
+    const fixedCount = epicModel.fixExpiredDates();
+    
+    res.json({
+      success: true,
+      message: `${fixedCount}件のEpic Gamesの日付を修正しました`,
+      fixedCount
+    });
+  } catch (error) {
+    logger.error('Failed to fix Epic game dates:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Epic Games日付修正に失敗しました'
+    });
+  }
+});
+
 // ゲームの受け取り状態を更新
 router.put('/:id/claim', async (req, res) => {
   try {
