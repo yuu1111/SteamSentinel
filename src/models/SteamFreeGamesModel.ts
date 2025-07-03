@@ -89,19 +89,38 @@ export class SteamFreeGamesModel {
     const freeGame = await this.findById(id);
     if (freeGame) {
       try {
-        // 基本的なゲーム追加ロジック
-        const gameInsertSql = `
-          INSERT OR IGNORE INTO games (steam_app_id, name, enabled, purchased, purchase_date, purchase_price)
-          VALUES (?, ?, 1, 1, ?, 0)
-        `;
-        const gameStmt = database.getConnection().prepare(gameInsertSql);
-        gameStmt.run([
-          freeGame.app_id,
-          freeGame.title,
-          new Date().toISOString().split('T')[0]
-        ]);
+        // まず既存のゲームを確認
+        const existingGameSql = `SELECT * FROM games WHERE steam_app_id = ?`;
+        const existingGameStmt = database.getConnection().prepare(existingGameSql);
+        const existingGame = existingGameStmt.get([freeGame.app_id]);
         
-        logger.info(`Free game "${freeGame.title}" added to game list`);
+        if (existingGame) {
+          // 既存ゲームを購入済みに更新
+          const updateSql = `
+            UPDATE games 
+            SET is_purchased = 1, purchased = 1, purchase_date = ?, purchase_price = 0, updated_at = CURRENT_TIMESTAMP
+            WHERE steam_app_id = ?
+          `;
+          const updateStmt = database.getConnection().prepare(updateSql);
+          updateStmt.run([
+            new Date().toISOString().split('T')[0],
+            freeGame.app_id
+          ]);
+          logger.info(`Existing game "${freeGame.title}" marked as purchased`);
+        } else {
+          // 新規ゲーム追加
+          const insertSql = `
+            INSERT INTO games (steam_app_id, name, enabled, is_purchased, purchased, purchase_date, purchase_price)
+            VALUES (?, ?, 1, 1, 1, ?, 0)
+          `;
+          const insertStmt = database.getConnection().prepare(insertSql);
+          insertStmt.run([
+            freeGame.app_id,
+            freeGame.title,
+            new Date().toISOString().split('T')[0]
+          ]);
+          logger.info(`New free game "${freeGame.title}" added as purchased`);
+        }
       } catch (error) {
         logger.error('Error adding free game to game list:', error);
       }

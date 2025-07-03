@@ -200,7 +200,7 @@ const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
       
       {/* Free Games Widget */}
       {isWidgetVisible('freeGames') && (
-        <Col xs={24} lg={12}>
+        <Col span={24}>
           <FreeGamesWidget />
         </Col>
       )}

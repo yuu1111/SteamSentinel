@@ -314,7 +314,6 @@ const FreeGames: React.FC = () => {
                 <Checkbox
                   checked={game.is_claimed}
                   onChange={() => toggleClaimedStatus(game.id, game.is_claimed)}
-                  disabled={game.status === 'expired'}
                   style={{ fontSize: responsive.isMobile ? 12 : 14 }}
                 >
                   受け取り済み
@@ -390,7 +389,7 @@ const FreeGames: React.FC = () => {
                 
                 {/* ゲーム情報 */}
                 <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                  {game.platform === 'epic' && game.start_date && game.end_date && (
+                  {game.platform === 'epic' && game.start_date && (
                     <Text 
                       type="secondary" 
                       style={{ 
@@ -398,19 +397,34 @@ const FreeGames: React.FC = () => {
                         lineHeight: '1.2'
                       }}
                     >
-                      <CalendarOutlined /> {new Date(game.start_date).toLocaleDateString()} - {new Date(game.end_date).toLocaleDateString()}
+                      <CalendarOutlined /> {new Date(game.start_date).toLocaleDateString()}{game.end_date ? ` - ${new Date(game.end_date).toLocaleDateString()}` : ' - 不明'}
                     </Text>
                   )}
-                  {game.platform === 'steam' && game.app_id && (
-                    <Text 
-                      type="secondary" 
-                      style={{ 
-                        fontSize: responsive.isMobile ? 10 : 12,
-                        lineHeight: '1.2'
-                      }}
-                    >
-                      App ID: {game.app_id}
-                    </Text>
+                  {game.platform === 'steam' && (
+                    <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                      {game.start_date && (
+                        <Text 
+                          type="secondary" 
+                          style={{ 
+                            fontSize: responsive.isMobile ? 10 : 12,
+                            lineHeight: '1.2'
+                          }}
+                        >
+                          <CalendarOutlined /> {new Date(game.start_date).toLocaleDateString()}{game.end_date ? ` - ${new Date(game.end_date).toLocaleDateString()}` : ' - 不明'}
+                        </Text>
+                      )}
+                      {game.app_id && (
+                        <Text 
+                          type="secondary" 
+                          style={{ 
+                            fontSize: responsive.isMobile ? 10 : 12,
+                            lineHeight: '1.2'
+                          }}
+                        >
+                          App ID: {game.app_id}
+                        </Text>
+                      )}
+                    </Space>
                   )}
                 </Space>
               </Space>
@@ -790,7 +804,6 @@ const FreeGames: React.FC = () => {
                     toggleClaimedStatus(selectedGame.id, selectedGame.is_claimed);
                     setSelectedGame(prev => prev ? { ...prev, is_claimed: !prev.is_claimed } : null);
                   }}
-                  disabled={selectedGame.status === 'expired'}
                 >
                   このゲームを受け取り済みにする
                 </Checkbox>
