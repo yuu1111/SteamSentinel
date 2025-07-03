@@ -23,7 +23,19 @@ export default defineConfig({
   publicDir: '../../public',
   build: {
     outDir: '../../dist/web',
-    emptyOutDir: true
+    emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          antd: ['antd'],
+          icons: ['@ant-design/icons']
+        }
+      }
+    },
+    chunkSizeWarningLimit: 1000,
+    minify: 'esbuild',
+    target: 'esnext'
   },
   server: {
     port: 3001,

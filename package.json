@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "nodemon --exec ts-node src/index.ts",
     "dev:web": "vite",
-    "build": "tsc && npm run build:web",
+    "build": "tsc --build && npm run build:web",
+    "build:fast": "tsc --build --incremental && vite build",
     "build:web": "vite build",
     "preview": "vite preview",
     "copy:components": "mkdir -p public/js/components public/js/spa && cp dist/web/public/js/components/*.js public/js/components/ && cp dist/web/public/js/spa/*.js public/js/spa/",
@@ -16,6 +17,7 @@
     "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
     "lint:fix": "eslint . --ext .ts,.tsx,.js,.jsx --fix",
     "typecheck": "tsc --noEmit",
+    "typecheck:fast": "tsc --noEmit --project tsconfig.dev.json",
     "clean": "rimraf dist node_modules package-lock.json",
     "release": "npm run clean && npm install && npm run typecheck && npm run lint && npm version patch && git add package.json package-lock.json && git commit -m \"chore: bump version to $(node -p \"require('./package.json').version\")\" && git tag v$(node -p \"require('./package.json').version\")",
     "release:minor": "npm run clean && npm install && npm run typecheck && npm run lint && npm version minor && git add package.json package-lock.json && git commit -m \"chore: bump version to $(node -p \"require('./package.json').version\")\" && git tag v$(node -p \"require('./package.json').version\")",
