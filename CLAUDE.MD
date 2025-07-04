@@ -2,6 +2,9 @@
 
 Steam価格監視・無料ゲーム検知・予算管理システム
 
+## Claude アシスタント規約
+@include claude-includes/claude-assistant-rules.yml#Claude_Assistant_Rules
+
 ## 機能
 @include claude-includes/core-features.yml#Core_Features
 
