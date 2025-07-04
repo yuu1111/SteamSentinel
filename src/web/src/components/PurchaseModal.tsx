@@ -30,31 +30,15 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
   useEffect(() => {
     const loadBudgets = async () => {
       try {
-        console.log('Loading budgets for purchase modal...')
         const response = await api.get('/budgets/summaries')
-        console.log('Budget API response:', {
-          success: response.success,
-          dataLength: response.data?.length,
-          data: response.data,
-          error: response.error
-        })
         
         // `/api/budgets/summaries` は直接配列を返す（api.get()を使用するとwrapperが追加される）
         const budgetData = response.data || response
         
         if (Array.isArray(budgetData)) {
-          console.log('Processing budgets:', budgetData)
           const activeBudgets = budgetData.filter((budget: any) => {
-            console.log('Checking budget:', {
-              id: budget.id,
-              name: budget.name, 
-              is_active: budget.is_active,
-              type: typeof budget.is_active,
-              remaining_amount: budget.remaining_amount
-            })
             return budget.is_active === true || budget.is_active === 1
           })
-          console.log('Filtered active budgets:', activeBudgets)
           setBudgets(activeBudgets)
         } else {
           console.error('Invalid budget response format:', {
@@ -137,10 +121,8 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
       onOk: async () => {
         try {
           setLoading(true)
-          console.log('Unmarking game:', game.id)
           
           const response = await api.put(`/games/${game.id}/unmark-purchased`)
-          console.log('Unmark response:', response)
 
           if (response.success) {
             showSuccess(`${game.name}の購入済みマークを解除しました`)

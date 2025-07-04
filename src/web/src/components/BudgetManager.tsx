@@ -34,19 +34,11 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({ expenseData }) => 
       }
       
       const budgetSummaries = await response.json()
-      console.log('Budget summaries received:', budgetSummaries)
       
       // `/api/budgets/summaries` は直接配列を返すため、そのまま使用
       
       // バックエンドのBudgetSummaryをフロントエンドのBudgetDataに変換
       const convertedBudgets: BudgetData[] = budgetSummaries.map((summary: any) => {
-        console.log('Converting budget summary:', summary)
-        console.log('Budget amounts:', {
-          budget_amount: summary.budget_amount,
-          spent_amount: summary.spent_amount,
-          remaining_amount: summary.remaining_amount,
-          calculated_remaining: summary.budget_amount - summary.spent_amount
-        })
         return {
           id: summary.id.toString(),
           name: summary.name,

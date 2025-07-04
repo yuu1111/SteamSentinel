@@ -542,8 +542,6 @@ const AlertTargetGames: React.FC<AlertTargetGamesProps> = ({ games, onShowGameDe
             <Card
               hoverable
               onClick={() => {
-                console.log('Card clicked for steam app id:', game.steam_app_id)
-                console.log('onShowGameDetail function:', onShowGameDetail)
                 onShowGameDetail?.(game.steam_app_id)
               }}
               style={{ cursor: 'pointer', height: '100%' }}

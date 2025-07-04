@@ -256,9 +256,7 @@ export const EditGameModal: React.FC<EditGameModalProps> = ({ show, game, onHide
   }, [show, game, form])
 
   const handleSubmit = async (values: any) => {
-    console.log('handleSubmit called with values:', values)
     if (!game) {
-      console.log('No game, returning')
       return
     }
 
@@ -294,11 +292,8 @@ export const EditGameModal: React.FC<EditGameModalProps> = ({ show, game, onHide
         manual_historical_low: values.manualHistoricalLow || null
       })
 
-      console.log('Update response:', response)
-      
       if (response.success) {
         showSuccess(`${gameName} の設定を更新しました`)
-        console.log('Calling onHide and onGameUpdated...')
         onHide()
         onGameUpdated()
       } else {

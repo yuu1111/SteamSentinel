@@ -94,6 +94,13 @@ Development_Rules:
     commits:
       format: "type: description"
       types: [feat, fix, docs, style, refactor, perf, test]
+      strategy: 論理的な単位で分割
+      guidelines:
+        - 機能ごとに分割（複数ファイル変更も1コミット可）
+        - 破綻しない最小単位を維持
+        - 1機能1コミットを基本とする
+        - リファクタリングとバグ修正は分離
+        - 設定変更は独立コミット
     branches:
       main: production ready
       develop: active development

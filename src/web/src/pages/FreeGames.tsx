@@ -252,10 +252,8 @@ const FreeGames: React.FC = () => {
     // 説明文からEpic Store URLを抽出
     const epicUrlFromDescription = extractEpicUrlFromDescription(game.description);
     if (epicUrlFromDescription) {
-      console.log('Found Epic Store URL in description:', epicUrlFromDescription);
       window.open(epicUrlFromDescription, '_blank');
     } else {
-      console.log('No Epic Store URL found in description for:', game.title);
       showError(`${game.title}のEpic Store URLが見つかりませんでした`);
     }
     

@@ -14,7 +14,6 @@ import Limitations from './pages/Limitations'
 import Licenses from './pages/Licenses'
 import GameDetail from './pages/GameDetail'
 import LoadingOverlay from './components/LoadingOverlay'
-// AlertContainer removed - using Ant Design notification system
 import HelpModal from './components/HelpModal'
 import { useDarkMode } from './hooks/useDarkMode'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'

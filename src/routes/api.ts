@@ -37,9 +37,6 @@ gameRoutes.delete('/:id(\\d+)', (req, res) => GameController.deleteGame(req, res
 gameRoutes.get('/:appId(\\d+)/price-history', validateSteamAppId, (req, res) => GameController.getGamePriceHistory(req, res));
 gameRoutes.get('/:appId(\\d+)/reviews', validateSteamAppId, (req, res) => GameController.getGameReviews(req, res));
 
-// TODO: REMOVE BEFORE PRODUCTION - Debug endpoints for review system
-gameRoutes.delete('/:appId(\\d+)/reviews', validateSteamAppId, (req, res) => GameController.clearGameReviews(req, res));
-gameRoutes.post('/:appId(\\d+)/reviews/refresh', validateSteamAppId, (req, res) => GameController.refreshGameReviews(req, res));
 gameRoutes.post('/reviews/batch', (req, res) => GameController.getMultipleGameReviews(req, res));
 gameRoutes.get('/:appId(\\d+)/info', validateSteamAppId, (req, res) => GameController.getGameInfo(req, res));
 gameRoutes.post('/info/batch', (req, res) => GameController.getMultipleGameInfo(req, res));

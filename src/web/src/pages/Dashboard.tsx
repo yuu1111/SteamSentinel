@@ -48,7 +48,6 @@ const Dashboard: React.FC = () => {
   }
 
   const handleShowGameDetail = (steamAppId: number) => {
-    console.log('handleShowGameDetail called with steamAppId:', steamAppId)
     navigate(`/games/${steamAppId}`)
   }
 
