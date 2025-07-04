@@ -636,23 +636,7 @@ const GameDetail: React.FC<GameDetailProps> = ({ steamAppId, onBack }) => {
                             <PictureOutlined />
                           </div>
                         }
-                        fallback={
-                          <div style={{ 
-                            height: 120, 
-                            background: '#f5f5f5', 
-                            borderRadius: 8,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: '#999',
-                            border: '1px dashed #d9d9d9'
-                          }}>
-                            <div style={{ textAlign: 'center' }}>
-                              <PictureOutlined style={{ fontSize: 24, marginBottom: 8 }} />
-                              <div>画像なし</div>
-                            </div>
-                          </div>
-                        }
+                        fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
                       />
                     </Col>
                   ))}
