@@ -28,73 +28,126 @@ const { Title, Text, Paragraph, Link } = Typography
 const Licenses: React.FC = () => {
   const frontendLibraries = [
     {
-      name: 'Chart.js 4.4.0',
-      license: 'MIT License',
-      purpose: '価格推移グラフの描画',
-      source: 'Chart.js',
-      url: 'https://www.chartjs.org/',
-      cdn: 'jsDelivr'
-    },
-    {
-      name: 'React 18',
+      name: 'React 19.1.0',
       license: 'MIT License',
       purpose: 'UIライブラリ、コンポーネント管理',
       source: 'React',
-      url: 'https://reactjs.org/',
-      cdn: 'npm'
+      url: 'https://reactjs.org/'
+    },
+    {
+      name: 'React DOM 19.1.6',
+      license: 'MIT License',
+      purpose: 'ReactのDOM操作ライブラリ',
+      source: 'React',
+      url: 'https://reactjs.org/'
     },
     {
       name: 'Ant Design 5.26.2',
       license: 'MIT License',
       purpose: 'UIコンポーネントライブラリ、デザインシステム',
       source: 'Ant Design',
-      url: 'https://ant.design/',
-      cdn: 'npm'
+      url: 'https://ant.design/'
+    },
+    {
+      name: '@ant-design/icons 6.0.0',
+      license: 'MIT License',
+      purpose: 'Ant Designアイコンライブラリ',
+      source: 'Ant Design',
+      url: 'https://ant.design/components/icon/'
+    },
+    {
+      name: 'Recharts 2.12.7',
+      license: 'MIT License',
+      purpose: '価格推移グラフ・チャートコンポーネント',
+      source: 'Recharts',
+      url: 'https://recharts.org/'
     }
   ]
 
   const backendLibraries = [
     {
-      name: 'Express.js',
+      name: 'Express.js 4.18.2',
       license: 'MIT License',
       purpose: 'Webサーバーフレームワーク',
       source: 'Express',
       url: 'https://expressjs.com/'
     },
     {
-      name: 'better-sqlite3',
+      name: 'better-sqlite3 9.2.2',
       license: 'MIT License',
       purpose: 'SQLiteデータベース操作',
       source: 'better-sqlite3',
       url: 'https://github.com/WiseLibs/better-sqlite3'
     },
     {
-      name: 'node-cron',
+      name: 'node-cron 3.0.3',
       license: 'ISC License',
-      purpose: 'スケジュール実行',
+      purpose: 'スケジュール実行（価格監視）',
       source: 'node-cron',
       url: 'https://github.com/node-cron/node-cron'
     },
     {
-      name: 'axios',
+      name: 'axios 1.6.2',
       license: 'MIT License',
-      purpose: 'HTTP通信ライブラリ',
+      purpose: 'HTTP通信ライブラリ（API呼び出し）',
       source: 'Axios',
       url: 'https://axios-http.com/'
     },
     {
-      name: 'winston',
+      name: 'winston 3.11.0',
       license: 'MIT License',
       purpose: 'ログ管理システム',
       source: 'Winston',
       url: 'https://github.com/winstonjs/winston'
     },
     {
-      name: 'dotenv',
+      name: 'winston-daily-rotate-file 4.7.1',
+      license: 'MIT License',
+      purpose: '日次ログローテーション',
+      source: 'Winston',
+      url: 'https://github.com/winstonjs/winston-daily-rotate-file'
+    },
+    {
+      name: 'cors 2.8.5',
+      license: 'MIT License',
+      purpose: 'CORS設定',
+      source: 'Express',
+      url: 'https://github.com/expressjs/cors'
+    },
+    {
+      name: 'helmet 7.1.0',
+      license: 'MIT License',
+      purpose: 'セキュリティヘッダー設定',
+      source: 'Helmet',
+      url: 'https://helmetjs.github.io/'
+    },
+    {
+      name: 'express-rate-limit 7.1.5',
+      license: 'MIT License',
+      purpose: 'APIレート制限',
+      source: 'Express',
+      url: 'https://github.com/express-rate-limit/express-rate-limit'
+    },
+    {
+      name: 'dotenv 16.3.1',
       license: 'BSD-2-Clause License',
       purpose: '環境変数管理',
       source: 'dotenv',
       url: 'https://github.com/motdotla/dotenv'
+    },
+    {
+      name: 'node-fetch 2.7.0',
+      license: 'MIT License',
+      purpose: 'Node.js用Fetchライブラリ',
+      source: 'node-fetch',
+      url: 'https://github.com/node-fetch/node-fetch'
+    },
+    {
+      name: 'xml2js 0.6.2',
+      license: 'MIT License',
+      purpose: 'XML解析（RSS処理）',
+      source: 'xml2js',
+      url: 'https://github.com/Leonidas-from-XIV/node-xml2js'
     }
   ]
 
@@ -105,8 +158,7 @@ const Licenses: React.FC = () => {
       purpose: 'ゲーム価格情報・歴代最安値データ取得',
       source: 'IsThereAnyDeal',
       url: 'https://isthereanydeal.com/',
-      terms: 'https://isthereanydeal.com/about/',
-      cost: '無料（APIキー必要）'
+      terms: 'https://isthereanydeal.com/about/'
     },
     {
       name: 'Steam Store API',
@@ -114,28 +166,39 @@ const Licenses: React.FC = () => {
       purpose: 'ゲーム詳細情報・価格情報取得',
       source: 'Steam Store',
       url: 'https://store.steampowered.com/',
-      terms: 'https://steamcommunity.com/dev/apiterms',
-      cost: '無料（制限あり）'
+      terms: 'https://steamcommunity.com/dev/apiterms'
     },
     {
       name: 'Steam CDN',
       license: 'Steamの利用規約に準拠',
       purpose: 'ゲームヘッダー画像の表示',
       source: 'Steam CDN',
-      url: 'https://cdn.akamai.steamstatic.com/',
-      cost: '無料'
+      url: 'https://cdn.akamai.steamstatic.com/'
     },
     {
       name: 'SteamDB',
       license: 'リンク先サイトの利用規約に準拠',
       purpose: '外部リンク（ゲーム詳細情報参照用）',
       source: 'SteamDB',
-      url: 'https://steamdb.info/',
-      cost: '無料'
+      url: 'https://steamdb.info/'
+    },
+    {
+      name: 'BackLoggd',
+      license: 'リンク先サイトの利用規約に準拠',
+      purpose: '外部リンク（ゲーム管理・レビューサイト）',
+      source: 'BackLoggd',
+      url: 'https://www.backloggd.com/'
     }
   ]
 
-  const renderLibraryCard = (item: any, showCDN: boolean = false) => (
+  const renderLibraryCard = (item: {
+    name: string;
+    license: string;
+    purpose: string;
+    source: string;
+    url: string;
+    terms?: string;
+  }) => (
     <Card size="small" style={{ height: '100%' }}>
       <Space direction="vertical" style={{ width: '100%' }}>
         <Title level={5} style={{ margin: 0 }}>{item.name}</Title>
@@ -148,23 +211,11 @@ const Licenses: React.FC = () => {
           <Text>{item.purpose}</Text>
         </div>
         <div>
-          <Text strong>配布元: </Text>
+          <Text strong>開発元: </Text>
           <Link href={item.url} target="_blank" rel="noopener noreferrer">
             {item.source}
           </Link>
         </div>
-        {showCDN && item.cdn && (
-          <div>
-            <Text strong>CDN: </Text>
-            <Text>{item.cdn}</Text>
-          </div>
-        )}
-        {item.cost && (
-          <div>
-            <Text strong>料金: </Text>
-            <Tag color="green">{item.cost}</Tag>
-          </div>
-        )}
         {item.terms && (
           <div>
             <Button 
@@ -212,7 +263,7 @@ const Licenses: React.FC = () => {
           <Row gutter={[16, 16]}>
             {frontendLibraries.map((lib, index) => (
               <Col xs={24} md={12} lg={8} key={index}>
-                {renderLibraryCard(lib, true)}
+                {renderLibraryCard(lib)}
               </Col>
             ))}
           </Row>
@@ -256,46 +307,6 @@ const Licenses: React.FC = () => {
           </Row>
         </Card>
 
-        {/* CDN Services */}
-        <Card 
-          title={
-            <Space>
-              <GlobalOutlined style={{ color: '#13c2c2' }} />
-              CDNサービス
-            </Space>
-          }
-          headStyle={{ borderBottom: '1px solid #87e8de' }}
-        >
-          <Row gutter={[16, 16]}>
-            <Col xs={24} md={12}>
-              <Card size="small">
-                <Space direction="vertical" style={{ width: '100%' }}>
-                  <Title level={5} style={{ margin: 0 }}>jsDelivr CDN</Title>
-                  <div>
-                    <Text strong>利用規約: </Text>
-                    <Link href="https://www.jsdelivr.com/terms" target="_blank" rel="noopener noreferrer">
-                      jsDelivr Terms of Service
-                    </Link>
-                  </div>
-                  <div>
-                    <Text strong>用途: </Text>
-                    <Text>フロントエンドライブラリの配信</Text>
-                  </div>
-                  <div>
-                    <Text strong>サービス提供元: </Text>
-                    <Link href="https://www.jsdelivr.com/" target="_blank" rel="noopener noreferrer">
-                      jsDelivr
-                    </Link>
-                  </div>
-                  <div>
-                    <Text strong>料金: </Text>
-                    <Tag color="green">無料</Tag>
-                  </div>
-                </Space>
-              </Card>
-            </Col>
-          </Row>
-        </Card>
 
         {/* License Notices */}
         <Card 

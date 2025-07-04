@@ -22,7 +22,7 @@ Tech_Stack:
     ui_library: Ant Design 5
     state_management: Context API
     routing: React Router v6
-    charts: Recharts
+    charts: Recharts 2.12.7
     libraries:
       http: axios
       date: dayjs

@@ -1,6 +1,15 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Modal, Card, Typography, Spin, Alert, Space } from 'antd'
 import { LineChartOutlined, InfoCircleOutlined } from '@ant-design/icons'
+import { 
+  LineChart, 
+  Line, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer 
+} from 'recharts'
 import { api } from '../utils/api'
 import { useAlert } from '../contexts/AlertContext'
 
@@ -16,6 +25,8 @@ interface PriceChartModalProps {
 interface PriceHistoryData {
   date: string
   current_price: number
+  formattedDate: string
+  formattedPrice: string
 }
 
 export const PriceChartModal: React.FC<PriceChartModalProps> = ({ 
@@ -24,8 +35,6 @@ export const PriceChartModal: React.FC<PriceChartModalProps> = ({
   gameName, 
   onHide 
 }) => {
-  const chartRef = useRef<HTMLCanvasElement>(null)
-  const chartInstanceRef = useRef<any>(null)
   const [loading, setLoading] = useState(false)
   const [priceHistory, setPriceHistory] = useState<PriceHistoryData[]>([])
   const { showError } = useAlert()
@@ -33,13 +42,6 @@ export const PriceChartModal: React.FC<PriceChartModalProps> = ({
   useEffect(() => {
     if (show && steamAppId) {
       loadPriceHistory()
-    }
-    
-    return () => {
-      if (chartInstanceRef.current) {
-        chartInstanceRef.current.destroy()
-        chartInstanceRef.current = null
-      }
     }
   }, [show, steamAppId])
 
@@ -56,12 +58,16 @@ export const PriceChartModal: React.FC<PriceChartModalProps> = ({
           return
         }
         
-        const formattedData = response.data.priceHistory.map((item: any) => ({
-          date: new Date(item.recorded_at).toISOString().split('T')[0],
-          current_price: item.current_price
-        }))
+        const formattedData = response.data.priceHistory.map((item: any) => {
+          const date = new Date(item.recorded_at)
+          return {
+            date: date.toISOString().split('T')[0],
+            current_price: item.current_price,
+            formattedDate: date.toLocaleDateString('ja-JP'),
+            formattedPrice: `¥${item.current_price.toLocaleString()}`
+          }
+        })
         setPriceHistory(formattedData)
-        setTimeout(() => createChart(formattedData), 100)
       } else {
         showError('価格履歴データがありません')
       }
@@ -72,82 +78,28 @@ export const PriceChartModal: React.FC<PriceChartModalProps> = ({
     }
   }
 
-  const createChart = (data: PriceHistoryData[]) => {
-    if (!chartRef.current || !(window as any).Chart) return
-
-    if (chartInstanceRef.current) {
-      chartInstanceRef.current.destroy()
+  // カスタムツールチップコンポーネント
+  const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: any[]; label?: string }) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload
+      return (
+        <div style={{
+          backgroundColor: 'white',
+          padding: '12px',
+          border: '1px solid #d9d9d9',
+          borderRadius: '6px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+        }}>
+          <p style={{ margin: 0, marginBottom: '4px', fontWeight: 'bold' }}>
+            {data.formattedDate}
+          </p>
+          <p style={{ margin: 0, color: '#1890ff' }}>
+            価格: {data.formattedPrice}
+          </p>
+        </div>
+      )
     }
-
-    const ctx = chartRef.current.getContext('2d')
-    if (!ctx) return
-
-    const labels = data.map(item => new Date(item.date).toLocaleDateString('ja-JP'))
-    const currentPrices = data.map(item => item.current_price)
-
-    chartInstanceRef.current = new ((window as any).Chart)(ctx, {
-      type: 'line',
-      data: {
-        labels: labels,
-        datasets: [
-          {
-            label: '価格',
-            data: currentPrices,
-            borderColor: '#1890ff',
-            backgroundColor: 'rgba(24, 144, 255, 0.1)',
-            tension: 0.1,
-            fill: false,
-            pointBackgroundColor: '#1890ff',
-            pointBorderColor: '#1890ff',
-            pointRadius: 4,
-            pointHoverRadius: 6
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          title: {
-            display: true,
-            text: `${gameName} - 価格推移`
-          },
-          legend: {
-            display: false
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            ticks: {
-              callback: function(value: any) {
-                return '¥' + value.toLocaleString()
-              }
-            },
-            title: {
-              display: true,
-              text: '価格 (円)'
-            }
-          },
-          x: {
-            title: {
-              display: true,
-              text: '日付'
-            }
-          }
-        },
-        interaction: {
-          intersect: false,
-          mode: 'index'
-        },
-        elements: {
-          point: {
-            radius: 3,
-            hoverRadius: 6
-          }
-        }
-      }
-    })
+    return null
   }
 
   return (
@@ -172,8 +124,38 @@ export const PriceChartModal: React.FC<PriceChartModalProps> = ({
         </Card>
       ) : priceHistory.length > 0 ? (
         <>
-          <div style={{ position: 'relative', height: '400px', width: '100%' }}>
-            <canvas ref={chartRef}></canvas>
+          <div style={{ height: '400px', width: '100%' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart
+                data={priceHistory}
+                margin={{
+                  top: 20,
+                  right: 30,
+                  left: 20,
+                  bottom: 20,
+                }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis 
+                  dataKey="formattedDate"
+                  tick={{ fontSize: 12 }}
+                  interval="preserveStartEnd"
+                />
+                <YAxis 
+                  tick={{ fontSize: 12 }}
+                  tickFormatter={(value) => `¥${value.toLocaleString()}`}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <Line 
+                  type="monotone" 
+                  dataKey="current_price" 
+                  stroke="#1890ff" 
+                  strokeWidth={2}
+                  dot={{ fill: '#1890ff', strokeWidth: 2, r: 4 }}
+                  activeDot={{ r: 6, stroke: '#1890ff', strokeWidth: 2 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
           <Alert
             message={
