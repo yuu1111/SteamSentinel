@@ -1,0 +1,77 @@
+# SteamSentinel Technology Stack
+# 技術スタック定義
+
+Tech_Stack:
+  backend:
+    runtime: Node.js v20
+    language: TypeScript 5.x
+    framework: Express 4.x
+    database: SQLite 3
+    libraries:
+      validation: express-validator
+      cors: cors
+      monitoring: node-cron
+      http: axios
+      parser: cheerio
+      date: date-fns
+    
+  frontend:
+    framework: React 18
+    language: TypeScript 5.x
+    builder: Vite 5.x
+    ui_library: Ant Design 5
+    state_management: Context API
+    routing: React Router v6
+    charts: Recharts
+    libraries:
+      http: axios
+      date: dayjs
+      icons: "@ant-design/icons"
+    
+  database:
+    primary: SQLite 3
+    orm: none (raw SQL)
+    migrations: manual
+    backup: file-based
+    
+  external_apis:
+    price_data: IsThereAnyDeal API
+    game_info: Steam Store API
+    free_games: RSS feeds
+    
+  monitoring_schedule:
+    price_check:
+      frequency: 6時間毎
+      times: ["6:00", "12:00", "18:00", "0:00"]
+    free_games:
+      epic_games:
+        frequency: 1時間毎
+        source: RSS feed
+      prime_gaming:
+        frequency: 手動確認促進
+        source: manual check
+      other_platforms:
+        frequency: プラットフォーム別
+        source: various
+    
+  development:
+    package_manager: npm
+    linter: ESLint
+    formatter: Prettier
+    testing: Jest (planned)
+    ci_cd: GitHub Actions (planned)
+    
+  deployment:
+    containerization: Docker
+    compose: docker-compose
+    volumes:
+      - "./data:/app/data"
+      - "./logs:/app/logs"
+    
+  project_statistics:
+    backend_files: 36
+    frontend_files: 45
+    db_tables: 8
+    total_endpoints: 80+
+    lines_of_code: ~15000
+    compile_time: 5秒（最適化済み）

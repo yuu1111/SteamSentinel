@@ -1,0 +1,120 @@
+# SteamSentinel Development Rules
+# 開発ルール・ガイドライン
+
+Development_Rules:
+  core_principles:
+    - TypeScript厳格モード必須
+    - Ant Designコンポーネント優先使用
+    - エラーハンドリング徹底
+    - 型安全性の確保
+    - Docker互換性維持
+    - コード品質優先
+    
+  coding_standards:
+    typescript:
+      strict_mode: true
+      no_any: true
+      explicit_types: required
+      null_checks: enabled
+      unused_checks: error
+    naming:
+      files: kebab-case
+      components: PascalCase
+      functions: camelCase
+      constants: UPPER_SNAKE_CASE
+      types: PascalCase
+    imports:
+      order:
+        - react
+        - third-party
+        - "@/" (alias)
+        - "./" (relative)
+      grouping: required
+      
+  development_workflow:
+    steps:
+      1: 機能実装前に型定義作成
+      2: APIエンドポイントから実装
+      3: フロントエンドUI実装
+      4: エラーケース先行実装
+      5: パフォーマンス測定必須
+      6: 動作確認とログ確認
+    testing:
+      unit: 推奨（未実装）
+      integration: 推奨（未実装）
+      manual: 必須
+      
+  api_design:
+    rest_conventions: strict
+    response_format: consistent
+    error_handling: structured
+    validation: express-validator
+    documentation: inline comments
+    
+  ui_guidelines:
+    framework: Ant Design 5
+    customization: minimal
+    responsive: required
+    accessibility: basic
+    themes: light/dark対応予定
+    
+  database_rules:
+    migrations: manual with version
+    backups: before schema changes
+    transactions: for multi-table ops
+    indexes: performance critical only
+    constraints: foreign keys required
+    
+  performance_constraints:
+    build_time: <10秒
+    api_response: <200ms
+    memory_usage: <500MB
+    cpu_usage: <50%
+    
+  security_practices:
+    input_validation: always
+    sql_injection: parameterized queries
+    xss_prevention: sanitize output
+    api_keys: environment variables
+    sensitive_data: never log
+    
+  external_api_usage:
+    steam_api:
+      status: 使用禁止
+      reason: レート制限厳しい
+      alternative: IsThereAnyDeal
+    rss_feeds:
+      status: 推奨
+      reason: レート制限なし
+    web_scraping:
+      status: 最小限
+      reason: 不安定
+      
+  git_practices:
+    commits:
+      format: "type: description"
+      types: [feat, fix, docs, style, refactor, perf, test]
+    branches:
+      main: production ready
+      develop: active development
+      feature/*: new features
+      
+  prohibited_practices:
+    - any型の使用
+    - console.log本番残し
+    - 未処理のPromise
+    - 同期的な重処理
+    - ハードコードされた値
+    - グローバル変数
+    - eval()の使用
+    - 未検証の外部入力
+    
+  code_review_checklist:
+    - [ ] TypeScriptエラーなし
+    - [ ] ESLint警告なし
+    - [ ] 適切なエラーハンドリング
+    - [ ] パフォーマンス考慮
+    - [ ] セキュリティ考慮
+    - [ ] コード可読性
+    - [ ] 適切なコメント
+    - [ ] テスト可能な設計

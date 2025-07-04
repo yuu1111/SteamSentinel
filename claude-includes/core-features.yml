@@ -1,0 +1,53 @@
+# SteamSentinel Core Features
+# 主要機能定義
+
+Core_Features:
+  price_monitoring:
+    description: 価格監視機能
+    features:
+      - 定期的な価格チェック（毎日2回・6:00/18:00）
+      - 価格履歴記録・グラフ表示
+      - セール通知（希望価格以下で通知）
+      - 価格変動通知
+      - 複数ストア価格比較
+      - 地域別価格追跡
+    
+  game_management:
+    description: ゲーム管理機能
+    features:
+      - ウィッシュリスト管理
+      - ゲーム情報一元管理
+      - メモ・優先度設定
+      - セール時のハイライト表示
+      - タグ・カテゴリ分類
+      - 購入済み管理
+    
+  budget_management:
+    description: 予算管理機能
+    features:
+      - 月間予算設定
+      - 支出管理（購入記録）
+      - 予算進捗ビジュアル表示
+      - 支出予測・アラート
+      - 年間支出統計
+      - カテゴリ別支出分析
+    
+  free_games_detection:
+    description: 無料ゲーム検知機能
+    features:
+      - 無料配布ゲーム自動検知
+      - Epic Games無料配布対応
+      - 期間限定オファー追跡
+      - 通知とウィジェット表示
+      - Prime Gaming対応
+      - 配布終了アラート
+    
+  system_features:
+    description: システム機能
+    features:
+      - 多言語対応（日英）
+      - レスポンシブデザイン
+      - Dockerコンテナ対応
+      - APIキー不要の基本機能
+      - 自動バックアップ
+      - データエクスポート/インポート

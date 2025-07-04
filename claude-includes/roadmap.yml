@@ -1,0 +1,204 @@
+# SteamSentinel Roadmap
+# 開発ロードマップ
+
+Roadmap:
+  immediate_improvements:
+    priority: URGENT
+    timeline: 1-2 weeks
+    items:
+      epic_games_accuracy:
+        description: Epic Games自動取得精度向上
+        tasks:
+          - RSS解析ロジック改善
+          - 重複検知強化
+          - エラーリトライ実装
+      price_history_optimization:
+        description: 価格履歴グラフ最適化
+        tasks:
+          - データポイント集約
+          - レンダリング最適化
+          - ズーム機能追加
+      error_notification:
+        description: エラー通知システム
+        tasks:
+          - トースト通知実装
+          - エラーログビューア
+          - 自動リカバリ機能
+      dark_mode:
+        description: ダークモード対応
+        tasks:
+          - Ant Designテーマ設定
+          - カラースキーム定義
+          - ユーザー設定保存
+          
+  phase1_core_enhancement:
+    priority: HIGH
+    timeline: 1-2 months
+    items:
+      price_prediction:
+        description: 価格予測アルゴリズム
+        features:
+          - 過去データ分析
+          - セールパターン学習
+          - 予測精度表示
+          - 信頼区間表示
+      sale_analysis:
+        description: セール傾向分析
+        features:
+          - 季節性分析
+          - プラットフォーム別統計
+          - 最適購入時期提案
+      wishlist_optimization:
+        description: ウィッシュリスト優先順位自動調整
+        features:
+          - 価格変動率考慮
+          - セール頻度分析
+          - ユーザー行動学習
+      backup_restore:
+        description: バックアップ/リストア機能
+        features:
+          - 自動バックアップ
+          - クラウド保存オプション
+          - バージョン管理
+          - 選択的リストア
+          
+  phase2_integration:
+    priority: MEDIUM
+    timeline: 3-4 months
+    items:
+      gog_support:
+        description: GOG.com対応
+        tasks:
+          - API調査
+          - データ構造拡張
+          - UI統合
+      humble_bundle:
+        description: Humble Bundle対応
+        tasks:
+          - Bundle検知
+          - 価格計算ロジック
+          - 期限管理
+      price_comparison:
+        description: 価格比較機能
+        features:
+          - 複数ストア横断検索
+          - 最安値ハイライト
+          - 地域別比較
+      regional_pricing:
+        description: 地域別価格表示
+        features:
+          - 主要地域対応
+          - 為替レート連動
+          - VPN警告表示
+          
+  phase3_advanced:
+    priority: LOW
+    timeline: 6+ months
+    items:
+      multi_user:
+        description: マルチユーザー対応
+        features:
+          - ユーザー認証
+          - 権限管理
+          - データ分離
+          - 共有機能
+      cloud_sync:
+        description: クラウド同期
+        features:
+          - リアルタイム同期
+          - 競合解決
+          - オフライン対応
+      mobile_app:
+        description: モバイルアプリ
+        platforms:
+          - React Native
+          - iOS/Android
+          - プッシュ通知
+      social_features:
+        description: ソーシャル機能
+        features:
+          - フレンドリスト
+          - ウィッシュリスト共有
+          - レビュー機能
+          
+  phase4_automation:
+    priority: FUTURE
+    timeline: 12+ months
+    items:
+      auto_purchase:
+        description: 購入自動化
+        features:
+          - 条件設定
+          - 安全性確保
+          - 確認ステップ
+      ai_recommendations:
+        description: AIレコメンデーション
+        features:
+          - 好み学習
+          - 類似ゲーム提案
+          - 予算内最適化
+      budget_optimization:
+        description: 予算最適化提案
+        features:
+          - 支出パターン分析
+          - 節約提案
+          - 購入タイミング最適化
+      sale_prediction:
+        description: セール予測
+        features:
+          - 機械学習モデル
+          - 確率表示
+          - アラート設定
+          
+  phase5_ecosystem:
+    priority: FUTURE
+    timeline: 18+ months
+    items:
+      browser_extension:
+        description: ブラウザ拡張機能
+        browsers:
+          - Chrome
+          - Firefox
+          - Edge
+        features:
+          - 価格オーバーレイ
+          - ワンクリック追加
+          - 即時アラート
+      discord_bot:
+        description: Discord bot
+        features:
+          - 価格チェックコマンド
+          - 自動通知
+          - グループ共有
+      slack_integration:
+        description: Slack連携
+        features:
+          - Webhook通知
+          - スラッシュコマンド
+          - チーム共有
+      ifttt_support:
+        description: IFTTT対応
+        features:
+          - トリガー定義
+          - アクション連携
+          - カスタムレシピ
+          
+  technical_improvements:
+    ongoing: true
+    items:
+      performance:
+        - データベース最適化
+        - キャッシング戦略
+        - 非同期処理改善
+      testing:
+        - ユニットテスト実装
+        - E2Eテスト追加
+        - CI/CD構築
+      monitoring:
+        - APM導入
+        - エラートラッキング
+        - 使用状況分析
+      documentation:
+        - API仕様書
+        - 開発者ガイド
+        - ユーザーマニュアル

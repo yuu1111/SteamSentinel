@@ -1,0 +1,226 @@
+# SteamSentinel API Summary
+# API仕様概要
+
+API_Summary:
+  base_config:
+    base_url: http://localhost:3001/api
+    version: 1.0
+    total_endpoints: 80+
+    format: REST
+    content_type: application/json
+    
+  response_format:
+    success:
+      success: boolean (true)
+      data: T | null
+      error: null
+    error:
+      success: boolean (false)
+      data: null
+      error: string
+      
+  endpoints:
+    games:
+      base: /games
+      operations:
+        list:
+          method: GET
+          path: /
+          query_params:
+            - monitoring_enabled: boolean
+            - platform: string
+            - sort: string
+          response: Game[]
+        create:
+          method: POST
+          path: /
+          body: CreateGameDto
+          response: Game
+        get:
+          method: GET
+          path: /:id
+          response: Game
+        update:
+          method: PUT
+          path: /:id
+          body: UpdateGameDto
+          response: Game
+        delete:
+          method: DELETE
+          path: /:id
+          response: boolean
+        batch_import:
+          method: POST
+          path: /import
+          body: steam_ids[]
+          response: ImportResult
+          
+    monitoring:
+      base: /monitoring
+      operations:
+        status:
+          method: GET
+          path: /status
+          response: MonitoringStatus
+        toggle:
+          method: POST
+          path: /toggle/:id
+          response: Game
+        check_now:
+          method: GET
+          path: /check-now
+          response: CheckResult
+        schedule:
+          method: GET
+          path: /schedule
+          response: Schedule
+        history:
+          method: GET
+          path: /history
+          query_params:
+            - limit: number
+            - offset: number
+          response: MonitoringLog[]
+          
+    alerts:
+      base: /alerts
+      operations:
+        list:
+          method: GET
+          path: /
+          query_params:
+            - active: boolean
+            - game_id: number
+          response: Alert[]
+        create:
+          method: POST
+          path: /
+          body: CreateAlertDto
+          response: Alert
+        update:
+          method: PUT
+          path: /:id
+          body: UpdateAlertDto
+          response: Alert
+        dismiss:
+          method: PUT
+          path: /dismiss/:id
+          response: Alert
+        delete:
+          method: DELETE
+          path: /:id
+          response: boolean
+          
+    budgets:
+      base: /budgets
+      operations:
+        get_month:
+          method: GET
+          path: /:month
+          response: Budget
+        create:
+          method: POST
+          path: /
+          body: CreateBudgetDto
+          response: Budget
+        update:
+          method: PUT
+          path: /:month
+          body: UpdateBudgetDto
+          response: Budget
+        summary:
+          method: GET
+          path: /summary
+          query_params:
+            - year: number
+          response: BudgetSummary
+        forecast:
+          method: GET
+          path: /forecast
+          response: BudgetForecast
+          
+    expenses:
+      base: /expenses
+      operations:
+        list:
+          method: GET
+          path: /
+          query_params:
+            - month: string
+            - year: number
+          response: Expense[]
+        create:
+          method: POST
+          path: /
+          body: CreateExpenseDto
+          response: Expense
+        stats:
+          method: GET
+          path: /stats
+          query_params:
+            - period: string
+          response: ExpenseStats
+          
+    free_games:
+      base: /free-games
+      operations:
+        list:
+          method: GET
+          path: /
+          query_params:
+            - platform: string
+            - active: boolean
+          response: FreeGame[]
+        check:
+          method: POST
+          path: /check
+          response: CheckResult
+        claim:
+          method: PUT
+          path: /claim/:id
+          response: FreeGame
+        sources:
+          method: GET
+          path: /sources
+          response: Source[]
+          
+    analytics:
+      base: /analytics
+      operations:
+        price_trends:
+          method: GET
+          path: /price-trends/:id
+          query_params:
+            - period: string
+          response: PriceTrend
+        sale_patterns:
+          method: GET
+          path: /sale-patterns
+          response: SalePattern[]
+        recommendations:
+          method: GET
+          path: /recommendations
+          response: Recommendation[]
+          
+  authentication:
+    type: none
+    note: ローカル使用前提のため認証なし
+    future: JWT検討中
+    
+  cors:
+    enabled: true
+    origins:
+      - http://localhost:5173
+      - http://localhost:3000
+    methods: ["GET", "POST", "PUT", "DELETE"]
+    
+  rate_limiting:
+    enabled: false
+    note: 外部API呼び出しのみレート制限考慮
+    
+  error_codes:
+    400: Bad Request - 不正なリクエスト
+    404: Not Found - リソースが見つかりません
+    409: Conflict - 競合が発生しました
+    500: Internal Server Error - サーバーエラー
+    503: Service Unavailable - 外部API利用不可

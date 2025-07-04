@@ -1,0 +1,140 @@
+# SteamSentinel Database Schema
+# データベーススキーマ定義
+
+Data_Schema:
+  tables:
+    games:
+      description: ゲーム基本情報
+      columns:
+        id: INTEGER PRIMARY KEY AUTOINCREMENT
+        steam_id: TEXT UNIQUE
+        title: TEXT NOT NULL
+        current_price: REAL
+        lowest_price: REAL
+        platform: TEXT DEFAULT 'steam'
+        priority: INTEGER DEFAULT 3
+        monitoring_enabled: BOOLEAN DEFAULT 1
+        free_to_play: BOOLEAN DEFAULT 0
+        notes: TEXT
+        tags: TEXT
+        added_at: DATETIME DEFAULT CURRENT_TIMESTAMP
+        updated_at: DATETIME DEFAULT CURRENT_TIMESTAMP
+      indexes:
+        - steam_id
+        - monitoring_enabled
+        - priority
+    
+    price_history:
+      description: 価格履歴
+      columns:
+        id: INTEGER PRIMARY KEY AUTOINCREMENT
+        game_id: INTEGER NOT NULL
+        price: REAL
+        is_sale: BOOLEAN DEFAULT 0
+        sale_percentage: INTEGER
+        checked_at: DATETIME DEFAULT CURRENT_TIMESTAMP
+        store: TEXT DEFAULT 'steam'
+      foreign_keys:
+        game_id: games(id) ON DELETE CASCADE
+      indexes:
+        - game_id
+        - checked_at
+    
+    alerts:
+      description: 価格アラート設定
+      columns:
+        id: INTEGER PRIMARY KEY AUTOINCREMENT
+        game_id: INTEGER NOT NULL
+        target_price: REAL NOT NULL
+        alert_type: TEXT DEFAULT 'price_drop'
+        triggered_at: DATETIME
+        dismissed: BOOLEAN DEFAULT 0
+        created_at: DATETIME DEFAULT CURRENT_TIMESTAMP
+      foreign_keys:
+        game_id: games(id) ON DELETE CASCADE
+      indexes:
+        - game_id
+        - dismissed
+    
+    budgets:
+      description: 月間予算管理
+      columns:
+        month: TEXT PRIMARY KEY
+        amount: REAL NOT NULL
+        spent: REAL DEFAULT 0
+        remaining: REAL
+        alert_threshold: REAL DEFAULT 0.8
+        created_at: DATETIME DEFAULT CURRENT_TIMESTAMP
+        updated_at: DATETIME DEFAULT CURRENT_TIMESTAMP
+      indexes:
+        - month
+    
+    expenses:
+      description: 購入記録
+      columns:
+        id: INTEGER PRIMARY KEY AUTOINCREMENT
+        game_id: INTEGER
+        amount: REAL NOT NULL
+        month: TEXT NOT NULL
+        purchased_at: DATETIME DEFAULT CURRENT_TIMESTAMP
+        store: TEXT DEFAULT 'steam'
+        notes: TEXT
+      foreign_keys:
+        game_id: games(id) ON DELETE SET NULL
+      indexes:
+        - month
+        - purchased_at
+    
+    free_games:
+      description: 無料配布ゲーム
+      columns:
+        id: INTEGER PRIMARY KEY AUTOINCREMENT
+        title: TEXT NOT NULL
+        platform: TEXT NOT NULL
+        start_date: DATETIME
+        end_date: DATETIME
+        url: TEXT
+        claimed: BOOLEAN DEFAULT 0
+        notified: BOOLEAN DEFAULT 0
+        created_at: DATETIME DEFAULT CURRENT_TIMESTAMP
+      indexes:
+        - platform
+        - end_date
+        - notified
+    
+    settings:
+      description: アプリケーション設定
+      columns:
+        key: TEXT PRIMARY KEY
+        value: TEXT
+        updated_at: DATETIME DEFAULT CURRENT_TIMESTAMP
+    
+    monitoring_log:
+      description: 監視実行ログ
+      columns:
+        id: INTEGER PRIMARY KEY AUTOINCREMENT
+        type: TEXT NOT NULL
+        status: TEXT NOT NULL
+        message: TEXT
+        games_checked: INTEGER DEFAULT 0
+        errors: INTEGER DEFAULT 0
+        duration_ms: INTEGER
+        executed_at: DATETIME DEFAULT CURRENT_TIMESTAMP
+      indexes:
+        - type
+        - executed_at
+    
+  type_definitions:
+    location: backend/types/
+    files:
+      - game.types.ts
+      - alert.types.ts
+      - budget.types.ts
+      - monitoring.types.ts
+      - api.types.ts
+    
+  constraints:
+    - 全テーブルでCASCADE削除を適用
+    - 価格は0以上の値のみ許可
+    - 日付はUTC時間で統一
+    - 文字列はUTF-8エンコーディング
