@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import { ConfigProvider, theme, App as AntApp } from 'antd'
 import { ExclamationCircleOutlined, FileTextOutlined, GithubOutlined } from '@ant-design/icons'
 import Navigation from './components/Navigation'
@@ -11,6 +12,7 @@ import FreeGames from './pages/FreeGames'
 import Settings from './pages/Settings'
 import Limitations from './pages/Limitations'
 import Licenses from './pages/Licenses'
+import GameDetail from './pages/GameDetail'
 import LoadingOverlay from './components/LoadingOverlay'
 // AlertContainer removed - using Ant Design notification system
 import HelpModal from './components/HelpModal'
@@ -19,11 +21,61 @@ import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { AlertProvider } from './contexts/AlertContext'
 import { ViewType } from './types'
 
-function App() {
-  const [currentView, setCurrentView] = useState<ViewType>('dashboard')
+// Router-aware App Content Component
+function AppContent() {
+  const navigate = useNavigate()
+  const location = useLocation()
   const [isDarkMode, toggleDarkMode] = useDarkMode()
   const [showHelpModal, setShowHelpModal] = useState(false)
-  // const [dashboardRef, setDashboardRef] = useState<any>(null)
+  
+  // Derive current view from URL path
+  const getCurrentView = (): ViewType => {
+    const path = location.pathname
+    if (path.startsWith('/games/')) return 'games'
+    if (path === '/games') return 'games'
+    if (path === '/alerts') return 'alerts'
+    if (path === '/monitoring') return 'monitoring'
+    if (path === '/test') return 'test'
+    if (path === '/free-games') return 'free-games'
+    if (path === '/settings') return 'settings'
+    if (path === '/limitations') return 'limitations'
+    if (path === '/licenses') return 'licenses'
+    return 'dashboard'
+  }
+  
+  const currentView = getCurrentView()
+  
+  const setCurrentView = (view: ViewType) => {
+    switch (view) {
+      case 'dashboard':
+        navigate('/')
+        break
+      case 'games':
+        navigate('/games')
+        break
+      case 'alerts':
+        navigate('/alerts')
+        break
+      case 'monitoring':
+        navigate('/monitoring')
+        break
+      case 'test':
+        navigate('/test')
+        break
+      case 'free-games':
+        navigate('/free-games')
+        break
+      case 'settings':
+        navigate('/settings')
+        break
+      case 'limitations':
+        navigate('/limitations')
+        break
+      case 'licenses':
+        navigate('/licenses')
+        break
+    }
+  }
 
   // ヘルプモーダル表示イベントリスナー
   useEffect(() => {
@@ -62,7 +114,7 @@ function App() {
         }, 0)
       })
     }
-  }, [currentView])
+  }, [location.pathname])
 
   // キーボードショートカット
   useKeyboardShortcuts({
@@ -76,30 +128,6 @@ function App() {
     }
   })
 
-  const renderCurrentView = () => {
-    switch (currentView) {
-      case 'dashboard':
-        return <Dashboard />
-      case 'games':
-        return <Games />
-      case 'alerts':
-        return <Alerts />
-      case 'monitoring':
-        return <Monitoring />
-      case 'test':
-        return <Test />
-      case 'free-games':
-        return <FreeGames />
-      case 'settings':
-        return <Settings />
-      case 'limitations':
-        return <Limitations />
-      case 'licenses':
-        return <Licenses />
-      default:
-        return <Dashboard />
-    }
-  }
 
   return (
     <ConfigProvider
@@ -174,7 +202,18 @@ function App() {
             />
             
             <main style={{ padding: '24px', maxWidth: '100%', minHeight: 'calc(100vh - 200px)' }}>
-              {renderCurrentView()}
+              <Routes>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/games" element={<Games />} />
+                <Route path="/games/:appId" element={<GameDetail onBack={() => navigate('/')} />} />
+                <Route path="/alerts" element={<Alerts />} />
+                <Route path="/monitoring" element={<Monitoring />} />
+                <Route path="/test" element={<Test />} />
+                <Route path="/free-games" element={<FreeGames />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/limitations" element={<Limitations />} />
+                <Route path="/licenses" element={<Licenses />} />
+              </Routes>
             </main>
 
             <LoadingOverlay />
@@ -193,10 +232,10 @@ function App() {
               <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 24px' }}>
                 <small style={{ color: isDarkMode ? '#999' : '#666' }}>
                   SteamSentinel v1.0.0 - Steam価格監視システム<br />
-                  <a href="#" onClick={(e) => { e.preventDefault(); setCurrentView('limitations') }} style={{ textDecoration: 'none', marginRight: '24px', color: isDarkMode ? '#1890ff' : '#1890ff' }}>
+                  <a href="#" onClick={(e) => { e.preventDefault(); navigate('/limitations') }} style={{ textDecoration: 'none', marginRight: '24px', color: isDarkMode ? '#1890ff' : '#1890ff' }}>
                     <ExclamationCircleOutlined style={{ marginRight: '4px' }} /> 制限事項・注意点
                   </a>
-                  <a href="#" onClick={(e) => { e.preventDefault(); setCurrentView('licenses') }} style={{ textDecoration: 'none', marginRight: '24px', color: isDarkMode ? '#1890ff' : '#1890ff' }}>
+                  <a href="#" onClick={(e) => { e.preventDefault(); navigate('/licenses') }} style={{ textDecoration: 'none', marginRight: '24px', color: isDarkMode ? '#1890ff' : '#1890ff' }}>
                     <FileTextOutlined style={{ marginRight: '4px' }} /> ライセンス情報
                   </a>
                   <a href="https://github.com/yuu1111/SteamSentinel" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: isDarkMode ? '#1890ff' : '#1890ff' }}>
@@ -209,6 +248,15 @@ function App() {
         </AlertProvider>
       </AntApp>
     </ConfigProvider>
+  )
+}
+
+// Main App Component with Router
+function App() {
+  return (
+    <Router>
+      <AppContent />
+    </Router>
   )
 }
 

@@ -5,6 +5,7 @@ import { Game } from '../types'
 
 interface SpecialGameStatusProps {
   games: Game[]
+  onShowGameDetail?: (steamAppId: number) => void
 }
 
 interface GameCategories {
@@ -14,7 +15,7 @@ interface GameCategories {
   removed: Game[]
 }
 
-export const SpecialGameStatus: React.FC<SpecialGameStatusProps> = ({ games }) => {
+export const SpecialGameStatus: React.FC<SpecialGameStatusProps> = ({ games, onShowGameDetail }) => {
 
   // ゲームをカテゴリ別に分類
   const gameCategories: GameCategories = {

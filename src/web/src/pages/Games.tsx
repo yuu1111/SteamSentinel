@@ -40,6 +40,7 @@ const Games: React.FC = () => {
   }, [])
 
   const loadAllGames = async (preserveScroll = false) => {
+    console.log('loadAllGames called, preserveScroll:', preserveScroll)
     const scrollPosition = preserveScroll ? window.scrollY : 0
     
     try {

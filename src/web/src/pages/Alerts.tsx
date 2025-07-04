@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Button, Select, Card, Timeline, Tag, Typography, Row, Col, Space, Spin, Empty, Badge, Avatar, Popconfirm, theme } from 'antd'
 import { 
   DeleteOutlined, 
@@ -20,6 +21,7 @@ import { formatDateJP } from '../utils/dateUtils'
 const { Title, Text } = Typography
 
 const Alerts: React.FC = () => {
+  const navigate = useNavigate()
   const [alerts, setAlerts] = useState<AlertData[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
@@ -74,6 +76,10 @@ const Alerts: React.FC = () => {
 
   const confirmClearAllAlerts = () => {
     clearAllAlerts()
+  }
+
+  const handleShowGameDetail = (steamAppId: number) => {
+    navigate(`/games/${steamAppId}`)
   }
 
   const getAlertIcon = (alertType: string) => {
@@ -388,6 +394,7 @@ const Alerts: React.FC = () => {
                         position: 'relative',
                         overflow: 'hidden'
                       }}
+                      onClick={() => steamAppId && handleShowGameDetail(steamAppId)}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.transform = 'translateY(-1px)'
                         e.currentTarget.style.boxShadow = `0 4px 12px ${token.colorFillSecondary}60`
@@ -521,6 +528,7 @@ const Alerts: React.FC = () => {
                                 href={`https://store.steampowered.com/app/${steamAppId}/`}
                                 target="_blank"
                                 rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
                                 style={{ 
                                   fontSize: 11, 
                                   padding: '3px 6px', 
@@ -538,6 +546,7 @@ const Alerts: React.FC = () => {
                                 href={`https://steamdb.info/app/${steamAppId}/`}
                                 target="_blank"
                                 rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
                                 style={{ 
                                   fontSize: 11, 
                                   padding: '3px 6px', 
@@ -552,7 +561,10 @@ const Alerts: React.FC = () => {
                               <Button
                                 type="text"
                                 size="small"
-                                onClick={() => openBackloggd(gameName)}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  openBackloggd(gameName)
+                                }}
                                 style={{ 
                                   fontSize: 11, 
                                   padding: '3px 6px', 

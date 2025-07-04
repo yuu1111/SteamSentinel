@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useParams } from 'react-router-dom'
 import { Card, Row, Col, Typography, Spin, Space, Tag, Button, Image, Divider, Rate, Avatar, List } from 'antd'
 import { ArrowLeftOutlined, LinkOutlined, ShoppingCartOutlined, StarOutlined, DatabaseOutlined, BookOutlined, TrophyOutlined, AppstoreOutlined, CloudOutlined, FireOutlined, ThunderboltOutlined, InfoCircleOutlined, TeamOutlined, AppstoreAddOutlined, CalendarOutlined, DesktopOutlined, PictureOutlined } from '@ant-design/icons'
 import { Game, ReviewScore, GameReviews } from '../types'
@@ -8,11 +9,13 @@ import { useAlert } from '../contexts/AlertContext'
 const { Title, Text } = Typography
 
 interface GameDetailProps {
-  steamAppId: number
+  steamAppId?: number
   onBack: () => void
 }
 
-const GameDetail: React.FC<GameDetailProps> = ({ steamAppId, onBack }) => {
+const GameDetail: React.FC<GameDetailProps> = ({ steamAppId: propSteamAppId, onBack }) => {
+  const { appId } = useParams<{ appId: string }>()
+  const steamAppId = propSteamAppId || (appId ? parseInt(appId, 10) : 0)
   const [game, setGame] = useState<Game | null>(null)
   const [gameReviews, setGameReviews] = useState<GameReviews | null>(null)
   const [gameDetails, setGameDetails] = useState<any>(null)

@@ -236,47 +236,31 @@ interface EditGameModalProps {
 }
 
 export const EditGameModal: React.FC<EditGameModalProps> = ({ show, game, onHide, onGameUpdated }) => {
-  const [formData, setFormData] = useState({
-    gameName: '',
-    thresholdType: 'price' as 'price' | 'discount' | 'any_sale',
-    priceThreshold: '',
-    discountThreshold: '',
-    gameEnabled: true,
-    alertEnabled: true,
-    manualHistoricalLow: ''
-  })
   const [loading, setLoading] = useState(false)
   const [form] = Form.useForm()
   const { showError, showSuccess } = useAlert()
 
   useEffect(() => {
     if (show && game) {
-      const newFormData = {
+      // Formの値を直接設定
+      form.setFieldsValue({
         gameName: game.name || '',
         thresholdType: game.price_threshold_type || 'price',
-        priceThreshold: game.price_threshold?.toString() || '',
-        discountThreshold: game.discount_threshold_percent?.toString() || '',
+        priceThreshold: game.price_threshold || undefined,
+        discountThreshold: game.discount_threshold_percent || undefined,
         gameEnabled: Boolean(game.enabled),
         alertEnabled: Boolean(game.alert_enabled),
-        manualHistoricalLow: game.manual_historical_low?.toString() || ''
-      }
-      setFormData(newFormData)
-      
-      // Formの値を明示的に設定
-      form.setFieldsValue({
-        gameName: newFormData.gameName,
-        thresholdType: newFormData.thresholdType,
-        priceThreshold: newFormData.priceThreshold ? parseInt(newFormData.priceThreshold) : undefined,
-        discountThreshold: newFormData.discountThreshold ? parseInt(newFormData.discountThreshold) : undefined,
-        gameEnabled: newFormData.gameEnabled,
-        alertEnabled: newFormData.alertEnabled,
-        manualHistoricalLow: newFormData.manualHistoricalLow ? parseInt(newFormData.manualHistoricalLow) : undefined
+        manualHistoricalLow: game.manual_historical_low || undefined
       })
     }
   }, [show, game, form])
 
   const handleSubmit = async (values: any) => {
-    if (!game) {return}
+    console.log('handleSubmit called with values:', values)
+    if (!game) {
+      console.log('No game, returning')
+      return
+    }
 
     const gameName = values.gameName?.trim()
     
@@ -310,8 +294,11 @@ export const EditGameModal: React.FC<EditGameModalProps> = ({ show, game, onHide
         manual_historical_low: values.manualHistoricalLow || null
       })
 
+      console.log('Update response:', response)
+      
       if (response.success) {
         showSuccess(`${gameName} の設定を更新しました`)
+        console.log('Calling onHide and onGameUpdated...')
         onHide()
         onGameUpdated()
       } else {
@@ -357,75 +344,78 @@ export const EditGameModal: React.FC<EditGameModalProps> = ({ show, game, onHide
         </Form.Item>
 
         <Form.Item 
-          label="ゲーム名 *" 
           name="gameName"
+          label="ゲーム名" 
           rules={[{ required: true, message: 'ゲーム名は必須です' }]}
         >
           <Input placeholder="ゲーム名を入力" />
         </Form.Item>
 
-        <Form.Item label="アラート条件">
-          <Radio.Group
-            value={formData.thresholdType}
-            onChange={(e) => setFormData(prev => ({ ...prev, thresholdType: e.target.value }))}
-            style={{ width: '100%' }}
-          >
+        <Form.Item 
+          name="thresholdType"
+          label="アラート条件"
+        >
+          <Radio.Group style={{ width: '100%' }}>
             <Space direction="vertical" style={{ width: '100%' }}>
               <Radio value="price">価格閾値 - 指定した金額以下になったら通知</Radio>
               <Radio value="discount">割引率閾値 - 指定した割引率以上になったら通知</Radio>
               <Radio value="any_sale">セール開始 - 1円でも安くなったら通知</Radio>
             </Space>
           </Radio.Group>
-
-          {formData.thresholdType === 'price' && (
-            <div style={{ marginTop: 12 }}>
-              <InputNumber
-                style={{ width: '100%' }}
-                placeholder="例: 2000"
-                min={0}
-                step={1}
-                value={formData.priceThreshold ? parseInt(formData.priceThreshold) : undefined}
-                onChange={(value) => setFormData(prev => ({ ...prev, priceThreshold: value?.toString() || '' }))}
-              />
-              <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
-                この金額以下になったときにアラートを送信
-              </Typography.Text>
-            </div>
-          )}
-
-          {formData.thresholdType === 'discount' && (
-            <div style={{ marginTop: 12 }}>
-              <InputNumber
-                style={{ width: '100%' }}
-                placeholder="例: 50"
-                min={1}
-                max={99}
-                step={1}
-                value={formData.discountThreshold ? parseInt(formData.discountThreshold) : undefined}
-                onChange={(value) => setFormData(prev => ({ ...prev, discountThreshold: value?.toString() || '' }))}
-              />
-              <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
-                この割引率以上になったときにアラートを送信（%）
-              </Typography.Text>
-            </div>
-          )}
         </Form.Item>
 
-        <Form.Item>
-          <Space direction="vertical">
-            <Checkbox
-              checked={formData.gameEnabled}
-              onChange={(e) => setFormData(prev => ({ ...prev, gameEnabled: e.target.checked }))}
-            >
-              監視を有効にする
-            </Checkbox>
-            <Checkbox
-              checked={formData.alertEnabled}
-              onChange={(e) => setFormData(prev => ({ ...prev, alertEnabled: e.target.checked }))}
-            >
-              アラートを有効にする
-            </Checkbox>
-          </Space>
+        <Form.Item
+          noStyle
+          shouldUpdate={(prevValues, currentValues) => prevValues.thresholdType !== currentValues.thresholdType}
+        >
+          {({ getFieldValue }) => {
+            const thresholdType = getFieldValue('thresholdType')
+            
+            if (thresholdType === 'price') {
+              return (
+                <Form.Item
+                  name="priceThreshold"
+                  label="価格閾値"
+                  help="この金額以下になったときにアラートを送信"
+                >
+                  <InputNumber
+                    style={{ width: '100%' }}
+                    placeholder="例: 2000"
+                    min={0}
+                    step={1}
+                  />
+                </Form.Item>
+              )
+            }
+            
+            if (thresholdType === 'discount') {
+              return (
+                <Form.Item
+                  name="discountThreshold"
+                  label="割引率閾値"
+                  help="この割引率以上になったときにアラートを送信（%）"
+                >
+                  <InputNumber
+                    style={{ width: '100%' }}
+                    placeholder="例: 50"
+                    min={1}
+                    max={99}
+                    step={1}
+                  />
+                </Form.Item>
+              )
+            }
+            
+            return null
+          }}
+        </Form.Item>
+
+        <Form.Item name="gameEnabled" valuePropName="checked">
+          <Checkbox>監視を有効にする</Checkbox>
+        </Form.Item>
+        
+        <Form.Item name="alertEnabled" valuePropName="checked">
+          <Checkbox>アラートを有効にする</Checkbox>
         </Form.Item>
 
         <Divider orientation="left">
@@ -433,23 +423,17 @@ export const EditGameModal: React.FC<EditGameModalProps> = ({ show, game, onHide
         </Divider>
         
         <Form.Item
+          name="manualHistoricalLow"
           label="手動最安値"
-          help={
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-              APIの最安値より優先される手動設定の最安値
-            </Typography.Text>
-          }
+          help="APIの最安値より優先される手動設定の最安値"
         >
           <InputNumber
             style={{ width: '100%' }}
             placeholder="例: 1000"
             min={0}
             step={1}
-            value={formData.manualHistoricalLow ? parseInt(formData.manualHistoricalLow) : undefined}
-            onChange={(value) => setFormData(prev => ({ ...prev, manualHistoricalLow: value?.toString() || '' }))}
           />
         </Form.Item>
-
 
         <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
           <Space>

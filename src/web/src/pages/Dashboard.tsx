@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Row, Col, Typography, Space, Button, Spin } from 'antd'
 import { HomeOutlined, SettingOutlined, FileTextOutlined, DatabaseOutlined } from '@ant-design/icons'
 import { TabDashboardData } from '../types'
@@ -12,6 +13,7 @@ import { DataManager } from '../components/DataManager'
 const { Title } = Typography
 
 const Dashboard: React.FC = () => {
+  const navigate = useNavigate()
   const [dashboardData, setDashboardData] = useState<TabDashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [showDashboardCustomizer, setShowDashboardCustomizer] = useState(false)
@@ -43,6 +45,11 @@ const Dashboard: React.FC = () => {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleShowGameDetail = (steamAppId: number) => {
+    console.log('handleShowGameDetail called with steamAppId:', steamAppId)
+    navigate(`/games/${steamAppId}`)
   }
 
   if (loading) {
@@ -102,6 +109,7 @@ const Dashboard: React.FC = () => {
             dashboardData={dashboardData}
             loading={loading}
             onRefresh={loadDashboardData}
+            onShowGameDetail={handleShowGameDetail}
           />
         </Col>
       </Row>
@@ -134,6 +142,7 @@ const Dashboard: React.FC = () => {
         show={showDataManager}
         onClose={() => setShowDataManager(false)}
       />
+
     </div>
   )
 }

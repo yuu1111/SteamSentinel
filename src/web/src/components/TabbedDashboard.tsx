@@ -15,12 +15,14 @@ interface TabbedDashboardProps {
   dashboardData: TabDashboardData | null
   loading: boolean
   onRefresh?: () => void
+  onShowGameDetail?: (steamAppId: number) => void
 }
 
 export const TabbedDashboard: React.FC<TabbedDashboardProps> = ({
   dashboardData,
   loading,
-  onRefresh
+  onRefresh,
+  onShowGameDetail
 }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'expenses'>('overview')
   const [expenseData, setExpenseData] = useState<ExpenseData | null>(null)
@@ -116,6 +118,7 @@ export const TabbedDashboard: React.FC<TabbedDashboardProps> = ({
           expenseData={expenseData}
           onRefresh={onRefresh}
           dashboardLayout={dashboardLayout}
+          onShowGameDetail={onShowGameDetail}
         />
       )
     },
@@ -151,13 +154,15 @@ interface OverviewDashboardProps {
   expenseData: ExpenseData | null
   onRefresh?: () => void
   dashboardLayout?: DashboardLayout | null
+  onShowGameDetail?: (steamAppId: number) => void
 }
 
 const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
   dashboardData,
   expenseData,
   onRefresh,
-  dashboardLayout
+  dashboardLayout,
+  onShowGameDetail
 }) => {
   // Filter games for special status display
   const specialGames = dashboardData?.games?.filter(game => {
@@ -264,7 +269,10 @@ const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
             }
           >
             {dashboardData?.games && (
-              <AlertTargetGames games={dashboardData.games} />
+              <AlertTargetGames 
+                games={dashboardData.games} 
+                onShowGameDetail={onShowGameDetail}
+              />
             )}
           </Card>
         </Col>
@@ -481,9 +489,10 @@ const IntegratedStatisticsCards: React.FC<IntegratedStatisticsCardsProps> = ({
 // Alert Target Games Component
 interface AlertTargetGamesProps {
   games: Game[]
+  onShowGameDetail?: (steamAppId: number) => void
 }
 
-const AlertTargetGames: React.FC<AlertTargetGamesProps> = ({ games }) => {
+const AlertTargetGames: React.FC<AlertTargetGamesProps> = ({ games, onShowGameDetail }) => {
   const alertTargetGames = games.filter(game => {
     if (!game.alert_enabled) {
       return false
@@ -532,6 +541,12 @@ const AlertTargetGames: React.FC<AlertTargetGamesProps> = ({ games }) => {
           <Col key={game.id} xs={24} sm={12} lg={8}>
             <Card
               hoverable
+              onClick={() => {
+                console.log('Card clicked for steam app id:', game.steam_app_id)
+                console.log('onShowGameDetail function:', onShowGameDetail)
+                onShowGameDetail?.(game.steam_app_id)
+              }}
+              style={{ cursor: 'pointer', height: '100%' }}
               cover={
                 <div style={{ position: 'relative', height: '120px', overflow: 'hidden' }}>
                   <img 
@@ -562,18 +577,12 @@ const AlertTargetGames: React.FC<AlertTargetGamesProps> = ({ games }) => {
                   )}
                 </div>
               }
-              style={{ height: '100%' }}
             >
               <Card.Meta
                 title={
-                  <Typography.Link 
-                    href={`https://store.steampowered.com/app/${game.steam_app_id}/`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ fontSize: 14 }}
-                  >
+                  <Typography.Text strong style={{ fontSize: 14 }}>
                     {game.name}
-                  </Typography.Link>
+                  </Typography.Text>
                 }
                 description={
                   <Space direction="vertical" size="small" style={{ width: '100%' }}>
