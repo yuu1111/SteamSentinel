@@ -118,14 +118,6 @@ export class SteamStoreAPI extends BaseAPI {
 
       const priceOverview = priceInfo.data.price_overview;
       
-      // Log Steam API price data for verification
-      logger.debug(`Steam API price data for ${appId}:`, {
-        currency: priceOverview.currency,
-        final: priceOverview.final,
-        initial: priceOverview.initial,
-        final_formatted: priceOverview.final_formatted,
-        initial_formatted: priceOverview.initial_formatted
-      });
       
       return {
         currentPrice: this.convertPriceToYen(priceOverview.final, priceOverview.currency),
@@ -265,7 +257,6 @@ export class SteamStoreAPI extends BaseAPI {
           gameInfo.review_score_desc = reviewsResponse.query_summary.review_score_desc || 'No user reviews';
           gameInfo.review_percentage = totalReviews > 0 ? Math.round((totalPositive / totalReviews) * 100) : 0;
           
-          logger.debug(`Steam reviews for ${appId}: ${totalPositive} positive, ${totalNegative} negative (${totalReviews} total, ${gameInfo.review_percentage}% positive)`);
         }
       } catch (reviewError) {
         logger.warn(`Failed to get review counts for ${appId}:`, reviewError);

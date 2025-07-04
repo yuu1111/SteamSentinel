@@ -58,8 +58,6 @@ export class IGDBService {
   constructor() {
     if (!config.igdbClientId || !config.igdbClientSecret) {
       logger.warn('IGDB credentials not configured. Review integration will use mock data.');
-      logger.debug(`IGDB_CLIENT_ID: ${config.igdbClientId ? 'SET' : 'NOT SET'}`);
-      logger.debug(`IGDB_CLIENT_SECRET: ${config.igdbClientSecret ? 'SET' : 'NOT SET'}`);
     } else {
       logger.info('IGDB credentials configured successfully');
     }
@@ -113,8 +111,6 @@ export class IGDBService {
   private async makeRequest(endpoint: string, query: string): Promise<any> {
     const token = await this.getAccessToken();
 
-    logger.debug(`Making IGDB API request to ${endpoint}`);
-    logger.debug(`Query: ${query}`);
 
     const response = await fetch(`${this.baseURL}${endpoint}`, {
       method: 'POST',
@@ -133,7 +129,6 @@ export class IGDBService {
     }
 
     const result = await response.json();
-    logger.debug(`IGDB API response: ${JSON.stringify(result, null, 2)}`);
     return result;
   }
 
@@ -186,7 +181,6 @@ export class IGDBService {
         );
         
         if (exactMatch) {
-          logger.debug(`Found exact match for "${gameName}": "${exactMatch.name}"`);
           return exactMatch;
         }
         
@@ -196,7 +190,6 @@ export class IGDBService {
         );
         
         if (partialMatch) {
-          logger.debug(`Found partial match for "${gameName}": "${partialMatch.name}"`);
           return partialMatch;
         }
         
@@ -206,7 +199,6 @@ export class IGDBService {
         );
         
         if (gameWithRating) {
-          logger.debug(`Found game with rating for "${gameName}": "${gameWithRating.name}"`);
           return gameWithRating;
         }
         
@@ -223,7 +215,6 @@ export class IGDBService {
   // Steam App IDでIGDBゲームを検索
   async findGameBySteamId(steamAppId: number): Promise<IGDBGame | null> {
     try {
-      logger.debug(`Searching IGDB for Steam App ID: ${steamAppId}`);
       
       // external_gamesを使ってSteam IDから検索
       const query = `
@@ -236,11 +227,9 @@ export class IGDBService {
       
       if (externalGames && externalGames.length > 0 && externalGames[0].game) {
         const game = externalGames[0].game;
-        logger.debug(`Found IGDB game via Steam ID: "${game.name}" (ID: ${game.id})`);
         return game;
       }
       
-      logger.debug(`No IGDB game found for Steam App ID: ${steamAppId}`);
       return null;
     } catch (error) {
       logger.error(`Failed to find game by Steam ID ${steamAppId}:`, error);
@@ -251,7 +240,6 @@ export class IGDBService {
   // ゲームのMetacriticスコアを取得（複数のアプローチ）
   async getMetacriticScore(gameId: number): Promise<number | null> {
     try {
-      logger.debug(`Searching for Metacritic score for IGDB game ID: ${gameId}`);
       
       // アプローチ1: game詳細でrating_*フィールドを再確認
       const gameDetailQuery = `
@@ -265,12 +253,10 @@ export class IGDBService {
         
         // 複数のレーティングフィールドをチェック
         if (game.aggregated_rating) {
-          logger.debug(`Found aggregated_rating as potential Metacritic: ${game.aggregated_rating}`);
           return Math.round(game.aggregated_rating);
         }
         
         if (game.total_rating) {
-          logger.debug(`Found total_rating as potential Metacritic: ${game.total_rating}`);
           return Math.round(game.total_rating);
         }
       }
@@ -288,7 +274,6 @@ export class IGDBService {
         );
         
         if (metacriticSite) {
-          logger.debug(`Found Metacritic URL for game ID ${gameId}: ${metacriticSite.url}`);
           // URLからスコアを抽出できる可能性があるが、WebスクレイピングになるためNG
         }
       }
@@ -302,13 +287,10 @@ export class IGDBService {
       try {
         const companies = await this.makeRequest('/involved_companies', companiesQuery);
         if (companies && companies.length > 0) {
-          logger.debug(`Found ${companies.length} companies for game ${gameId}`);
         }
       } catch (error) {
-        logger.debug(`Companies query failed for game ${gameId}:`, error);
       }
       
-      logger.debug(`No separate Metacritic score found for game ID: ${gameId}`);
       return null;
     } catch (error) {
       logger.error(`Failed to get Metacritic score for game ID ${gameId}:`, error);
@@ -323,7 +305,6 @@ export class IGDBService {
     url?: string;
   }> {
     try {
-      logger.debug(`Searching IGDB for game: "${gameName}"${steamAppId ? ` (Steam ID: ${steamAppId})` : ''}`);
       
       let game: IGDBGame | null = null;
       
@@ -338,11 +319,9 @@ export class IGDBService {
       }
       
       if (!game) {
-        logger.debug(`No IGDB game found for: "${gameName}"`);
         return {};
       }
 
-      logger.debug(`Found IGDB game: "${game.name}" (ID: ${game.id})`);
 
       const result: any = {};
 
@@ -350,13 +329,11 @@ export class IGDBService {
       if (game.total_rating && game.total_rating_count) {
         result.igdbRating = Math.round(game.total_rating);
         result.igdbRatingCount = game.total_rating_count;
-        logger.debug(`IGDB total rating: ${result.igdbRating} (${result.igdbRatingCount} reviews)`);
       }
       // フォールバック（ratingを使用）
       else if (game.rating && game.rating_count) {
         result.igdbRating = Math.round(game.rating);
         result.igdbRatingCount = game.rating_count;
-        logger.debug(`IGDB rating: ${result.igdbRating} (${result.igdbRatingCount} reviews)`);
       }
 
       // URL
@@ -364,7 +341,6 @@ export class IGDBService {
         result.url = game.url;
       }
 
-      logger.debug(`IGDB result for "${gameName}":`, result);
       return result;
     } catch (error) {
       logger.error(`Failed to get IGDB ratings for "${gameName}":`, error);
@@ -397,7 +373,6 @@ export class IGDBService {
     }>;
   }> {
     try {
-      logger.debug(`Searching IGDB for detailed game info: "${gameName}"${steamAppId ? ` (Steam ID: ${steamAppId})` : ''}`);
       
       let game: IGDBGame | null = null;
       
@@ -412,7 +387,6 @@ export class IGDBService {
       }
       
       if (!game) {
-        logger.debug(`No IGDB game found for detailed info: "${gameName}"`);
         return {};
       }
 
@@ -435,9 +409,7 @@ export class IGDBService {
           limit 10;
         `;
         screenshots = await this.makeRequest('/screenshots', screenshotQuery);
-        logger.debug(`Found ${screenshots.length} screenshots for game ${game.id}`);
       } catch (screenshotError) {
-        logger.debug(`Failed to get screenshots for game ${game.id}:`, screenshotError);
       }
       
       if (detailedGames && detailedGames.length > 0) {

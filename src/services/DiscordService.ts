@@ -1,5 +1,3 @@
-// configは現在使用していないため、インポートをコメントアウト
-// import { config } from '../config';
 import logger from '../utils/logger';
 import { Game } from '../types';
 

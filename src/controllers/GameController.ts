@@ -6,7 +6,6 @@ import { MonitoringService } from '../services/MonitoringService';
 import reviewIntegrationService from '../services/ReviewIntegrationService';
 import gameInfoService from '../services/GameInfoService';
 import { HighDiscountDetectionService } from '../services/HighDiscountDetectionService';
-import ReviewModel from '../models/ReviewModel';
 import { SteamStoreAPI } from '../api/SteamStoreAPI';
 import IGDBService from '../services/IGDBService';
 import logger from '../utils/logger';

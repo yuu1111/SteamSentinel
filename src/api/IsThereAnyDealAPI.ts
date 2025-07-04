@@ -26,12 +26,10 @@ export class IsThereAnyDealAPI extends BaseAPI {
         }
       });
 
-      logger.debug(`ITAD lookup response for ${steamAppId}:`, JSON.stringify(response));
 
       const plain = `app/${steamAppId}`;
       if (response && response[plain]) {
-        logger.debug(`Found ITAD game ID for ${steamAppId}: ${response[plain]}`);
-        return response[plain];
+          return response[plain];
       }
       logger.warn(`No ITAD game ID found for Steam App ID ${steamAppId} in response`);
       return null;
@@ -182,7 +180,6 @@ export class IsThereAnyDealAPI extends BaseAPI {
         return null;
       }
 
-      logger.debug(`Getting overview for game ID ${gameId} (Steam App ID: ${steamAppId})`);
 
       const response = await this.post<any>('/games/overview/v2', [gameId], {
         params: {
@@ -192,12 +189,10 @@ export class IsThereAnyDealAPI extends BaseAPI {
         }
       });
 
-      logger.debug(`ITAD overview response for ${steamAppId}:`, JSON.stringify(response));
 
       if (response?.prices && response.prices.length > 0) {
         const gameData = response.prices.find((p: any) => p.id === gameId);
         if (gameData) {
-          logger.debug(`Found game data for ${steamAppId}:`, JSON.stringify(gameData));
           const overview = {
             price: gameData.current,
             lowest: gameData.lowest,
@@ -401,17 +396,9 @@ export class IsThereAnyDealAPI extends BaseAPI {
       // Steam shopのみに限定
       params.shops = '61';
 
-      logger.debug('ITAD deals API params:', params);
 
       const response = await this.get<any>('/deals/v2', { params });
 
-      logger.debug('ITAD deals API response structure:', {
-        hasResponse: !!response,
-        hasList: !!response?.list,
-        listLength: response?.list?.length || 0,
-        listIsArray: Array.isArray(response?.list),
-        responseKeys: response ? Object.keys(response) : []
-      });
 
       // デバッグ: 最初の5件のrawデータを出力
       if (response?.list && Array.isArray(response.list) && response.list.length > 0) {
@@ -441,14 +428,6 @@ export class IsThereAnyDealAPI extends BaseAPI {
 
       for (const deal of response.list) {
         try {
-          logger.debug('Processing deal:', {
-            title: deal.title,
-            shop: deal.shop,
-            plain: deal.plain,
-            priceNew: deal.price_new,
-            priceOld: deal.price_old,
-            priceCut: deal.price_cut
-          });
 
           // Steam店舗のデータのみを処理
           if (deal.shop?.id === 61 && deal.plain) {
@@ -456,7 +435,6 @@ export class IsThereAnyDealAPI extends BaseAPI {
             // Steam App IDを抽出（app/123456形式から）
             const appIdMatch = deal.plain.match(/app\/(\d+)/);
             if (!appIdMatch) {
-              logger.debug('No app ID found in plain:', deal.plain);
               continue;
             }
 
@@ -477,15 +455,6 @@ export class IsThereAnyDealAPI extends BaseAPI {
                 gameData.current_price > 0 && 
                 gameData.original_price > gameData.current_price) {
               highDiscountGames.push(gameData);
-              logger.debug('Added game:', gameData.name, `${gameData.discount_percent}% off`);
-            } else {
-              logger.debug('Game filtered out:', gameData.name, {
-                discountPercent: gameData.discount_percent,
-                currentPrice: gameData.current_price,
-                originalPrice: gameData.original_price,
-                meetsMinDiscount: gameData.discount_percent >= options.minDiscount,
-                validPrices: gameData.current_price > 0 && gameData.original_price > gameData.current_price
-              });
             }
           } else {
             if (deal.shop?.id !== 61) {
@@ -493,10 +462,6 @@ export class IsThereAnyDealAPI extends BaseAPI {
             } else if (!deal.plain) {
               noPlainFieldCount++;
             }
-            logger.debug('Deal filtered out - not Steam or no plain field:', {
-              shopId: deal.shop?.id,
-              hasPlain: !!deal.plain
-            });
           }
         } catch (dealError) {
           logger.warn('Error processing deal:', dealError);

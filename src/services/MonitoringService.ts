@@ -125,7 +125,6 @@ export class MonitoringService {
                   this.progress.failedGames++;
                 }
                 
-                logger.debug(`Saved price data for ${game.name} immediately`);
               } catch (error) {
                 logger.error(`Error processing game ${game.name}:`, error);
                 this.progress.failedGames++;
@@ -189,7 +188,6 @@ export class MonitoringService {
     try {
       // レビュー情報の取得（バックグラウンドで実行、エラーを無視）
       this.updateGameReviews(game).catch(reviewError => {
-        logger.debug(`Review update failed for ${game.name} (${game.steam_app_id}):`, reviewError);
       });
 
       // APIから取得したゲーム名でゲーム情報を更新（元の名前が一般的でない場合のみ）
@@ -206,7 +204,6 @@ export class MonitoringService {
             game.name = updatedGame.name;
           }
         } else {
-          logger.debug(`Keeping original English name "${game.name}" instead of Japanese name "${newPriceHistory.gameName}"`);
         }
       }
 
@@ -475,7 +472,6 @@ export class MonitoringService {
       await reviewIntegrationService.getGameReviews(game.steam_app_id, game.name);
     } catch (error) {
       // レビュー取得の失敗は価格監視には影響しないため、debugレベルでログ出力
-      logger.debug(`Failed to update review data for ${game.name} (${game.steam_app_id}):`, error);
       throw error; // 呼び出し元でcatchするため再throw
     }
   }

@@ -25,7 +25,6 @@ export abstract class BaseAPI {
     this.axiosInstance.interceptors.request.use(
       async (config) => {
         await this.enforceRateLimit();
-        logger.debug(`${this.apiName} API Request: ${config.method?.toUpperCase()} ${config.url}`);
         return config;
       },
       (error) => {
@@ -37,7 +36,6 @@ export abstract class BaseAPI {
     // レスポンスインターセプター
     this.axiosInstance.interceptors.response.use(
       (response) => {
-        logger.debug(`${this.apiName} API Response: ${response.status} ${response.config.url}`);
         return response;
       },
       async (error) => {

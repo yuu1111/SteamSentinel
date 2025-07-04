@@ -134,14 +134,6 @@ export class FreeGamesRSSService {
         if (description.toLowerCase().includes('epic games') || 
             link.includes('epicgames.com')) {
           
-          // Debug: Detailed RSS data output
-          logger.debug(`=== Epic Games RSS Data Debug ===`);
-          logger.debug(`Title: ${title}`);
-          logger.debug(`Link: ${link}`);
-          logger.debug(`Description (first 500 chars): ${description.substring(0, 500)}...`);
-          logger.debug(`Full Description: ${description}`);
-          logger.debug(`PubDate: ${item.pubDate?.[0] || ''}`);
-          
           // 説明文からEpic Store URLを直接抽出（URLエンコード対応）
           let epicStoreUrl = link; // デフォルトはRSSリンク
           
@@ -158,12 +150,8 @@ export class FreeGamesRSSService {
           
           if (epicUrlMatch) {
             epicStoreUrl = epicUrlMatch[0];
-            logger.debug(`Epic Store URL found in description: ${epicStoreUrl}`);
           } else {
-            logger.debug(`Epic Store URL not found in description`);
-            logger.debug(`Using RSS link as fallback: ${link}`);
           }
-          logger.debug(`=== End Epic Games RSS Data Debug ===`);
           
           // 終了日の抽出 - 複数のパターンに対応
           const endDateMatch = description.match(/(?:until|through)\s+(\w+\s+\d{1,2})/i);
@@ -276,13 +264,6 @@ export class FreeGamesRSSService {
 
   private async processEpicGame(game: ParsedFreeGame): Promise<void> {
     try {
-      // Debug: Output detailed information for all Epic games
-      logger.debug(`Processing Epic Game: ${game.title}`);
-      logger.debug(`Description length: ${game.description.length} chars`);
-      logger.debug(`URL: ${game.url}`);
-      logger.debug(`Pub Date: ${game.pubDate}`);
-      logger.debug(`End Date: ${game.endDate || 'none'}`);
-      
       // 既存のゲームかチェック
       const existing = await this.epicGamesModel.findByTitle(game.title);
       
@@ -292,7 +273,6 @@ export class FreeGamesRSSService {
         
         // Epic Games Store URLを使用（RSS処理で既に説明文から抽出済み）
         const epicStoreUrl = game.url;
-        logger.debug(`Epic Store URL: ${epicStoreUrl}`);
         
         // 新規ゲームとして追加（配布終了のゲームも含む）
         await this.epicGamesModel.create({
@@ -376,7 +356,6 @@ export class FreeGamesRSSService {
     name?: string;
   } | null> {
     try {
-      logger.debug(`Starting Steam API verification: ${title} (${appId})`);
       
       const appDetails = await this.steamAPI.getAppDetails(appId);
       
@@ -399,11 +378,6 @@ export class FreeGamesRSSService {
       const currentPrice = data?.price_overview?.final ? 
         Math.round(data.price_overview.final / 100) : undefined;
       
-      logger.debug(`Steam API verification result: ${title} (${appId})`);
-      logger.debug(`   - Free: ${isFree}`);
-      logger.debug(`   - Type: ${gameType}`);
-      logger.debug(`   - Current price: ${currentPrice ? `¥${currentPrice.toLocaleString()}` : 'No price info'}`);
-      logger.debug(`   - Name: ${data?.name || 'Unknown'}`);
       
       return {
         isFree,
@@ -457,7 +431,6 @@ export class FreeGamesRSSService {
         if (result) {
           if (result.isFree) {
             stillFree++;
-            logger.debug(`Still free: ${game.title} (${game.app_id})`);
           } else {
             expired++;
             // 配布終了をデータベースに反映

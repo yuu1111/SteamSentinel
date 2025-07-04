@@ -2,8 +2,6 @@ import { IsThereAnyDealAPI } from '../api/IsThereAnyDealAPI';
 import discordService from './DiscordService';
 import logger from '../utils/logger';
 import itadSettingsModel from '../models/ITADSettingsModel';
-// configは現在使用していないため、インポートをコメントアウト
-// import { config } from '../config';
 
 export interface HighDiscountGame {
   name: string;
