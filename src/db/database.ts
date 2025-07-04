@@ -195,6 +195,50 @@ class DatabaseManager {
       )
     `);
 
+    // レビュー統合データテーブル
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS game_reviews (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        steam_app_id INTEGER NOT NULL,
+        game_name TEXT NOT NULL,
+        steam_score INTEGER,
+        steam_review_count INTEGER,
+        steam_description TEXT,
+        metacritic_score INTEGER,
+        metacritic_description TEXT,
+        metacritic_url TEXT,
+        igdb_score INTEGER,
+        igdb_review_count INTEGER,
+        igdb_description TEXT,
+        igdb_url TEXT,
+        aggregate_score INTEGER,
+        last_updated DATETIME DEFAULT CURRENT_TIMESTAMP,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (steam_app_id) REFERENCES games(steam_app_id),
+        UNIQUE(steam_app_id)
+      )
+    `);
+
+    // レビューソース別詳細テーブル
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS review_scores (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        steam_app_id INTEGER NOT NULL,
+        source TEXT NOT NULL CHECK(source IN ('steam', 'metacritic', 'igdb')),
+        score INTEGER NOT NULL,
+        max_score INTEGER NOT NULL DEFAULT 100,
+        review_count INTEGER,
+        description TEXT,
+        url TEXT,
+        tier TEXT,
+        percent_recommended REAL,
+        last_updated DATETIME DEFAULT CURRENT_TIMESTAMP,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (steam_app_id) REFERENCES games(steam_app_id),
+        UNIQUE(steam_app_id, source)
+      )
+    `);
+
     // Steam無料ゲーム管理テーブル
     db.exec(`
       CREATE TABLE IF NOT EXISTS steam_free_games (
@@ -254,6 +298,60 @@ class DatabaseManager {
       }
     } catch (error) {
       logger.debug('Migration check for steam_free_games:', error);
+    }
+
+    // review_scoresテーブルのIGDBソース対応マイグレーション
+    try {
+      // テーブルが存在するかチェック
+      const tableExists = db.prepare(`
+        SELECT name FROM sqlite_master 
+        WHERE type='table' AND name='review_scores'
+      `).get();
+      
+      if (tableExists) {
+        // 現在のCHECK制約を確認
+        const tableSchema = db.prepare(`
+          SELECT sql FROM sqlite_master 
+          WHERE type='table' AND name='review_scores'
+        `).get() as any;
+        
+        if (tableSchema && !tableSchema.sql.includes('igdb')) {
+          logger.info('Migrating review_scores table to support IGDB...');
+          
+          // 新しいテーブルを作成
+          db.exec(`
+            CREATE TABLE review_scores_new (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              steam_app_id INTEGER NOT NULL,
+              source TEXT NOT NULL CHECK(source IN ('steam', 'metacritic', 'igdb')),
+              score INTEGER NOT NULL,
+              max_score INTEGER NOT NULL DEFAULT 100,
+              review_count INTEGER,
+              description TEXT,
+              url TEXT,
+              tier TEXT,
+              percent_recommended REAL,
+              last_updated DATETIME DEFAULT CURRENT_TIMESTAMP,
+              created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+              UNIQUE(steam_app_id, source)
+            );
+          `);
+          
+          // 既存データをコピー
+          db.exec(`
+            INSERT INTO review_scores_new 
+            SELECT * FROM review_scores;
+          `);
+          
+          // 古いテーブルを削除し、新しいテーブルをリネーム
+          db.exec(`DROP TABLE review_scores;`);
+          db.exec(`ALTER TABLE review_scores_new RENAME TO review_scores;`);
+          
+          logger.info('review_scores table migration completed');
+        }
+      }
+    } catch (error) {
+      logger.warn('Failed to migrate review_scores table:', error);
     }
 
     // トリガーの作成

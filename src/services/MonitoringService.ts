@@ -3,6 +3,7 @@ import { PriceHistoryModel } from '../models/PriceHistory';
 import { AlertModel } from '../models/Alert';
 import { APIService } from './APIService';
 import discordService from './DiscordService';
+import reviewIntegrationService from './ReviewIntegrationService';
 import { Game, PriceHistory, Alert, MonitoringResult } from '../types';
 import { config } from '../config';
 import logger from '../utils/logger';
@@ -186,6 +187,11 @@ export class MonitoringService {
     }
 
     try {
+      // レビュー情報の取得（バックグラウンドで実行、エラーを無視）
+      this.updateGameReviews(game).catch(reviewError => {
+        logger.debug(`Review update failed for ${game.name} (${game.steam_app_id}):`, reviewError);
+      });
+
       // APIから取得したゲーム名でゲーム情報を更新（元の名前が一般的でない場合のみ）
       if (newPriceHistory.gameName && newPriceHistory.gameName !== game.name) {
         // 元の名前が英語名で、新しい名前が日本語名の場合は上書きしない
@@ -356,7 +362,21 @@ export class MonitoringService {
       throw new Error(`Game with Steam App ID ${steamAppId} not found`);
     }
 
+    logger.info(`Starting manual monitoring for game: ${game.name} (${steamAppId})`);
+
+    // 価格情報の取得
     const priceHistory = await this.apiService.getGamePriceInfo(game.steam_app_id, game.name);
+    
+    // レビュー情報の取得（バックグラウンドで実行）
+    try {
+      logger.info(`Fetching review data for game: ${game.name} (${steamAppId})`);
+      await reviewIntegrationService.getGameReviews(steamAppId, game.name);
+      logger.info(`Successfully updated review data for game: ${game.name} (${steamAppId})`);
+    } catch (reviewError) {
+      logger.warn(`Failed to update review data for game ${game.name} (${steamAppId}):`, reviewError);
+      // レビュー取得失敗は価格監視を止めない
+    }
+    
     return this.processGamePriceUpdate(game, priceHistory);
   }
 
@@ -447,5 +467,16 @@ export class MonitoringService {
     }
     
     return alert;
+  }
+
+  // ゲームのレビュー情報を更新（バックグラウンド実行用）
+  private async updateGameReviews(game: Game): Promise<void> {
+    try {
+      await reviewIntegrationService.getGameReviews(game.steam_app_id, game.name);
+    } catch (error) {
+      // レビュー取得の失敗は価格監視には影響しないため、debugレベルでログ出力
+      logger.debug(`Failed to update review data for ${game.name} (${game.steam_app_id}):`, error);
+      throw error; // 呼び出し元でcatchするため再throw
+    }
   }
 }

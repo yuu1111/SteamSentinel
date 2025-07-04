@@ -1,27 +1,16 @@
 import { SteamStoreAPI } from '../api/SteamStoreAPI';
+import IGDBService from './IGDBService';
+import ReviewModel, { GameReviews, ReviewScore } from '../models/ReviewModel';
 import logger from '../utils/logger';
 
-export interface ReviewScore {
-  source: 'steam' | 'metacritic' | 'opencritic';
-  score: number;
-  maxScore: number;
-  reviewCount?: number;
-  description?: string;
-  url?: string;
-}
-
-export interface GameReviews {
-  steamAppId: number;
-  gameName: string;
-  reviews: ReviewScore[];
-  aggregateScore: number; // 0-100の統合スコア
-  lastUpdated: Date;
-}
+// これらの型はReviewModelから再エクスポート
+export { GameReviews, ReviewScore } from '../models/ReviewModel';
 
 export class ReviewIntegrationService {
   private steamAPI: SteamStoreAPI;
-  private reviewCache = new Map<number, GameReviews>();
-  private cacheTimeout = 24 * 60 * 60 * 1000; // 24時間
+  private memoryCache = new Map<number, GameReviews>();
+  private memoryCacheTimeout = 5 * 60 * 1000; // 5分（メモリキャッシュは短期）
+  private dbCacheTimeout = 24; // 24時間（データベースキャッシュ）
 
   constructor() {
     this.steamAPI = new SteamStoreAPI();
@@ -30,33 +19,44 @@ export class ReviewIntegrationService {
   // ゲームのレビュー統合情報を取得
   async getGameReviews(steamAppId: number, gameName: string): Promise<GameReviews | null> {
     try {
-      // キャッシュをチェック
-      const cached = this.reviewCache.get(steamAppId);
-      if (cached && Date.now() - cached.lastUpdated.getTime() < this.cacheTimeout) {
-        return cached;
+      // メモリキャッシュをチェック
+      const memoryCached = this.memoryCache.get(steamAppId);
+      if (memoryCached && Date.now() - memoryCached.lastUpdated.getTime() < this.memoryCacheTimeout) {
+        logger.debug(`Memory cache hit for ${gameName} (${steamAppId})`);
+        return memoryCached;
       }
 
-      logger.info(`Fetching reviews for ${gameName} (${steamAppId})`);
+      // データベースキャッシュをチェック
+      if (ReviewModel.isReviewCacheValid(steamAppId, this.dbCacheTimeout)) {
+        const dbCached = ReviewModel.getGameReviews(steamAppId);
+        if (dbCached) {
+          logger.debug(`Database cache hit for ${gameName} (${steamAppId})`);
+          // メモリキャッシュにも保存
+          this.memoryCache.set(steamAppId, dbCached);
+          return dbCached;
+        }
+      }
+
+      logger.info(`Fetching fresh reviews for ${gameName} (${steamAppId})`);
 
       const reviews: ReviewScore[] = [];
 
-      // Steam レビューを取得
-      const steamReview = await this.getSteamReview(steamAppId);
-      if (steamReview) {
-        reviews.push(steamReview);
+      // Steam レビューとMetacriticスコアを取得
+      const steamData = await this.getSteamReview(steamAppId);
+      if (steamData.steamReview) {
+        reviews.push(steamData.steamReview);
+      }
+      
+      // SteamからのMetacriticスコア（唯一のプロバイダー）
+      if (steamData.metacriticReview) {
+        reviews.push(steamData.metacriticReview);
       }
 
-      // Metacritic レビューを取得（OpenCritic APIをフォールバックとして使用）
-      const metacriticReview = await this.getMetacriticReview(gameName);
-      if (metacriticReview) {
-        reviews.push(metacriticReview);
-      }
+      // IGDB レビューを取得（IGDBスコアのみ、Metacriticは除外）
+      const igdbReviews = await this.getIGDBReviews(gameName, steamAppId);
+      reviews.push(...igdbReviews);
 
-      // OpenCritic レビューを取得
-      const opencriticReview = await this.getOpenCriticReview(gameName);
-      if (opencriticReview) {
-        reviews.push(opencriticReview);
-      }
+      // OpenCritic サポート削除
 
       // 統合スコアを計算
       const aggregateScore = this.calculateAggregateScore(reviews);
@@ -69,8 +69,16 @@ export class ReviewIntegrationService {
         lastUpdated: new Date()
       };
 
-      // キャッシュに保存
-      this.reviewCache.set(steamAppId, gameReviews);
+      // データベースに保存
+      const saved = ReviewModel.saveGameReviews(gameReviews);
+      if (saved) {
+        logger.info(`Saved reviews to database for ${gameName} (${steamAppId})`);
+      } else {
+        logger.warn(`Failed to save reviews to database for ${gameName} (${steamAppId})`);
+      }
+
+      // メモリキャッシュに保存
+      this.memoryCache.set(steamAppId, gameReviews);
 
       return gameReviews;
 
@@ -80,17 +88,21 @@ export class ReviewIntegrationService {
     }
   }
 
-  // Steam レビューを取得
-  private async getSteamReview(steamAppId: number): Promise<ReviewScore | null> {
+  // Steam レビューを取得（Metacriticスコアも含む）
+  private async getSteamReview(steamAppId: number): Promise<{ steamReview: ReviewScore | null; metacriticReview: ReviewScore | null }> {
     try {
       const gameInfo = await this.steamAPI.getGameInfo(steamAppId);
       
+      let steamReview: ReviewScore | null = null;
+      let metacriticReview: ReviewScore | null = null;
+      
+      // Steamレビュー
       if (gameInfo?.positive_reviews !== undefined && gameInfo?.negative_reviews !== undefined) {
         const totalReviews = gameInfo.positive_reviews + gameInfo.negative_reviews;
         const positivePercent = totalReviews > 0 ? 
           Math.round((gameInfo.positive_reviews / totalReviews) * 100) : 0;
 
-        return {
+        steamReview = {
           source: 'steam',
           score: positivePercent,
           maxScore: 100,
@@ -99,11 +111,23 @@ export class ReviewIntegrationService {
           url: `https://store.steampowered.com/app/${steamAppId}/`
         };
       }
+      
+      // SteamからのMetacriticスコア（最も正確）
+      if (gameInfo?.metacritic_score) {
+        metacriticReview = {
+          source: 'metacritic',
+          score: gameInfo.metacritic_score,
+          maxScore: 100,
+          description: this.getMetacriticDescription(gameInfo.metacritic_score),
+          url: gameInfo.metacritic_url || `https://www.metacritic.com/search/game/${encodeURIComponent(gameInfo.name || '')}/`
+        };
+        logger.info(`Found Metacritic score from Steam for ${gameInfo.name}: ${gameInfo.metacritic_score}`);
+      }
 
-      return null;
+      return { steamReview, metacriticReview };
     } catch (error) {
       logger.error(`Failed to get Steam review for ${steamAppId}:`, error);
-      return null;
+      return { steamReview: null, metacriticReview: null };
     }
   }
 
@@ -132,36 +156,41 @@ export class ReviewIntegrationService {
     return description;
   }
 
-  // Metacritic レビューを取得（シミュレーション）
-  private async getMetacriticReview(gameName: string): Promise<ReviewScore | null> {
+  // IGDB レビューを取得（IGDBスコアのみ）
+  private async getIGDBReviews(gameName: string, steamAppId?: number): Promise<ReviewScore[]> {
+    const reviews: ReviewScore[] = [];
+    
     try {
-      // 実際のプロダクションでは Metacritic API または スクレイピングを使用
-      // ここではデモンストレーション用のシミュレーション
-      
-      // よく知られたゲームの場合はサンプルスコアを返す
-      const knownGames: Record<string, number> = {
-        'Cyberpunk 2077': 86,
-        'The Witcher 3: Wild Hunt': 93,
-        'Baldur\'s Gate 3': 96,
-        'Grand Theft Auto V': 97,
-        'Dark Souls III': 89
-      };
-
-      const score = knownGames[gameName];
-      if (score) {
-        return {
-          source: 'metacritic',
-          score,
-          maxScore: 100,
-          description: this.getMetacriticDescription(score),
-          url: `https://www.metacritic.com/search/game/${encodeURIComponent(gameName)}/`
-        };
+      // IGDBが設定されている場合は実際のAPIを使用
+      if (IGDBService.isConfigured()) {
+        logger.debug(`Attempting to get IGDB reviews for "${gameName}"${steamAppId ? ` (Steam ID: ${steamAppId})` : ''}`);
+        
+        const ratings = await IGDBService.getGameRatings(gameName, steamAppId);
+        
+        // IGDBスコア（複数の評価を個別に表示）
+        if (ratings.igdbRating) {
+          logger.info(`Found IGDB score for "${gameName}": ${ratings.igdbRating}`);
+          reviews.push({
+            source: 'igdb',
+            score: ratings.igdbRating,
+            maxScore: 100,
+            reviewCount: ratings.igdbRatingCount,
+            description: this.getIGDBDescription(ratings.igdbRating),
+            url: ratings.url || `https://www.igdb.com/search?type=1&q=${encodeURIComponent(gameName)}`
+          });
+        }
+        
+        if (reviews.length === 0) {
+          logger.debug(`No IGDB scores found for "${gameName}"`);
+        }
+      } else {
+        logger.warn('IGDB not configured, skipping IGDB review fetch');
       }
 
-      return null;
+      return reviews;
     } catch (error) {
-      logger.error(`Failed to get Metacritic review for ${gameName}:`, error);
-      return null;
+      logger.error(`Failed to get IGDB reviews for ${gameName}:`, error);
+      return reviews;
     }
   }
 
@@ -178,55 +207,24 @@ export class ReviewIntegrationService {
     }
   }
 
-  // OpenCritic レビューを取得
-  private async getOpenCriticReview(gameName: string): Promise<ReviewScore | null> {
-    try {
-      // OpenCritic API は無料で利用可能
-      // const searchUrl = `https://opencritic-api.p.rapidapi.com/game/search?criteria=${encodeURIComponent(gameName)}`;
-      
-      // 実際のAPI呼び出しは省略（APIキーが必要）
-      // ここではサンプルデータを返す
-      
-      const knownGames: Record<string, { score: number; reviewCount: number }> = {
-        'Cyberpunk 2077': { score: 78, reviewCount: 142 },
-        'The Witcher 3: Wild Hunt': { score: 93, reviewCount: 156 },
-        'Baldur\'s Gate 3': { score: 96, reviewCount: 89 },
-        'Elden Ring': { score: 94, reviewCount: 178 }
-      };
-
-      const gameData = knownGames[gameName];
-      if (gameData) {
-        return {
-          source: 'opencritic',
-          score: gameData.score,
-          maxScore: 100,
-          reviewCount: gameData.reviewCount,
-          description: this.getOpenCriticDescription(gameData.score),
-          url: `https://opencritic.com/search?criteria=${encodeURIComponent(gameName)}`
-        };
-      }
-
-      return null;
-    } catch (error) {
-      logger.error(`Failed to get OpenCritic review for ${gameName}:`, error);
-      return null;
-    }
-  }
-
-  // OpenCriticスコアの説明文を生成
-  private getOpenCriticDescription(score: number): string {
+  // IGDBスコアの説明文を生成
+  private getIGDBDescription(score: number): string {
     if (score >= 90) {
-      return 'Mighty';
+      return 'Exceptional';
     } else if (score >= 80) {
-      return 'Strong';
+      return 'Great';
     } else if (score >= 70) {
-      return 'Fair';
+      return 'Good';
     } else if (score >= 60) {
-      return 'Weak';
+      return 'Above Average';
+    } else if (score >= 50) {
+      return 'Average';
     } else {
-      return 'Awful';
+      return 'Below Average';
     }
   }
+
+  // OpenCritic サポートは削除されました
 
   // 統合スコアを計算
   private calculateAggregateScore(reviews: ReviewScore[]): number {
@@ -246,10 +244,10 @@ export class ReviewIntegrationService {
           weight = review.reviewCount && review.reviewCount > 1000 ? 2 : 1.5;
           break;
         case 'metacritic':
-          weight = 1.8;
+          weight = 2.0;
           break;
-        case 'opencritic':
-          weight = 1.5;
+        case 'igdb':
+          weight = 1.8;
           break;
       }
 
@@ -262,43 +260,80 @@ export class ReviewIntegrationService {
 
   // 複数ゲームのレビューを一括取得
   async getMultipleGameReviews(games: Array<{ steamAppId: number; name: string }>): Promise<Map<number, GameReviews | null>> {
+    // データベースから一括取得を試行
+    const steamAppIds = games.map(g => g.steamAppId);
+    const dbReviews = ReviewModel.getMultipleGameReviews(steamAppIds);
+    
     const reviewMap = new Map<number, GameReviews | null>();
+    const needsFetch: Array<{ steamAppId: number; name: string }> = [];
     
-    // 並列処理で複数ゲームのレビューを取得
-    const promises = games.map(async (game) => {
-      const reviews = await this.getGameReviews(game.steamAppId, game.name);
-      return { steamAppId: game.steamAppId, reviews };
-    });
-
-    const results = await Promise.allSettled(promises);
-    
-    results.forEach((result, index) => {
-      const game = games[index];
-      if (result.status === 'fulfilled') {
-        reviewMap.set(game.steamAppId, result.value.reviews);
+    // キャッシュヒット判定
+    for (const game of games) {
+      const dbReview = dbReviews.get(game.steamAppId);
+      
+      if (dbReview && ReviewModel.isReviewCacheValid(game.steamAppId, this.dbCacheTimeout)) {
+        reviewMap.set(game.steamAppId, dbReview);
+        this.memoryCache.set(game.steamAppId, dbReview); // メモリキャッシュにも保存
       } else {
-        logger.error(`Failed to get reviews for ${game.name}:`, result.reason);
-        reviewMap.set(game.steamAppId, null);
+        needsFetch.push(game);
       }
-    });
+    }
+    
+    // 新規取得が必要なゲームのみ並列処理
+    if (needsFetch.length > 0) {
+      logger.info(`Fetching fresh reviews for ${needsFetch.length} games`);
+      
+      const promises = needsFetch.map(async (game) => {
+        const reviews = await this.getGameReviews(game.steamAppId, game.name);
+        return { steamAppId: game.steamAppId, reviews };
+      });
+
+      const results = await Promise.allSettled(promises);
+      
+      results.forEach((result, index) => {
+        const game = needsFetch[index];
+        if (result.status === 'fulfilled') {
+          reviewMap.set(game.steamAppId, result.value.reviews);
+        } else {
+          logger.error(`Failed to get reviews for ${game.name}:`, result.reason);
+          reviewMap.set(game.steamAppId, null);
+        }
+      });
+    }
 
     return reviewMap;
   }
 
   // キャッシュクリア
   clearCache(): void {
-    this.reviewCache.clear();
-    logger.info('Review cache cleared');
+    this.memoryCache.clear();
+    logger.info('Memory review cache cleared');
+  }
+
+  // データベースキャッシュクリア
+  clearDatabaseCache(): void {
+    // 古いレビューデータを削除（30日以上前）
+    const deletedCount = ReviewModel.cleanupOldReviews(30);
+    logger.info(`Database review cache cleanup: ${deletedCount} records deleted`);
   }
 
   // 統計情報取得
   getStatistics(): {
-    cachedGames: number;
-    cacheSize: number;
+    memoryCachedGames: number;
+    memoryCacheSize: number;
+    databaseStats: {
+      totalGamesWithReviews: number;
+      reviewSourceStats: { source: string; count: number }[];
+      averageAggregateScore: number;
+      lastUpdateTime: string | null;
+    };
   } {
+    const dbStats = ReviewModel.getStatistics();
+    
     return {
-      cachedGames: this.reviewCache.size,
-      cacheSize: this.reviewCache.size * 1024 // 概算
+      memoryCachedGames: this.memoryCache.size,
+      memoryCacheSize: this.memoryCache.size * 1024, // 概算
+      databaseStats: dbStats
     };
   }
 }

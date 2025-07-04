@@ -3,7 +3,6 @@ import { SteamPriceInfo } from '../types';
 import logger from '../utils/logger';
 
 export class SteamStoreAPI extends BaseAPI {
-  // private readonly currency = 'JPY'; // Currently unused but may be needed for future API calls
   private readonly countryCode = 'JP';
 
   constructor() {
@@ -206,21 +205,117 @@ export class SteamStoreAPI extends BaseAPI {
     }
   }
 
-  // ゲーム基本情報取得（レビュー・リリース日等）
+  // ゲーム基本情報取得（レビュー・リリース日・Metacritic等）
   async getGameInfo(appId: number): Promise<{
     name?: string;
     coming_soon?: boolean;
     release_date?: string;
     positive_reviews?: number;
     negative_reviews?: number;
+    metacritic_score?: number;
+    metacritic_url?: string;
+  } | null> {
+    try {
+      // ゲーム基本情報取得
+      const detailsResponse = await this.get<any>('/api/appdetails', {
+        params: {
+          appids: appId,
+          cc: this.countryCode,
+          l: 'japanese',
+          filters: 'basic,release_date,metacritic'
+        }
+      });
+
+      let gameInfo: any = {};
+      
+      if (detailsResponse?.[appId]?.success && detailsResponse[appId].data) {
+        const data = detailsResponse[appId].data;
+        gameInfo = {
+          name: data.name,
+          coming_soon: data.release_date?.coming_soon || false,
+          release_date: data.release_date?.date,
+          positive_reviews: 0,
+          negative_reviews: 0,
+          metacritic_score: data.metacritic?.score,
+          metacritic_url: data.metacritic?.url
+        };
+      }
+
+      // レビュー数取得（Steam Reviews API）
+      try {
+        const reviewsResponse = await this.get<any>('/appreviews/' + appId, {
+          params: {
+            json: 1,
+            language: 'all',
+            purchase_type: 'all',
+            num_per_page: 20, // 少数のレビューサンプルを取得
+            filter: 'recent' // 最近のレビューを取得
+          }
+        });
+
+        if (reviewsResponse?.query_summary) {
+          const totalReviews = reviewsResponse.query_summary.total_reviews || 0;
+          const totalPositive = reviewsResponse.query_summary.total_positive || 0;
+          const totalNegative = totalReviews - totalPositive; // Steam APIでは必ず一致
+          
+          gameInfo.positive_reviews = totalPositive;
+          gameInfo.negative_reviews = totalNegative;
+          
+          // レビューの詳細情報も保存（ReviewIntegrationServiceで使用）
+          gameInfo.review_score_desc = reviewsResponse.query_summary.review_score_desc || 'No user reviews';
+          gameInfo.review_percentage = totalReviews > 0 ? Math.round((totalPositive / totalReviews) * 100) : 0;
+          
+          logger.debug(`Steam reviews for ${appId}: ${totalPositive} positive, ${totalNegative} negative (${totalReviews} total, ${gameInfo.review_percentage}% positive)`);
+        }
+      } catch (reviewError) {
+        logger.warn(`Failed to get review counts for ${appId}:`, reviewError);
+        // レビュー取得失敗は致命的ではない
+      }
+
+      return gameInfo.name ? gameInfo : null;
+    } catch (error) {
+      logger.error(`Failed to get game info for ${appId}:`, error);
+      return null;
+    }
+  }
+
+  // 詳細なゲーム情報取得（説明、開発者、ジャンル等）
+  async getDetailedGameInfo(appId: number): Promise<{
+    short_description?: string;
+    detailed_description?: string;
+    developers?: string[];
+    publishers?: string[];
+    categories?: Array<{ id: number; description: string }>;
+    genres?: Array<{ id: number; description: string }>;
+    platforms?: {
+      windows?: boolean;
+      mac?: boolean;
+      linux?: boolean;
+    };
+    release_date?: {
+      coming_soon: boolean;
+      date: string;
+    };
+    required_age?: number;
+    achievements?: {
+      total: number;
+      highlighted?: Array<{
+        name: string;
+        path: string;
+      }>;
+    };
+    screenshots?: Array<{
+      id: number;
+      path_thumbnail: string;
+      path_full: string;
+    }>;
   } | null> {
     try {
       const response = await this.get<any>('/api/appdetails', {
         params: {
           appids: appId,
           cc: this.countryCode,
-          l: 'japanese',
-          filters: 'basic,release_date'
+          l: 'japanese'
         }
       });
 
@@ -228,17 +323,27 @@ export class SteamStoreAPI extends BaseAPI {
         const data = response[appId].data;
         
         return {
-          name: data.name,
-          coming_soon: data.release_date?.coming_soon || false,
-          release_date: data.release_date?.date,
-          positive_reviews: undefined, // Steam API には含まれていない
-          negative_reviews: undefined
+          short_description: data.short_description,
+          detailed_description: data.detailed_description,
+          developers: data.developers,
+          publishers: data.publishers,
+          categories: data.categories,
+          genres: data.genres,
+          platforms: data.platforms,
+          release_date: data.release_date,
+          required_age: data.required_age,
+          achievements: data.achievements,
+          screenshots: data.screenshots?.map((screenshot: any) => ({
+            id: screenshot.id,
+            path_thumbnail: screenshot.path_thumbnail,
+            path_full: screenshot.path_full
+          }))
         };
       }
 
       return null;
     } catch (error) {
-      logger.error(`Failed to get game info for ${appId}:`, error);
+      logger.error(`Failed to get detailed game info for ${appId}:`, error);
       return null;
     }
   }

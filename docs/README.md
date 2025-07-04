@@ -25,12 +25,17 @@ SteamSentinelは、Steamゲームの価格を監視し、セール時の最安�
 - RSS監視 (1時間間隔)・受け取り状況管理・自動ゲーム登録
 - Discord通知・統計情報・WebUI専用ページ
 
+### 📊 レビュー統合
+- Steam・IGDB・OpenCritic レビューデータ統合
+- 重み付け統合スコア計算・二層キャッシュシステム
+- ゲーム詳細ページでの包括的評価表示
+
 ## 🛠️ 技術スタック
 
 - **Backend**: Node.js + TypeScript + Express.js + SQLite
 - **Frontend**: React 19.1.0 + TypeScript + Ant Design 5.26.2
 - **Build**: Vite 7.0.0 + ESLint + TypeScript strict mode + unplugin-info
-- **APIs**: IsThereAnyDeal API, Steam Store API, RSS feeds
+- **APIs**: IsThereAnyDeal API, Steam Store API, IGDB API, RSS feeds
 - **Logging**: Winston (English logs), Steam API verification system
 
 ## 🚀 セットアップ
@@ -52,16 +57,21 @@ npm install
 # 必須
 ITAD_API_KEY=your_itad_api_key
 
+# レビュー統合用（オプション）
+IGDB_CLIENT_ID=your_igdb_client_id
+IGDB_CLIENT_SECRET=your_igdb_client_secret
+
 # オプション
 DISCORD_WEBHOOK_URL=your_discord_webhook
 WEB_PORT=3000
 ```
 
 ### APIキー取得
-| API | URL | 制限 |
-|-----|-----|------|
-| IsThereAnyDeal | [isthereanydeal.com/dev](https://isthereanydeal.com/dev/app/) | 緩い制限 |
-| Discord Webhook | Discord設定 | なし |
+| API | URL | 制限 | 用途 |
+|-----|-----|------|------|
+| IsThereAnyDeal | [isthereanydeal.com/dev](https://isthereanydeal.com/dev/app/) | 緩い制限 | 価格監視（必須） |
+| IGDB | [api.igdb.com](https://api.igdb.com/) | 4req/s | レビューデータ（オプション） |
+| Discord Webhook | Discord設定 | なし | 通知（オプション） |
 
 ### 起動
 ```bash
@@ -98,8 +108,11 @@ MIT License - 詳細は[LICENSE](../LICENSE)参照
 - **[設定ガイド](configuration.md)** - 環境変数・ITAD設定・最適化
 - **[API リファレンス](api-reference.md)** - REST API仕様・使用例
 - **[データベーススキーマ](database-schema.md)** - テーブル構造・関係性
+- **[レビュー統合](REVIEW_INTEGRATION.md)** - レビューシステム・スコア計算・API連携
+- **[レビュースコア](REVIEW_SCORING.md)** - スコア計算式・重み付け・統合アルゴリズム
 - **[トラブルシューティング](troubleshooting.md)** - よくある問題・解決方法
 - **[開発ガイド](development-guide.md)** - 開発環境・コーディング規約・ワークフロー
+- **[デバッグコード削除](DEBUG_CODE_CLEANUP.md)** - 本番リリース前削除項目
 
 ## 🔧 開発者向け
 

@@ -6,6 +6,9 @@ import { MonitoringService } from '../services/MonitoringService';
 import reviewIntegrationService from '../services/ReviewIntegrationService';
 import gameInfoService from '../services/GameInfoService';
 import { HighDiscountDetectionService } from '../services/HighDiscountDetectionService';
+import ReviewModel from '../models/ReviewModel';
+import { SteamStoreAPI } from '../api/SteamStoreAPI';
+import IGDBService from '../services/IGDBService';
 import logger from '../utils/logger';
 
 export class GameController {
@@ -82,6 +85,46 @@ export class GameController {
       });
     } catch (error) {
       logger.error('Failed to get game details:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to retrieve game details'
+      });
+    }
+  }
+
+  // Steam App ID でゲーム詳細取得
+  static async getGameBySteamAppId(req: Request, res: Response): Promise<Response> {
+    try {
+      const steamAppId = parseInt(req.params.appId, 10);
+      const game = GameModel.getBySteamAppId(steamAppId);
+      
+      if (!game) {
+        return res.status(404).json({
+          success: false,
+          error: 'Game not found'
+        });
+      }
+
+      // 最新価格情報を取得
+      const latestPrice = PriceHistoryModel.getLatestByGameId(game.steam_app_id);
+      
+      // 価格履歴を取得（直近30日）
+      const priceHistory = PriceHistoryModel.getByGameId(game.steam_app_id, 30);
+      
+      // アラート履歴を取得
+      const alerts = AlertModel.getByGameId(game.steam_app_id, 10);
+
+      return res.json({
+        success: true,
+        data: {
+          game,
+          latestPrice,
+          priceHistory,
+          alerts
+        }
+      });
+    } catch (error) {
+      logger.error('Failed to get game details by Steam App ID:', error);
       return res.status(500).json({
         success: false,
         error: 'Failed to retrieve game details'
@@ -753,6 +796,76 @@ export class GameController {
     }
   }
 
+  // TODO: REMOVE BEFORE PRODUCTION - Debug method for clearing review cache
+  // ゲームレビューキャッシュクリア（デバッグ用）
+  static async clearGameReviews(req: Request, res: Response): Promise<Response> {
+    try {
+      const steamAppId = parseInt(req.params.appId, 10);
+      
+      const game = GameModel.getBySteamAppId(steamAppId);
+      if (!game) {
+        return res.status(404).json({
+          success: false,
+          error: 'Game not found'
+        });
+      }
+
+      // データベースキャッシュクリア
+      const deleted = ReviewModel.deleteGameReviews(steamAppId);
+      
+      // メモリキャッシュクリア
+      reviewIntegrationService.clearCache();
+      
+      logger.info(`Cleared review cache for game: ${game.name} (${steamAppId})`);
+      
+      return res.json({
+        success: true,
+        message: 'Review cache cleared successfully'
+      });
+    } catch (error) {
+      logger.error('Failed to clear review cache:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to clear review cache'
+      });
+    }
+  }
+
+  // TODO: REMOVE BEFORE PRODUCTION - Debug method for force refreshing reviews
+  // ゲームレビュー強制更新（デバッグ用）
+  static async refreshGameReviews(req: Request, res: Response): Promise<Response> {
+    try {
+      const steamAppId = parseInt(req.params.appId, 10);
+      
+      const game = GameModel.getBySteamAppId(steamAppId);
+      if (!game) {
+        return res.status(404).json({
+          success: false,
+          error: 'Game not found'
+        });
+      }
+
+      // キャッシュクリア
+      ReviewModel.deleteGameReviews(steamAppId);
+      reviewIntegrationService.clearCache();
+      
+      // 強制的に新しいレビューを取得
+      logger.info(`Force refreshing reviews for: ${game.name} (${steamAppId})`);
+      const reviews = await reviewIntegrationService.getGameReviews(steamAppId, game.name);
+      
+      return res.json({
+        success: true,
+        data: reviews
+      });
+    } catch (error) {
+      logger.error('Failed to refresh game reviews:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to refresh game reviews'
+      });
+    }
+  }
+
   // 複数ゲームのレビュー一括取得
   static async getMultipleGameReviews(req: Request, res: Response): Promise<Response> {
     try {
@@ -1130,6 +1243,54 @@ export class GameController {
       return res.status(500).json({
         success: false,
         error: 'Failed to run high discount detection'
+      });
+    }
+  }
+
+  // ゲーム詳細情報取得（Steam + IGDB）
+  static async getGameDetails(req: Request, res: Response): Promise<Response> {
+    try {
+      const steamAppId = parseInt(req.params.appId, 10);
+      
+      const game = GameModel.getBySteamAppId(steamAppId);
+      if (!game) {
+        return res.status(404).json({
+          success: false,
+          error: 'Game not found'
+        });
+      }
+
+      logger.info(`Getting detailed game info for: ${game.name} (${steamAppId})`);
+
+      // Steam APIから詳細情報を取得
+      const steamAPI = new SteamStoreAPI();
+      const steamDetails = await steamAPI.getDetailedGameInfo(steamAppId);
+
+      // IGDB APIから詳細情報を取得
+      let igdbDetails = {};
+      if (IGDBService.isConfigured()) {
+        igdbDetails = await IGDBService.getDetailedGameInfo(game.name, steamAppId);
+      } else {
+        logger.warn('IGDB not configured, skipping IGDB detail fetch');
+      }
+
+      const gameDetails = {
+        steam: steamDetails,
+        igdb: igdbDetails
+      };
+
+      logger.info(`Retrieved game details for ${game.name}: Steam=${!!steamDetails}, IGDB=${Object.keys(igdbDetails).length > 0}`);
+
+      return res.json({
+        success: true,
+        data: gameDetails
+      });
+    } catch (error) {
+      logger.error(`Failed to get game details for ${req.params.appId}:`, error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to get game details',
+        details: error instanceof Error ? error.message : String(error)
       });
     }
   }

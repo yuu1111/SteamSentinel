@@ -30,14 +30,20 @@ gameRoutes.get('/highDiscount', (req, res) => GameController.getHighDiscountGame
 gameRoutes.post('/highDiscount/detect', (req, res) => GameController.runHighDiscountDetection(req, res));
 
 gameRoutes.get('/:id(\\d+)', (req, res) => GameController.getGameById(req, res));
+gameRoutes.get('/steam/:appId(\\d+)', validateSteamAppId, (req, res) => GameController.getGameBySteamAppId(req, res));
 gameRoutes.post('/', (req, res) => GameController.addGame(req, res));
 gameRoutes.put('/:id(\\d+)', (req, res) => GameController.updateGame(req, res));
 gameRoutes.delete('/:id(\\d+)', (req, res) => GameController.deleteGame(req, res));
 gameRoutes.get('/:appId(\\d+)/price-history', validateSteamAppId, (req, res) => GameController.getGamePriceHistory(req, res));
 gameRoutes.get('/:appId(\\d+)/reviews', validateSteamAppId, (req, res) => GameController.getGameReviews(req, res));
+
+// TODO: REMOVE BEFORE PRODUCTION - Debug endpoints for review system
+gameRoutes.delete('/:appId(\\d+)/reviews', validateSteamAppId, (req, res) => GameController.clearGameReviews(req, res));
+gameRoutes.post('/:appId(\\d+)/reviews/refresh', validateSteamAppId, (req, res) => GameController.refreshGameReviews(req, res));
 gameRoutes.post('/reviews/batch', (req, res) => GameController.getMultipleGameReviews(req, res));
 gameRoutes.get('/:appId(\\d+)/info', validateSteamAppId, (req, res) => GameController.getGameInfo(req, res));
 gameRoutes.post('/info/batch', (req, res) => GameController.getMultipleGameInfo(req, res));
+gameRoutes.get('/:appId(\\d+)/details', validateSteamAppId, (req, res) => GameController.getGameDetails(req, res));
 
 // 手動最安値設定
 gameRoutes.put('/:id(\\d+)/manual-historical-low', (req, res) => GameController.setManualHistoricalLow(req, res));

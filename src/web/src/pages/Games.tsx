@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Table, Button, Space, Typography, Avatar, Tag, Tooltip, Row, Col, Card, Spin } from 'antd'
-import { AppstoreOutlined, PlusOutlined, SyncOutlined, EditOutlined, DeleteOutlined, BarChartOutlined, DatabaseOutlined, BookOutlined, HddOutlined, PieChartOutlined, ShoppingCartOutlined } from '@ant-design/icons'
+import { AppstoreOutlined, PlusOutlined, SyncOutlined, EditOutlined, DeleteOutlined, BarChartOutlined, DatabaseOutlined, BookOutlined, HddOutlined, PieChartOutlined, ShoppingCartOutlined, EyeOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import { Game } from '../types'
 import { api } from '../utils/api'
@@ -11,6 +11,7 @@ import { PriceChartModal } from '../components/PriceChartModal'
 import { DataManager } from '../components/DataManager'
 import { ReportGenerator } from '../components/ReportGenerator'
 import { PurchaseModal } from '../components/PurchaseModal'
+import GameDetail from './GameDetail'
 
 const Games: React.FC = () => {
   const [games, setGames] = useState<Game[]>([])
@@ -30,6 +31,8 @@ const Games: React.FC = () => {
   const [purchaseGame, setPurchaseGame] = useState<Game | null>(null)
   const [pageSize, setPageSize] = useState(20)
   const [currentPage, setCurrentPage] = useState(1)
+  const [showGameDetail, setShowGameDetail] = useState(false)
+  const [detailGameId, setDetailGameId] = useState<number | null>(null)
   const { showError, showSuccess } = useAlert()
 
   useEffect(() => {
@@ -139,6 +142,11 @@ const Games: React.FC = () => {
     setShowPurchaseModal(true)
   }
 
+  const handleShowGameDetail = (steamAppId: number) => {
+    setDetailGameId(steamAppId)
+    setShowGameDetail(true)
+  }
+
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: '80px 0' }}>
@@ -147,6 +155,18 @@ const Games: React.FC = () => {
           読み込み中...
         </Typography.Text>
       </div>
+    )
+  }
+
+  if (showGameDetail && detailGameId) {
+    return (
+      <GameDetail 
+        steamAppId={detailGameId}
+        onBack={() => {
+          setShowGameDetail(false)
+          setDetailGameId(null)
+        }}
+      />
     )
   }
 
@@ -296,7 +316,7 @@ const Games: React.FC = () => {
     {
       title: '操作',
       key: 'actions',
-      width: 350, // 幅をさらに拡大
+      width: 350,
       render: (_, record: Game) => (
         <Space size="small" wrap>
           <Tooltip title={record.is_purchased ? "購入情報を編集" : "購入済みとしてマーク"}>
@@ -304,6 +324,13 @@ const Games: React.FC = () => {
               size="middle"
               icon={<ShoppingCartOutlined style={{ color: 'white' }} />}
               onClick={() => handlePurchaseGame(record)}
+            />
+          </Tooltip>
+          <Tooltip title="詳細情報">
+            <Button
+              size="middle"
+              icon={<EyeOutlined />}
+              onClick={() => handleShowGameDetail(record.steam_app_id)}
             />
           </Tooltip>
           <Tooltip title="価格推移">

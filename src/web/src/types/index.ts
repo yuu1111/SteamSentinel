@@ -18,6 +18,56 @@ export interface Game {
   created_at: string
   updated_at: string
   latestPrice?: PriceData
+  gameDetails?: GameDetails
+}
+
+export interface GameDetails {
+  // Steam API data
+  short_description?: string
+  detailed_description?: string
+  developers?: string[]
+  publishers?: string[]
+  categories?: Array<{ id: number; description: string }>
+  genres?: Array<{ id: number; description: string }>
+  platforms?: {
+    windows?: boolean
+    mac?: boolean
+    linux?: boolean
+  }
+  release_date?: {
+    coming_soon: boolean
+    date: string
+  }
+  required_age?: number
+  achievements?: {
+    total: number
+    highlighted?: Array<{
+      name: string
+      path: string
+    }>
+  }
+  // IGDB API data
+  igdb_summary?: string
+  igdb_storyline?: string
+  igdb_themes?: Array<{ id: number; name: string }>
+  igdb_game_modes?: Array<{ id: number; name: string }>
+  igdb_player_perspectives?: Array<{ id: number; name: string }>
+  igdb_age_ratings?: Array<{
+    category: number
+    rating: number
+    content_descriptions?: Array<{ description: string }>
+  }>
+  igdb_screenshots?: Array<{
+    id: number
+    url: string
+    width: number
+    height: number
+  }>
+  igdb_videos?: Array<{
+    id: number
+    name: string
+    video_id: string
+  }>
 }
 
 export interface PriceData {
@@ -296,4 +346,22 @@ export interface UserPreferences {
   }
   created_at: string
   updated_at: string
+}
+
+// Review integration types
+export interface ReviewScore {
+  source: 'steam' | 'metacritic' | 'igdb';
+  score: number;
+  maxScore: number;
+  reviewCount?: number;
+  description?: string;
+  url?: string;
+}
+
+export interface GameReviews {
+  steamAppId: number;
+  gameName: string;
+  reviews: ReviewScore[];
+  aggregateScore: number;
+  lastUpdated: Date;
 }
