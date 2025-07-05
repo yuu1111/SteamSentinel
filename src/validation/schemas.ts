@@ -1,5 +1,58 @@
 import Joi from 'joi';
 
+// 認証関連のバリデーションスキーマ
+export const registerSchema = Joi.object({
+    username: Joi.string().alphanum().min(3).max(30).required()
+        .messages({
+            'string.alphanum': 'ユーザー名は英数字のみ使用できます',
+            'string.min': 'ユーザー名は3文字以上である必要があります',
+            'string.max': 'ユーザー名は30文字以下である必要があります',
+            'any.required': 'ユーザー名は必須です'
+        }),
+    email: Joi.string().email().required()
+        .messages({
+            'string.email': '有効なメールアドレスを入力してください',
+            'any.required': 'メールアドレスは必須です'
+        }),
+    password: Joi.string().min(8).pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/).required()
+        .messages({
+            'string.min': 'パスワードは8文字以上である必要があります',
+            'string.pattern.base': 'パスワードは大文字、小文字、数字を含む必要があります',
+            'any.required': 'パスワードは必須です'
+        })
+});
+
+export const loginSchema = Joi.object({
+    username: Joi.string().required()
+        .messages({
+            'any.required': 'ユーザー名またはメールアドレスは必須です'
+        }),
+    password: Joi.string().required()
+        .messages({
+            'any.required': 'パスワードは必須です'
+        })
+});
+
+export const changePasswordSchema = Joi.object({
+    currentPassword: Joi.string().required()
+        .messages({
+            'any.required': '現在のパスワードは必須です'
+        }),
+    newPassword: Joi.string().min(8).pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/).required()
+        .messages({
+            'string.min': '新しいパスワードは8文字以上である必要があります',
+            'string.pattern.base': '新しいパスワードは大文字、小文字、数字を含む必要があります',
+            'any.required': '新しいパスワードは必須です'
+        })
+});
+
+export const refreshTokenSchema = Joi.object({
+    refreshToken: Joi.string().required()
+        .messages({
+            'any.required': 'リフレッシュトークンは必須です'
+        })
+});
+
 // ゲーム関連のバリデーションスキーマ
 export const gameSchema = Joi.object({
     steam_app_id: Joi.number().integer().positive().required()
