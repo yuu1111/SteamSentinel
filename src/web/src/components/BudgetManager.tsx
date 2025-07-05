@@ -27,7 +27,7 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({ expenseData }) => 
   const loadBudgets = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/budgets/summaries')
+      const response = await fetch('/api/v1/budgets/summaries')
       
       if (!response.ok) {
         throw new Error('Failed to fetch budgets')
@@ -90,7 +90,7 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({ expenseData }) => 
     try {
       setLoading(true)
       
-      const url = editingBudget ? `/api/budgets/${editingBudget.id}` : '/api/budgets'
+      const url = editingBudget ? `/api/v1/budgets/${editingBudget.id}` : '/api/v1/budgets'
       const method = editingBudget ? 'PUT' : 'POST'
       
       const response = await fetch(url, {
@@ -129,7 +129,7 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({ expenseData }) => 
     try {
       setLoading(true)
       
-      const response = await fetch(`/api/budgets/${budgetId}`, {
+      const response = await fetch(`/api/v1/budgets/${budgetId}`, {
         method: 'DELETE'
       })
       

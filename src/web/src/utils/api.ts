@@ -4,7 +4,7 @@ class ApiClient {
   private baseUrl: string
 
   constructor() {
-    this.baseUrl = '/api'
+    this.baseUrl = '/api/v1'
   }
 
   private async request<T = any>(

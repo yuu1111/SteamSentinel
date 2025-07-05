@@ -33,7 +33,7 @@ export const ITADSettings: React.FC<ITADSettingsProps> = ({ onSettingsChange }) 
   const loadSettings = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/itad/settings')
+      const response = await fetch('/api/v1/itad/settings')
       
       if (!response.ok) {
         throw new Error('設定の取得に失敗しました')
@@ -74,7 +74,7 @@ export const ITADSettings: React.FC<ITADSettingsProps> = ({ onSettingsChange }) 
         value: String(value)
       }))
       
-      const response = await fetch('/api/itad/settings', {
+      const response = await fetch('/api/v1/itad/settings', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -104,7 +104,7 @@ export const ITADSettings: React.FC<ITADSettingsProps> = ({ onSettingsChange }) 
     try {
       setSaveLoading(true)
       
-      const response = await fetch('/api/itad/settings/reset', {
+      const response = await fetch('/api/v1/itad/settings/reset', {
         method: 'POST'
       })
       

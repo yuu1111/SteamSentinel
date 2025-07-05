@@ -4,7 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import { config } from './config';
 import { securityHeaders, generalLimiter, errorHandler, jsonSizeLimit } from './middleware/security';
-import apiRoutes from './routes/api';
+import restfulApiRoutes from './routes/restful-api';
 
 const app = express();
 
@@ -26,7 +26,9 @@ app.use(express.urlencoded({ extended: true, limit: jsonSizeLimit }));
 app.use(express.static(config.publicPath));
 
 // APIルート
-app.use('/api', apiRoutes);
+app.use('/api/v1', restfulApiRoutes);
+// Legacy API support for backward compatibility
+app.use('/api', restfulApiRoutes);
 
 // React build files serving
 app.use(express.static(path.join(__dirname, '../dist/web')));

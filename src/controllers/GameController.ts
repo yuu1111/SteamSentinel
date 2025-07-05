@@ -331,7 +331,7 @@ export class GameController extends BaseController {
   }
 
   // ダッシュボード用データ取得（N+1問題解決版）
-  static async getDashboardData(_req: Request, res: Response): Promise<Response> {
+  static async getDashboardData(_req: Request, res: Response): Promise<void> {
     const perf = new PerformanceHelper();
     perf.setCacheHit(false); // ダッシュボードはリアルタイムデータ
     

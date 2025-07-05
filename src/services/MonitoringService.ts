@@ -428,7 +428,7 @@ export class MonitoringService {
 
   // リリースアラートの作成
   private async createReleaseAlert(game: Game, priceHistory: PriceHistory): Promise<Alert> {
-    const releaseAlert: Omit<Alert, 'id' | 'created_at'> = {
+    const releaseAlert: any = {
       steam_app_id: game.steam_app_id,
       game_id: game.id,
       alert_type: 'game_released',

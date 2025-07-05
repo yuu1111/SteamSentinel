@@ -167,7 +167,7 @@ export class PerformanceHelper {
         this.cacheHit = hit;
     }
 
-    getPerformanceMeta(): APIResponse['meta']['performance'] {
+    getPerformanceMeta() {
         return {
             query_time_ms: Date.now() - this.startTime,
             cache_hit: this.cacheHit

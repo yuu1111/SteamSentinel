@@ -3,7 +3,6 @@ import path from 'path';
 import fs from 'fs';
 import { config } from '../config';
 import logger from '../utils/logger';
-import { MigrationRunner } from '../database/MigrationRunner';
 
 class DatabaseManager {
   private db: Database.Database | null = null;
@@ -64,15 +63,7 @@ class DatabaseManager {
   initialize(): void {
     const db = this.getConnection();
     
-    // Run migrations first
-    try {
-      const migrationRunner = new MigrationRunner(db);
-      migrationRunner.runMigrations();
-      logger.info('Database migrations completed');
-    } catch (error) {
-      logger.error('Migration failed:', error);
-      // Continue with legacy initialization for backwards compatibility
-    }
+    // Migrations removed - using direct schema initialization for dev environment
     
     // ゲーム情報テーブル
     db.exec(`

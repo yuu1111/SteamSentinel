@@ -11,7 +11,8 @@ import {
   SafetyOutlined,
   QuestionCircleOutlined,
   SunOutlined,
-  MoonOutlined
+  MoonOutlined,
+  ApiOutlined
 } from '@ant-design/icons'
 import { ViewType } from '../types'
 
@@ -37,6 +38,7 @@ const Navigation: React.FC<NavigationProps> = ({
     { key: 'monitoring', label: '監視状況', icon: <LineChartOutlined /> },
     { key: 'free-games', label: '無料ゲーム', icon: <GiftOutlined /> },
     { key: 'settings', label: '設定', icon: <SettingOutlined /> },
+    { key: 'api-docs', label: 'API仕様', icon: <ApiOutlined /> },
     { key: 'test', label: 'テスト', icon: <ExperimentOutlined /> },
   ]
 

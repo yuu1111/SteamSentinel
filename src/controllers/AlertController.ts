@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { AlertModel, AlertFilters } from '../models/Alert';
+import { AlertModel, AlertFilters } from '../models/AlertModel';
 import { GameModel } from '../models/Game';
 import { ApiResponseHelper, BaseController, PerformanceHelper, PaginationOptions } from '../utils/apiResponse';
 import logger from '../utils/logger';
@@ -35,9 +35,7 @@ export class AlertController extends BaseController {
                 enrichedAlerts,
                 total,
                 pagination,
-                `${alerts.length}件のアラートを取得しました`,
-                200,
-                { performance: perf.getPerformanceMeta() }
+                `${alerts.length}件のアラートを取得しました`
             );
         } catch (error) {
             logger.error('Failed to fetch alerts:', error);
@@ -209,13 +207,12 @@ export class AlertController extends BaseController {
             }
 
             // テストアラート作成
-            const alertId = await AlertModel.create({
+            const alertId = AlertModel.create({
                 steam_app_id: parseInt(steamAppId),
                 alert_type: alertType,
-                triggered_price: 0,
-                threshold_value: null,
-                discount_percent: null,
-                metadata: JSON.stringify({ test: true, message })
+                trigger_price: 0,
+                message: message || 'テストアラート',
+                notified_discord: false
             });
 
             ApiResponseHelper.success(

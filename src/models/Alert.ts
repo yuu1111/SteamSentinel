@@ -19,7 +19,7 @@ export interface PaginationOptions {
 
 export class AlertModel {
   // アラートを作成
-  static create(alertData: Omit<Alert, 'id' | 'created_at'>): Alert {
+  static create(alertData: any): Alert {
     try {
       const db = database.getConnection();
       const stmt = db.prepare(`
@@ -67,7 +67,9 @@ export class AlertModel {
       return {
         ...record,
         notified_discord: record.notified_discord === 1,
-        created_at: new Date(record.created_at)
+        is_read: record.is_read === 1,
+        created_at: new Date(record.created_at),
+        updated_at: record.updated_at ? new Date(record.updated_at) : undefined
       };
     } catch (error) {
       logger.error(`Failed to fetch alert with id ${id}:`, error);
@@ -96,7 +98,9 @@ export class AlertModel {
       return {
         ...record,
         notified_discord: record.notified_discord === 1,
-        created_at: new Date(record.created_at)
+        is_read: record.is_read === 1,
+        created_at: new Date(record.created_at),
+        updated_at: record.updated_at ? new Date(record.updated_at) : undefined
       };
     } catch (error) {
       logger.error(`Failed to fetch latest alert for game ${steamAppId}:`, error);

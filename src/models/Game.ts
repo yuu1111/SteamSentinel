@@ -386,8 +386,7 @@ export class GameModel {
             source: row.source,
             recorded_at: row.recorded_at,
             historical_low: row.historical_low,
-            all_time_low: row.all_time_low || 0,
-            all_time_low_date: row.all_time_low_date
+            all_time_low: row.all_time_low || 0
           };
         }
         

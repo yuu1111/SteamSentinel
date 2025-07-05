@@ -43,17 +43,15 @@ export interface PriceHistory {
 export interface Alert {
   id?: number;
   steam_app_id: number;
-  game_id?: number;
-  alert_type: 'new_low' | 'sale_start' | 'threshold_met' | 'free_game' | 'game_released';
+  alert_type: 'new_low' | 'sale_start' | 'threshold_met' | 'free_game' | 'game_released' | 'test';
   message?: string;
   trigger_price?: number;
   previous_low?: number;
   discount_percent?: number;
-  price_data?: any;
-  game_name?: string;
   notified_discord: boolean;
-  created_at: Date;
-  release_date?: string; // リリース通知の場合のリリース日
+  is_read?: boolean;
+  created_at?: Date;
+  updated_at?: Date;
 }
 
 export interface ITADGameInfo {

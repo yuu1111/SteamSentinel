@@ -1,4 +1,4 @@
-export type ViewType = 'dashboard' | 'games' | 'alerts' | 'monitoring' | 'test' | 'free-games' | 'settings' | 'limitations' | 'licenses';
+export type ViewType = 'dashboard' | 'games' | 'alerts' | 'monitoring' | 'test' | 'free-games' | 'settings' | 'limitations' | 'licenses' | 'api-docs';
 
 export interface Game {
   id: number

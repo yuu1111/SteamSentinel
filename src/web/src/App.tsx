@@ -12,6 +12,7 @@ import FreeGames from './pages/FreeGames'
 import Settings from './pages/Settings'
 import Limitations from './pages/Limitations'
 import Licenses from './pages/Licenses'
+import ApiDocs from './pages/ApiDocs'
 import GameDetail from './pages/GameDetail'
 import LoadingOverlay from './components/LoadingOverlay'
 import HelpModal from './components/HelpModal'
@@ -39,6 +40,7 @@ function AppContent() {
     if (path === '/settings') return 'settings'
     if (path === '/limitations') return 'limitations'
     if (path === '/licenses') return 'licenses'
+    if (path === '/api-docs') return 'api-docs'
     return 'dashboard'
   }
   
@@ -72,6 +74,9 @@ function AppContent() {
         break
       case 'licenses':
         navigate('/licenses')
+        break
+      case 'api-docs':
+        navigate('/api-docs')
         break
     }
   }
@@ -212,6 +217,7 @@ function AppContent() {
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/limitations" element={<Limitations />} />
                 <Route path="/licenses" element={<Licenses />} />
+                <Route path="/api-docs" element={<ApiDocs />} />
               </Routes>
             </main>
 
