@@ -2,6 +2,21 @@ import database from '../db/database';
 import { Alert } from '../types';
 import logger from '../utils/logger';
 
+export interface AlertFilters {
+  alertType?: string;
+  unread?: boolean;
+  steamAppId?: number;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+export interface PaginationOptions {
+  limit: number;
+  offset: number;
+  sort?: string;
+  order?: 'ASC' | 'DESC';
+}
+
 export class AlertModel {
   // アラートを作成
   static create(alertData: Omit<Alert, 'id' | 'created_at'>): Alert {
@@ -314,6 +329,175 @@ export class AlertModel {
       }));
     } catch (error) {
       logger.error('Failed to fetch alerts by date range:', error);
+      throw error;
+    }
+  }
+
+  // フィルタ付きアラート取得（新しいController用）
+  static getFiltered(filters: AlertFilters, pagination: PaginationOptions): Alert[] {
+    try {
+      const db = database.getConnection();
+      let query = 'SELECT * FROM alerts WHERE 1=1';
+      const params: any[] = [];
+
+      // フィルタ条件の構築
+      if (filters.alertType) {
+        query += ' AND alert_type = ?';
+        params.push(filters.alertType);
+      }
+
+      if (filters.unread !== undefined) {
+        // is_readフィールドがない場合はnotified_discordを使用
+        query += ' AND notified_discord = ?';
+        params.push(filters.unread ? 0 : 1);
+      }
+
+      if (filters.steamAppId) {
+        query += ' AND steam_app_id = ?';
+        params.push(filters.steamAppId);
+      }
+
+      if (filters.dateFrom) {
+        query += ' AND created_at >= ?';
+        params.push(filters.dateFrom);
+      }
+
+      if (filters.dateTo) {
+        query += ' AND created_at <= ?';
+        params.push(filters.dateTo);
+      }
+
+      // ソート順
+      const sortField = pagination.sort || 'created_at';
+      const sortOrder = pagination.order || 'DESC';
+      query += ` ORDER BY ${sortField} ${sortOrder}`;
+
+      // ページネーション
+      query += ' LIMIT ? OFFSET ?';
+      params.push(pagination.limit, pagination.offset);
+
+      const records = db.prepare(query).all(...params) as any[];
+      
+      return records.map(record => ({
+        ...record,
+        notified_discord: record.notified_discord === 1,
+        created_at: new Date(record.created_at)
+      }));
+    } catch (error) {
+      logger.error('Failed to fetch filtered alerts:', error);
+      throw error;
+    }
+  }
+
+  // フィルタ付きアラート数取得
+  static getCount(filters: AlertFilters): number {
+    try {
+      const db = database.getConnection();
+      let query = 'SELECT COUNT(*) as count FROM alerts WHERE 1=1';
+      const params: any[] = [];
+
+      // フィルタ条件の構築（getFilteredと同じ）
+      if (filters.alertType) {
+        query += ' AND alert_type = ?';
+        params.push(filters.alertType);
+      }
+
+      if (filters.unread !== undefined) {
+        query += ' AND notified_discord = ?';
+        params.push(filters.unread ? 0 : 1);
+      }
+
+      if (filters.steamAppId) {
+        query += ' AND steam_app_id = ?';
+        params.push(filters.steamAppId);
+      }
+
+      if (filters.dateFrom) {
+        query += ' AND created_at >= ?';
+        params.push(filters.dateFrom);
+      }
+
+      if (filters.dateTo) {
+        query += ' AND created_at <= ?';
+        params.push(filters.dateTo);
+      }
+
+      const result = db.prepare(query).get(...params) as { count: number };
+      return result.count;
+    } catch (error) {
+      logger.error('Failed to get filtered alert count:', error);
+      throw error;
+    }
+  }
+
+  // アラートを既読にする
+  static markAsRead(id: number): boolean {
+    try {
+      const db = database.getConnection();
+      // notified_discordフィールドを使用（is_readフィールドがないため）
+      const info = db.prepare('UPDATE alerts SET notified_discord = 1 WHERE id = ?').run(id);
+      return info.changes > 0;
+    } catch (error) {
+      logger.error(`Failed to mark alert ${id} as read:`, error);
+      throw error;
+    }
+  }
+
+  // 複数アラートを既読にする
+  static markMultipleAsRead(filters: AlertFilters): number {
+    try {
+      const db = database.getConnection();
+      let query = 'UPDATE alerts SET notified_discord = 1 WHERE notified_discord = 0';
+      const params: any[] = [];
+
+      if (filters.alertType) {
+        query += ' AND alert_type = ?';
+        params.push(filters.alertType);
+      }
+
+      if (filters.steamAppId) {
+        query += ' AND steam_app_id = ?';
+        params.push(filters.steamAppId);
+      }
+
+      const info = db.prepare(query).run(...params);
+      return info.changes;
+    } catch (error) {
+      logger.error('Failed to mark multiple alerts as read:', error);
+      throw error;
+    }
+  }
+
+  // アラートを削除
+  static delete(id: number): boolean {
+    try {
+      const db = database.getConnection();
+      const info = db.prepare('DELETE FROM alerts WHERE id = ?').run(id);
+      return info.changes > 0;
+    } catch (error) {
+      logger.error(`Failed to delete alert ${id}:`, error);
+      throw error;
+    }
+  }
+
+  // 古いアラートを削除
+  static deleteOlderThan(days: number, readOnly: boolean = false): number {
+    try {
+      const db = database.getConnection();
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - days);
+
+      let query = 'DELETE FROM alerts WHERE created_at < ?';
+      const params: any[] = [cutoffDate.toISOString()];
+
+      if (readOnly) {
+        query += ' AND notified_discord = 1';
+      }
+
+      const info = db.prepare(query).run(...params);
+      return info.changes;
+    } catch (error) {
+      logger.error('Failed to delete old alerts:', error);
       throw error;
     }
   }

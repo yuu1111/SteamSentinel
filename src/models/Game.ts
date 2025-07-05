@@ -312,4 +312,92 @@ export class GameModel {
       throw error;
     }
   }
+
+  // 複数のSteam App IDでゲーム取得（AlertController用）
+  static getByMultipleSteamAppIds(steamAppIds: number[]): Game[] {
+    try {
+      const db = database.getConnection();
+      
+      if (steamAppIds.length === 0) {
+        return [];
+      }
+      
+      const placeholders = steamAppIds.map(() => '?').join(',');
+      const query = `SELECT * FROM games WHERE steam_app_id IN (${placeholders})`;
+      
+      return db.prepare(query).all(...steamAppIds) as Game[];
+    } catch (error) {
+      logger.error('Failed to fetch games by multiple steam app ids:', error);
+      throw error;
+    }
+  }
+
+  // 最新価格付きでゲーム取得（N+1問題解決）
+  static getAllWithLatestPrices(enabledOnly: boolean = false): Game[] {
+    try {
+      const db = database.getConnection();
+      
+      // latest_prices テーブルが存在する場合はそれを使用、なければ従来のクエリ
+      const query = enabledOnly 
+        ? `SELECT g.*, 
+             lp.current_price, lp.original_price, lp.discount_percent, lp.is_on_sale, 
+             lp.source, lp.recorded_at, lp.historical_low, lp.all_time_low_date
+           FROM games g
+           LEFT JOIN latest_prices lp ON g.steam_app_id = lp.steam_app_id
+           WHERE g.enabled = 1 
+           ORDER BY g.name`
+        : `SELECT g.*, 
+             lp.current_price, lp.original_price, lp.discount_percent, lp.is_on_sale,
+             lp.source, lp.recorded_at, lp.historical_low, lp.all_time_low_date
+           FROM games g
+           LEFT JOIN latest_prices lp ON g.steam_app_id = lp.steam_app_id
+           ORDER BY g.name`;
+      
+      const rawGames = db.prepare(query).all() as any[];
+      
+      // 価格データをlatestPriceとして整形
+      return rawGames.map(row => {
+        const game: Game = {
+          id: row.id,
+          steam_app_id: row.steam_app_id,
+          name: row.name,
+          enabled: !!row.enabled,
+          alert_enabled: !!row.alert_enabled,
+          price_threshold: row.price_threshold,
+          price_threshold_type: row.price_threshold_type,
+          discount_threshold_percent: row.discount_threshold_percent,
+          manual_historical_low: row.manual_historical_low,
+          is_purchased: !!row.is_purchased,
+          purchase_price: row.purchase_price,
+          purchase_date: row.purchase_date,
+          was_unreleased: !!row.was_unreleased,
+          last_known_release_date: row.last_known_release_date,
+          created_at: row.created_at,
+          updated_at: row.updated_at
+        };
+        
+        // 価格データがある場合はlatestPriceを追加
+        if (row.current_price !== null) {
+          game.latestPrice = {
+            current_price: row.current_price,
+            original_price: row.original_price,
+            discount_percent: row.discount_percent,
+            is_on_sale: !!row.is_on_sale,
+            source: row.source,
+            recorded_at: row.recorded_at,
+            historical_low: row.historical_low,
+            all_time_low: row.all_time_low || 0,
+            all_time_low_date: row.all_time_low_date
+          };
+        }
+        
+        return game;
+      });
+    } catch (error) {
+      logger.error('Failed to fetch games with latest prices:', error);
+      // latest_pricesテーブルがない場合は従来のクエリにフォールバック
+      logger.warn('Falling back to legacy query');
+      return this.getAll(enabledOnly);
+    }
+  }
 }

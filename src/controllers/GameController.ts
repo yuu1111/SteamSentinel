@@ -8,11 +8,14 @@ import gameInfoService from '../services/GameInfoService';
 import { HighDiscountDetectionService } from '../services/HighDiscountDetectionService';
 import { SteamStoreAPI } from '../api/SteamStoreAPI';
 import IGDBService from '../services/IGDBService';
+import { ApiResponseHelper, BaseController, PerformanceHelper } from '../utils/apiResponse';
 import logger from '../utils/logger';
 
-export class GameController {
-  // 全ゲーム取得
+export class GameController extends BaseController {
+  // 全ゲーム取得（N+1問題解決版）
   static async getAllGames(req: Request, res: Response) {
+    const perf = new PerformanceHelper();
+    
     try {
       const enabled = req.query.enabled as string;
       let enabledOnly = false;
@@ -25,19 +28,22 @@ export class GameController {
         enabledOnly = false; // デフォルトは全ゲーム
       }
       
-      const games = GameModel.getAll(enabledOnly);
+      // N+1問題を解決：latest_pricesテーブルを使用
+      const games = GameModel.getAllWithLatestPrices(enabledOnly);
       
-      res.json({
-        success: true,
-        data: games,
-        count: games.length
-      });
+      ApiResponseHelper.success(
+        res, 
+        games, 
+        `${games.length}件のゲームを取得しました`,
+        200,
+        { 
+          performance: perf.getPerformanceMeta(),
+          pagination: { total: games.length, limit: games.length, offset: 0, hasMore: false }
+        }
+      );
     } catch (error) {
       logger.error('Failed to get games:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to retrieve games'
-      });
+      ApiResponseHelper.error(res, 'ゲームの取得に失敗しました', 500, error);
     }
   }
 
@@ -324,44 +330,37 @@ export class GameController {
     }
   }
 
-  // ダッシュボード用データ取得
+  // ダッシュボード用データ取得（N+1問題解決版）
   static async getDashboardData(_req: Request, res: Response): Promise<Response> {
+    const perf = new PerformanceHelper();
+    perf.setCacheHit(false); // ダッシュボードはリアルタイムデータ
+    
     try {
-      const games = GameModel.getAll(true);
-      
-      // 各ゲームの最新価格を取得
-      const gamesWithPrices = games.map(game => {
-        const latestPrice = PriceHistoryModel.getLatestByGameId(game.steam_app_id);
-        return {
-          ...game,
-          latestPrice
-        };
-      });
+      // N+1問題を解決：latest_pricesテーブルを使用して一度に取得
+      const gamesWithPrices = GameModel.getAllWithLatestPrices(true);
 
-      // 統計情報
-      const priceStats = PriceHistoryModel.getStatistics();
-      const alertStats = AlertModel.getStatistics();
-      const recentAlerts = AlertModel.getRecent(5);
-      const recentPriceChanges = PriceHistoryModel.getRecentPriceChanges(5);
+      // 統計情報を並列で取得
+      const [priceStats, alertStats, recentAlerts, recentPriceChanges] = await Promise.all([
+        Promise.resolve(PriceHistoryModel.getStatistics()),
+        Promise.resolve(AlertModel.getStatistics()),
+        Promise.resolve(AlertModel.getRecent(5)),
+        Promise.resolve(PriceHistoryModel.getRecentPriceChanges(5))
+      ]);
 
-      return res.json({
-        success: true,
-        data: {
-          games: gamesWithPrices,
-          statistics: {
-            ...priceStats,
-            ...alertStats
-          },
-          recentAlerts,
-          recentPriceChanges
-        }
+      ApiResponseHelper.success(res, {
+        games: gamesWithPrices,
+        statistics: {
+          ...priceStats,
+          ...alertStats
+        },
+        recentAlerts,
+        recentPriceChanges
+      }, 'ダッシュボードデータを取得しました', 200, {
+        performance: perf.getPerformanceMeta()
       });
     } catch (error) {
       logger.error('Failed to get dashboard data:', error);
-      return res.status(500).json({
-        success: false,
-        error: 'Failed to retrieve dashboard data'
-      });
+      ApiResponseHelper.error(res, 'ダッシュボードデータの取得に失敗しました', 500, error);
     }
   }
 
