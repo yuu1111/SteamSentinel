@@ -46,15 +46,16 @@ Core_Features:
     description: レビュー統合機能
     features:
       - マルチプラットフォームレビュー統合
-      - Steam・IGDB・OpenCriticレビュー取得
+      - Steam・IGDBレビュー取得・MetacriticスコアSteam API経由取得
       - 重み付け統合スコア算出
       - ゲーム詳細ページでの表示
       - Steam ID → IGDB自動連携
       - 二層キャッシュシステム（メモリ＋DB）
+      - Metacritic評価Steam API経由取得
     limitations:
       - ゲーム名マッチングの精度問題
       - 日本語ゲーム名の検索制限
-      - OpenCritic API一部エラー
+      - OpenCritic API削除済み（2025年7月削除）
       - 評価基準の違い（ユーザーvsプロ）
     
   system_features:

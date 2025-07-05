@@ -2,14 +2,20 @@
 
 **ベースURL**: `http://localhost:3000/api`
 
+## 概要
+
+SteamSentinel APIは、RESTful設計に基づいた統一的なインターフェースを提供します。2025年7月5日の大規模リファクタリングにより、エンドポイントが整理・統合され、約**80個のエンドポイント**で安定動作します。
+
+**レビューシステム**: Steamユーザーレビュー + IGDB評価 + Metacriticスコア（Steam API経由）の3ソース統合
+
 ## 認証
 
 現在認証は不要です。すべてのエンドポイントは直接アクセス可能です。
+※将来的にJWT認証の実装を検討中
 
 ## レスポンス形式
 
-すべてのAPIレスポンスは以下の形式です：
-
+### 成功時
 ```json
 {
   "success": true,
@@ -18,7 +24,7 @@
 }
 ```
 
-エラー時：
+### エラー時
 ```json
 {
   "success": false,
@@ -32,8 +38,14 @@
 ### ゲーム一覧取得
 ```http
 GET /api/games
-GET /api/games?search=ゲーム名&page=1&limit=50
+GET /api/games?enabled=all
+GET /api/games?enabled=true
 ```
+
+**クエリパラメータ:**
+- `enabled` - `all` | `true` | `false` (デフォルト: true)
+- `search` - ゲーム名検索
+- `sort` - ソート順
 
 **レスポンス例:**
 ```json
@@ -46,13 +58,20 @@ GET /api/games?search=ゲーム名&page=1&limit=50
       "name": "Cyberpunk 2077",
       "enabled": true,
       "price_threshold": 2000,
+      "price_threshold_type": "price",
+      "discount_threshold_percent": null,
       "alert_enabled": true,
-      "current_price": 3980,
-      "is_on_sale": false,
-      "discount_percent": 0
+      "created_at": "2025-07-01T10:00:00Z",
+      "updated_at": "2025-07-05T08:30:00Z"
     }
   ]
 }
+```
+
+### ゲーム詳細取得
+```http
+GET /api/games/:id
+GET /api/games/by-steam-id/:steamAppId
 ```
 
 ### ゲーム追加
@@ -64,7 +83,9 @@ Content-Type: application/json
   "steam_app_id": 1091500,
   "name": "Cyberpunk 2077",
   "price_threshold": 2000,
-  "price_threshold_type": "price"
+  "price_threshold_type": "price",
+  "enabled": true,
+  "alert_enabled": true
 }
 ```
 
@@ -75,7 +96,8 @@ Content-Type: application/json
 
 {
   "price_threshold": 1500,
-  "alert_enabled": true
+  "alert_enabled": true,
+  "manual_historical_low": 1200
 }
 ```
 
@@ -84,146 +106,21 @@ Content-Type: application/json
 DELETE /api/games/:id
 ```
 
-## 価格・監視 API
-
-### 価格履歴取得
+### Steam ID一括インポート
 ```http
-GET /api/games/:id/price-history
-GET /api/games/:id/price-history?days=30
-```
-
-**レスポンス例:**
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "current_price": 3980,
-      "original_price": 7980,
-      "discount_percent": 50,
-      "historical_low": 2980,
-      "is_on_sale": true,
-      "recorded_at": "2025-07-01T10:00:00Z"
-    }
-  ]
-}
-```
-
-### 監視制御
-```http
-POST /api/monitoring/start
-POST /api/monitoring/stop
-GET /api/monitoring/status
-```
-
-### アラート管理
-```http
-GET /api/alerts
-GET /api/alerts?type=new_low&page=1
-DELETE /api/alerts/:id
-```
-
-## 予算管理 API
-
-### 予算CRUD
-```http
-GET /api/budgets
-POST /api/budgets
-PUT /api/budgets/:id
-DELETE /api/budgets/:id
-```
-
-**予算作成例:**
-```json
-{
-  "name": "月次ゲーム予算",
-  "period_type": "monthly",
-  "budget_amount": 10000,
-  "start_date": "2025-07-01",
-  "end_date": "2025-07-31"
-}
-```
-
-### 支出記録
-```http
-POST /api/budgets/:id/expenses
+POST /api/games/import
 Content-Type: application/json
 
 {
-  "steam_app_id": 1091500,
-  "game_name": "Cyberpunk 2077",
-  "amount": 1980,
-  "purchase_date": "2025-07-01",
-  "category": "RPG"
+  "steam_app_ids": [1091500, 730, 570]
 }
 ```
 
-### 予算分析
+## ゲーム情報・レビュー API
+
+### ゲームレビュー取得（統合）
 ```http
-GET /api/budgets/:id/analytics
-GET /api/budgets/summary
-```
-
-## 無料ゲーム API
-
-### Epic Games無料ゲーム
-```http
-GET /api/epic-games
-GET /api/epic-games?filter=unclaimed
-PUT /api/epic-games/:id/claim
-PUT /api/epic-games/:id/unclaim
-GET /api/epic-games/current
-```
-
-### Steam無料ゲーム
-```http
-GET /api/steam-free-games
-GET /api/steam-free-games?filter=all
-PUT /api/steam-free-games/:id/claim
-GET /api/steam-free-games/stats
-POST /api/steam-free-games/refresh
-```
-
-**レスポンス例:**
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "id": 1,
-      "app_id": 550,
-      "title": "Left 4 Dead 2",
-      "steam_url": "https://store.steampowered.com/app/550/",
-      "is_claimed": false,
-      "discovered_at": "2025-07-01T10:00:00Z"
-    }
-  ]
-}
-```
-
-## ITAD設定 API
-
-### 設定管理
-```http
-GET /api/itad-settings
-PUT /api/itad-settings/:name
-POST /api/itad-settings/reset
-```
-
-**設定更新例:**
-```json
-{
-  "min_discount": 25,
-  "max_price": 3000,
-  "enabled": true
-}
-```
-
-## システム API
-
-### システム状態
-```http
-GET /api/system/status
+GET /api/games/:appId/reviews
 ```
 
 **レスポンス例:**
@@ -231,13 +128,236 @@ GET /api/system/status
 {
   "success": true,
   "data": {
-    "monitoring_active": true,
-    "total_games": 127,
-    "last_check": "2025-07-01T10:00:00Z",
-    "uptime": "2 days, 14:32:10",
-    "memory_usage": "245MB"
+    "steam_app_id": 1091500,
+    "game_name": "Cyberpunk 2077",
+    "steam": {
+      "positive": 425000,
+      "negative": 150000,
+      "percentage": 74,
+      "text": "やや好評"
+    },
+    "igdb": {
+      "rating": 75,
+      "count": 890
+    },
+    "metacritic": {
+      "score": 86,
+      "url": "https://www.metacritic.com/game/cyberpunk-2077"
+    },
+    "integrated_score": {
+      "score": 76.8,
+      "sources": ["steam", "igdb", "metacritic"],
+      "confidence": "high"
+    },
+    "last_updated": "2025-07-05T08:00:00Z"
   }
 }
+```
+
+### ゲーム情報取得
+```http
+GET /api/games/:appId/info
+```
+
+### ゲーム詳細取得
+```http
+GET /api/games/:appId/details
+```
+
+### バッチレビュー取得
+```http
+POST /api/games/reviews/batch
+Content-Type: application/json
+
+{
+  "gameIds": [1091500, 730, 570]
+}
+```
+
+### 価格履歴取得
+```http
+GET /api/games/:appId/price-history
+GET /api/games/:appId/price-history?days=30
+```
+
+## 監視・アラート API
+
+### 監視ステータス
+```http
+GET /api/monitoring/status
+```
+
+**レスポンス例:**
+```json
+{
+  "success": true,
+  "data": {
+    "is_monitoring": true,
+    "next_check": "2025-07-05T12:00:00Z",
+    "last_check": "2025-07-05T06:00:00Z",
+    "total_games_monitored": 127,
+    "check_frequency": "6時間毎"
+  }
+}
+```
+
+### 手動価格チェック
+```http
+POST /api/monitoring/check-now
+```
+
+### アラート一覧
+```http
+GET /api/alerts
+GET /api/alerts?unread=true
+```
+
+### アラート既読
+```http
+PUT /api/alerts/:id/mark-read
+```
+
+## 予算管理 API
+
+### 予算サマリー取得
+```http
+GET /api/budgets/summaries
+```
+
+**レスポンス例:**
+```json
+[
+  {
+    "id": 1,
+    "name": "月次ゲーム予算",
+    "period_type": "monthly",
+    "budget_amount": 10000,
+    "spent_amount": 5980,
+    "remaining_amount": 4020,
+    "is_active": true,
+    "start_date": "2025-07-01",
+    "end_date": "2025-07-31"
+  }
+]
+```
+
+### 予算作成
+```http
+POST /api/budgets
+Content-Type: application/json
+
+{
+  "name": "夏セール予算",
+  "period_type": "custom",
+  "budget_amount": 20000,
+  "start_date": "2025-07-01",
+  "end_date": "2025-07-14"
+}
+```
+
+### 支出記録
+```http
+POST /api/games/:id/mark-purchased
+Content-Type: application/json
+
+{
+  "price": 1980,
+  "budgetId": 1
+}
+```
+
+### 購入解除
+```http
+PUT /api/games/:id/unmark-purchased
+```
+
+## 無料ゲーム API
+
+### 無料ゲーム一覧（統合）
+```http
+GET /api/free-games
+```
+
+**レスポンス例:**
+```json
+{
+  "success": true,
+  "data": {
+    "epic": [
+      {
+        "id": 1,
+        "title": "Death Stranding",
+        "description": "小島秀夫監督の最新作...",
+        "epic_url": "https://store.epicgames.com/...",
+        "start_date": "2025-07-01",
+        "end_date": "2025-07-08",
+        "is_claimed": false
+      }
+    ],
+    "steam": [
+      {
+        "id": 1,
+        "app_id": 550,
+        "title": "Left 4 Dead 2",
+        "steam_url": "https://store.steampowered.com/app/550/",
+        "discovered_at": "2025-07-01T10:00:00Z",
+        "is_expired": false,
+        "is_claimed": false
+      }
+    ]
+  }
+}
+```
+
+### Epic Gamesのみ
+```http
+GET /api/epic-games
+```
+
+### Steam無料ゲームのみ
+```http
+GET /api/steam-free-games
+```
+
+### 無料ゲーム取得済みマーク
+```http
+PUT /api/epic-games/:id/claim
+PUT /api/steam-free-games/:id/claim
+```
+
+## システム管理 API
+
+### システム情報
+```http
+GET /api/system/info
+```
+
+**レスポンス例:**
+```json
+{
+  "success": true,
+  "data": {
+    "version": "1.0.0",
+    "node_version": "20.11.0",
+    "platform": "linux",
+    "uptime": "2 days, 14:32:10",
+    "memory": {
+      "total": "1GB",
+      "used": "245MB",
+      "free": "779MB"
+    }
+  }
+}
+```
+
+### システム統計
+```http
+GET /api/system/stats
+```
+
+### ビルド情報
+```http
+GET /api/system/build-info
 ```
 
 ### Discord通知テスト
@@ -246,26 +366,33 @@ POST /api/system/test-discord
 Content-Type: application/json
 
 {
-  "message": "テストメッセージ"
+  "type": "connection" | "price_alert" | "high_discount" | "epic_free"
 }
 ```
 
-### ビルド情報
+### 価格アラートテスト
 ```http
-GET /api/system/build-info
+POST /api/system/test-price-alert
+Content-Type: application/json
+
+{
+  "gameId": 1,
+  "alertType": "new_low" | "sale_start" | "threshold_met",
+  "testPrice": 1980,
+  "sendDiscord": true
+}
 ```
 
-## データエクスポート
+## Discord API
 
-### ゲームデータエクスポート
+### Discord設定取得
 ```http
-GET /api/export/games?format=csv
-GET /api/export/games?format=json
+GET /api/discord/config
 ```
 
-### 予算データエクスポート
+### Discord接続状態
 ```http
-GET /api/export/budgets?format=csv&year=2025
+GET /api/discord/status
 ```
 
 ## エラーコード
@@ -275,52 +402,89 @@ GET /api/export/budgets?format=csv&year=2025
 | 200 | 成功 |
 | 400 | リクエストエラー (パラメータ不正等) |
 | 404 | リソースが見つからない |
+| 409 | 競合が発生 |
 | 500 | サーバーエラー |
+| 503 | 外部API利用不可 |
 
 ## 使用例
 
-### JavaScript/Node.js
-```javascript
+### JavaScript/TypeScript (api.ts使用)
+```typescript
+import { api } from './utils/api';
+
 // ゲーム一覧取得
-const response = await fetch('http://localhost:3000/api/games');
-const data = await response.json();
+const games = await api.get<Game[]>('/games');
 
 // ゲーム追加
-const newGame = await fetch('http://localhost:3000/api/games', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    steam_app_id: 1091500,
-    name: 'Cyberpunk 2077',
-    price_threshold: 2000
-  })
+const newGame = await api.post<Game>('/games', {
+  steam_app_id: 1091500,
+  name: 'Cyberpunk 2077',
+  price_threshold: 2000,
+  price_threshold_type: 'price'
 });
+
+// レビュー取得
+const reviews = await api.get<GameReviews>(`/games/${steamAppId}/reviews`);
 ```
 
 ### Python
 ```python
 import requests
 
+BASE_URL = 'http://localhost:3000/api'
+
 # ゲーム一覧取得
-response = requests.get('http://localhost:3000/api/games')
+response = requests.get(f'{BASE_URL}/games')
 games = response.json()
 
 # 予算作成
 budget_data = {
     "name": "月次予算",
     "period_type": "monthly", 
-    "budget_amount": 10000
+    "budget_amount": 10000,
+    "start_date": "2025-07-01",
+    "end_date": "2025-07-31"
 }
-response = requests.post('http://localhost:3000/api/budgets', json=budget_data)
+response = requests.post(f'{BASE_URL}/budgets', json=budget_data)
 ```
 
 ### cURL
 ```bash
 # システム状態確認
-curl http://localhost:3000/api/system/status
+curl http://localhost:3000/api/system/info
 
 # ゲーム追加
 curl -X POST http://localhost:3000/api/games \
   -H "Content-Type: application/json" \
-  -d '{"steam_app_id": 1091500, "name": "Cyberpunk 2077"}'
+  -d '{"steam_app_id": 1091500, "name": "Cyberpunk 2077", "price_threshold": 2000}'
+
+# Discord通知テスト
+curl -X POST http://localhost:3000/api/system/test-discord \
+  -H "Content-Type: application/json" \
+  -d '{"type": "connection"}'
 ```
+
+## パフォーマンス最適化
+
+2025年7月5日のアップデートにより、以下の最適化が実施されました：
+
+- **デバッグログ90%削減**: API通信の高速化
+- **エンドポイント統合**: 重複ルートの削除によるメンテナンス性向上
+- **レスポンス時間**: 平均100ms以下を維持
+
+## 変更履歴
+
+### v1.2.0 (2025-07-05)
+- APIエンドポイントの統合・整理
+- レビューAPI統合機能追加（Steam + IGDB + Metacritic）
+- OpenCritic API削除（認証要件のため）
+- システム管理APIの拡充
+- パフォーマンス最適化（ログ90%削減）
+
+### v1.1.0 (2025-07-04)
+- レビューシステムAPI追加
+- ゲーム詳細APIの実装
+- Discord APIの拡充
+
+### v1.0.0 (2025-07-01)
+- 初回リリース

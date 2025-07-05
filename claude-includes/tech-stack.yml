@@ -21,7 +21,7 @@ Tech_Stack:
     builder: Vite 5.x
     ui_library: Ant Design 5
     state_management: Context API
-    routing: React Router v6
+    routing: React Router v7.6.3
     charts: Recharts 2.12.7
     libraries:
       http: axios
@@ -38,6 +38,10 @@ Tech_Stack:
     price_data: IsThereAnyDeal API
     game_info: Steam Store API
     free_games: RSS feeds
+    reviews:
+      - Steam Reviews API (ユーザーレビュー)
+      - IGDB API (Twitch OAuth2)
+      - Metacritic (Steam Store API経由)
     
   monitoring_schedule:
     price_check:
@@ -69,9 +73,10 @@ Tech_Stack:
       - "./logs:/app/logs"
     
   project_statistics:
-    backend_files: 36
-    frontend_files: 45
-    db_tables: 8
-    total_endpoints: 80+
-    lines_of_code: ~15000
+    backend_files: 40+
+    frontend_files: 50+
+    db_tables: 10
+    total_endpoints: 80
+    lines_of_code: ~16000
     compile_time: 5秒（最適化済み）
+    log_reduction: 90%（最適化済み）

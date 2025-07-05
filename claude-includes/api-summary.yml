@@ -3,9 +3,9 @@
 
 API_Summary:
   base_config:
-    base_url: http://localhost:3001/api
+    base_url: http://localhost:3000/api
     version: 1.0
-    total_endpoints: 80+
+    total_endpoints: 80
     format: REST
     content_type: application/json
     
@@ -54,6 +54,18 @@ API_Summary:
           path: /import
           body: steam_ids[]
           response: ImportResult
+        reviews:
+          method: GET
+          path: /:appId/reviews
+          response: GameReviews
+        info:
+          method: GET  
+          path: /:appId/info
+          response: GameInfo
+        details:
+          method: GET
+          path: /:appId/details
+          response: GameDetails
           
     monitoring:
       base: /monitoring
@@ -201,6 +213,44 @@ API_Summary:
           method: GET
           path: /recommendations
           response: Recommendation[]
+          
+    system:
+      base: /system
+      operations:
+        info:
+          method: GET
+          path: /info
+          response: SystemInfo
+        stats:
+          method: GET
+          path: /stats
+          response: SystemStats
+        build_info:
+          method: GET
+          path: /build-info
+          response: BuildInfo
+        test_discord:
+          method: POST
+          path: /test-discord
+          body: { type: string }
+          response: TestResult
+        test_price_alert:
+          method: POST
+          path: /test-price-alert
+          body: TestPriceAlertDto
+          response: TestResult
+          
+    discord:
+      base: /discord
+      operations:
+        config:
+          method: GET
+          path: /config
+          response: DiscordConfig
+        status:
+          method: GET
+          path: /status
+          response: DiscordStatus
           
   authentication:
     type: none
