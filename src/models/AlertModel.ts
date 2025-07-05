@@ -19,28 +19,37 @@ export interface PaginationOptions {
 
 export class AlertModel {
   // アラートを作成（正規化版）
-  static create(alertData: Omit<Alert, 'id' | 'created_at' | 'updated_at'>): Alert {
+  static create(alertData: {
+    steam_app_id: number;
+    alert_type: string;
+    triggered_price?: number;
+    threshold_value?: number;
+    discount_percent?: number;
+    metadata?: any;
+  }): Alert {
     try {
       const db = database.getConnection();
       const stmt = db.prepare(`
         INSERT INTO alerts (
-          steam_app_id, alert_type, message, trigger_price, 
-          previous_low, discount_percent, notified_discord, is_read
+          steam_app_id, alert_type, triggered_price, threshold_value,
+          discount_percent, notified_discord, is_read, metadata
         ) VALUES (
-          @steam_app_id, @alert_type, @message, @trigger_price,
-          @previous_low, @discount_percent, @notified_discord, @is_read
+          @steam_app_id, @alert_type, @triggered_price, @threshold_value,
+          @discount_percent, @notified_discord, @is_read, @metadata
         )
       `);
+      
+      const metadata = alertData.metadata ? JSON.stringify(alertData.metadata) : null;
       
       const info = stmt.run({
         steam_app_id: alertData.steam_app_id,
         alert_type: alertData.alert_type,
-        message: alertData.message || null,
-        trigger_price: alertData.trigger_price || null,
-        previous_low: alertData.previous_low || null,
+        triggered_price: alertData.triggered_price || null,
+        threshold_value: alertData.threshold_value || null,
         discount_percent: alertData.discount_percent || null,
-        notified_discord: alertData.notified_discord ? 1 : 0,
-        is_read: alertData.is_read ? 1 : 0
+        notified_discord: 0,
+        is_read: 0,
+        metadata
       });
       
       logger.info(`Alert created: ${alertData.alert_type} for game ${alertData.steam_app_id}`);

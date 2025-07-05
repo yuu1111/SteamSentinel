@@ -3,6 +3,9 @@ import Joi from 'joi';
 import { AlertController } from '../controllers/AlertController';
 import { GameController } from '../controllers/GameController';
 import { MonitoringController } from '../controllers/MonitoringController';
+import { PriceController } from '../controllers/PriceController';
+import { ReviewController } from '../controllers/ReviewController';
+import { StatisticsController } from '../controllers/StatisticsController';
 import { validateBody, validateQuery, validateParams } from '../middleware/validation';
 import { 
   gameSchema, 
@@ -14,11 +17,16 @@ import {
   dateRangeSchema
 } from '../validation/schemas';
 import { apiLimiter } from '../middleware/security';
+import { authenticateToken, authorizeRole, optionalAuth } from '../middleware/auth';
+import authRoutes from './auth';
 
 const router = Router();
 
 // APIレート制限を適用
 router.use(apiLimiter);
+
+// 認証ルートを追加（認証不要）
+router.use('/auth', authRoutes);
 
 // ===== GAMES RESOURCE =====
 
@@ -38,21 +46,25 @@ router.get('/games/:id',
   (req, res) => GameController.getGameById(req, res)
 );
 
-// POST /api/v1/games - ゲーム作成
+// POST /api/v1/games - ゲーム作成（認証必須）
 router.post('/games',
+  authenticateToken,
   validateBody(gameSchema),
   (req, res) => GameController.addGame(req, res)
 );
 
-// PUT /api/v1/games/:id - ゲーム更新
+// PUT /api/v1/games/:id - ゲーム更新（認証必須）
 router.put('/games/:id',
+  authenticateToken,
   validateParams(idParamSchema),
   validateBody(gameUpdateSchema),
   (req, res) => GameController.updateGame(req, res)
 );
 
-// DELETE /api/v1/games/:id - ゲーム削除
+// DELETE /api/v1/games/:id - ゲーム削除（管理者のみ）
 router.delete('/games/:id',
+  authenticateToken,
+  authorizeRole(['admin']),
   validateParams(idParamSchema),
   (req, res) => GameController.deleteGame(req, res)
 );
@@ -61,7 +73,8 @@ router.delete('/games/:id',
 router.get('/games/:id/price-history',
   validateParams(idParamSchema),
   validateQuery(dateRangeSchema.keys({
-    days: Joi.number().integer().min(1).max(365).default(30)
+    days: Joi.number().integer().min(1).max(365).default(30),
+    limit: Joi.number().integer().min(1).max(1000).default(100)
   })),
   (req, res) => GameController.getGamePriceHistory(req, res)
 );
@@ -132,18 +145,21 @@ router.post('/games/high-discount/detect',
   (req, res) => GameController.runHighDiscountDetection(req, res)
 );
 
-// GET /api/v1/games/:appId/reviews - ゲームレビュー取得
+// GET /api/v1/games/:appId/reviews - ゲームレビュー取得（移行先: ReviewController）
 router.get('/games/:appId/reviews',
   validateParams(Joi.object({ appId: Joi.number().integer().positive().required() })),
-  (req, res) => GameController.getGameReviews(req, res)
+  validateQuery(Joi.object({
+    details: Joi.boolean().default(false)
+  })),
+  (req, res) => new ReviewController().getGameReviews(req, res)
 );
 
-// POST /api/v1/games/reviews/batch - 複数ゲームレビュー取得
+// POST /api/v1/games/reviews/batch - 複数ゲームレビュー取得（移行先: ReviewController）
 router.post('/games/reviews/batch',
   validateBody(Joi.object({
-    steam_app_ids: Joi.array().items(Joi.number().integer().positive()).max(10).required()
+    steamAppIds: Joi.array().items(Joi.number().integer().positive()).max(10).required()
   })),
-  (req, res) => GameController.getMultipleGameReviews(req, res)
+  (req, res) => new ReviewController().getMultipleGameReviews(req, res)
 );
 
 // GET /api/v1/games/:appId/info - ゲーム情報取得
@@ -266,6 +282,95 @@ router.delete('/alerts',
   (req, res) => new AlertController().cleanup(req, res)
 );
 
+// ===== PRICES RESOURCE =====
+
+// GET /api/v1/prices/history/:appId - 価格履歴取得
+router.get('/prices/history/:appId',
+  validateParams(Joi.object({ appId: Joi.number().integer().positive().required() })),
+  validateQuery(Joi.object({
+    days: Joi.number().integer().min(1).max(365).default(30),
+    limit: Joi.number().integer().min(1).max(1000).default(100)
+  })),
+  (req, res) => new PriceController().getPriceHistory(req, res)
+);
+
+// GET /api/v1/prices/latest/:appId - 最新価格取得
+router.get('/prices/latest/:appId',
+  validateParams(Joi.object({ appId: Joi.number().integer().positive().required() })),
+  (req, res) => new PriceController().getLatestPrice(req, res)
+);
+
+// GET /api/v1/prices/statistics - 価格統計取得
+router.get('/prices/statistics',
+  (req, res) => new PriceController().getPriceStatistics(req, res)
+);
+
+// POST /api/v1/prices/track - 価格追跡開始（認証必須）
+router.post('/prices/track',
+  authenticateToken,
+  validateBody(Joi.object({
+    steamAppIds: Joi.array().items(Joi.number().integer().positive()).max(10).required()
+  })),
+  (req, res) => new PriceController().startTracking(req, res)
+);
+
+// DELETE /api/v1/prices/track/:appId - 価格追跡停止（認証必須）
+router.delete('/prices/track/:appId',
+  authenticateToken,
+  validateParams(Joi.object({ appId: Joi.number().integer().positive().required() })),
+  (req, res) => new PriceController().stopTracking(req, res)
+);
+
+// GET /api/v1/prices/alerts/potential - アラート候補取得
+router.get('/prices/alerts/potential',
+  validateQuery(Joi.object({
+    threshold: Joi.number().integer().min(10).max(90).default(50)
+  })),
+  (req, res) => new PriceController().getPotentialAlerts(req, res)
+);
+
+// ===== REVIEWS RESOURCE =====
+
+// GET /api/v1/reviews/:appId - ゲームレビュー統合取得
+router.get('/reviews/:appId',
+  validateParams(Joi.object({ appId: Joi.number().integer().positive().required() })),
+  validateQuery(Joi.object({
+    details: Joi.boolean().default(false)
+  })),
+  (req, res) => new ReviewController().getGameReviews(req, res)
+);
+
+// POST /api/v1/reviews/:appId/refresh - レビュー情報更新（認証必須）
+router.post('/reviews/:appId/refresh',
+  authenticateToken,
+  validateParams(Joi.object({ appId: Joi.number().integer().positive().required() })),
+  validateQuery(Joi.object({
+    force: Joi.boolean().default(false)
+  })),
+  (req, res) => new ReviewController().refreshGameReviews(req, res)
+);
+
+// POST /api/v1/reviews/batch - 複数ゲームレビュー取得
+router.post('/reviews/batch',
+  validateBody(Joi.object({
+    steamAppIds: Joi.array().items(Joi.number().integer().positive()).max(10).required()
+  })),
+  (req, res) => new ReviewController().getMultipleGameReviews(req, res)
+);
+
+// GET /api/v1/reviews/statistics - レビュー統計取得
+router.get('/reviews/statistics',
+  (req, res) => new ReviewController().getReviewStatistics(req, res)
+);
+
+// DELETE /api/v1/reviews/:appId - レビュー情報削除（管理者のみ）
+router.delete('/reviews/:appId',
+  authenticateToken,
+  authorizeRole(['admin']),
+  validateParams(Joi.object({ appId: Joi.number().integer().positive().required() })),
+  (req, res) => new ReviewController().deleteGameReviews(req, res)
+);
+
 // ===== DASHBOARD & STATISTICS =====
 
 // GET /api/v1/dashboard - ダッシュボードデータ取得
@@ -273,17 +378,40 @@ router.get('/dashboard',
   (req, res) => GameController.getDashboardData(req, res)
 );
 
-// GET /api/v1/statistics/alerts - アラート統計取得
-router.get('/statistics/alerts',
-  (req, res) => new AlertController().getStatistics(req, res)
+// GET /api/v1/statistics/dashboard - ダッシュボード統計
+router.get('/statistics/dashboard',
+  (req, res) => new StatisticsController().getDashboardStatistics(req, res)
 );
 
 // GET /api/v1/statistics/games - ゲーム統計取得
 router.get('/statistics/games',
-  (req, res) => {
-    // ダッシュボードデータから統計部分を抽出
-    GameController.getDashboardData(req, res);
-  }
+  validateQuery(Joi.object({
+    period: Joi.string().valid('7d', '30d', '90d', '1y').default('30d')
+  })),
+  (req, res) => new StatisticsController().getGameStatistics(req, res)
+);
+
+// GET /api/v1/statistics/alerts - アラート統計取得
+router.get('/statistics/alerts',
+  validateQuery(Joi.object({
+    period: Joi.string().valid('7d', '30d', '90d', '1y').default('30d')
+  })),
+  (req, res) => new StatisticsController().getAlertStatistics(req, res)
+);
+
+// GET /api/v1/statistics/performance - パフォーマンス統計
+router.get('/statistics/performance',
+  (req, res) => new StatisticsController().getPerformanceStatistics(req, res)
+);
+
+// GET /api/v1/statistics/export - 統計データエクスポート（認証必須）
+router.get('/statistics/export',
+  authenticateToken,
+  validateQuery(Joi.object({
+    format: Joi.string().valid('json', 'csv').default('json'),
+    include_sensitive: Joi.boolean().default(false)
+  })),
+  (req, res) => new StatisticsController().exportStatistics(req, res)
 );
 
 // ===== MONITORING =====
