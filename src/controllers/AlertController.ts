@@ -24,8 +24,8 @@ export class AlertController extends BaseController {
                 return ApiResponseHelper.badRequest(res, '無効なSteam App IDです');
             }
 
-            const alerts = await AlertModel.getFiltered(filters, pagination);
-            const total = await AlertModel.getCount(filters);
+            const alerts = AlertModel.getFiltered(filters, pagination);
+            const total = AlertModel.getCount(filters);
 
             // ゲーム名を追加取得（JOIN最適化のため別途取得）
             const enrichedAlerts = await this.enrichAlertsWithGameNames(alerts);
@@ -81,7 +81,7 @@ export class AlertController extends BaseController {
                 return ApiResponseHelper.badRequest(res, '無効なアラートIDです');
             }
 
-            const result = await AlertModel.markAsRead(alertId);
+            const result = AlertModel.markAsRead(alertId);
             
             if (!result) {
                 return ApiResponseHelper.notFound(res, 'アラート');
@@ -127,7 +127,7 @@ export class AlertController extends BaseController {
                 return ApiResponseHelper.badRequest(res, '無効なアラートIDです');
             }
 
-            const result = await AlertModel.delete(alertId);
+            const result = AlertModel.delete(alertId);
             
             if (!result) {
                 return ApiResponseHelper.notFound(res, 'アラート');
@@ -183,49 +183,7 @@ export class AlertController extends BaseController {
         }
     }
 
-    // POST /api/alerts/test
-    async createTestAlert(req: Request, res: Response): Promise<void> {
-        try {
-            const { steamAppId, alertType = 'test', message } = req.body;
-            
-            // バリデーション
-            const missingFields = this.validateRequiredFields(req.body, ['steamAppId']);
-            if (missingFields.length > 0) {
-                return ApiResponseHelper.validationError(res, 
-                    missingFields.map(field => ({ field, message: `${field}は必須です` }))
-                );
-            }
-
-            if (isNaN(parseInt(steamAppId))) {
-                return ApiResponseHelper.badRequest(res, '無効なSteam App IDです');
-            }
-
-            // ゲームの存在確認
-            const game = await GameModel.getBySteamAppId(parseInt(steamAppId));
-            if (!game) {
-                return ApiResponseHelper.notFound(res, 'ゲーム');
-            }
-
-            // テストアラート作成
-            const alertId = AlertModel.create({
-                steam_app_id: parseInt(steamAppId),
-                alert_type: alertType,
-                trigger_price: 0,
-                message: message || 'テストアラート',
-                notified_discord: false
-            });
-
-            ApiResponseHelper.success(
-                res, 
-                { id: alertId, steamAppId: parseInt(steamAppId), alertType }, 
-                'テストアラートを作成しました',
-                201
-            );
-        } catch (error) {
-            logger.error('Failed to create test alert:', error);
-            ApiResponseHelper.error(res, 'テストアラートの作成に失敗しました', 500, error);
-        }
-    }
+    // createTestAlert メソッドを削除（テスト専用機能をプロダクションコードから除去）
 
     // プライベートヘルパーメソッド
     private async enrichAlertsWithGameNames(alerts: any[]): Promise<any[]> {

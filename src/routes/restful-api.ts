@@ -7,8 +7,7 @@ import { validateBody, validateQuery, validateParams } from '../middleware/valid
 import { 
   gameSchema, 
   gameUpdateSchema, 
-  alertSchema, 
-  testAlertSchema,
+  alertSchema,
   paginationSchema, 
   idParamSchema,
   steamAppIdParamSchema,
@@ -203,13 +202,7 @@ router.get('/alerts',
   (req, res) => new AlertController().getAlerts(req, res)
 );
 
-// GET /api/v1/alerts/:id - アラート詳細取得
-router.get('/alerts/:id',
-  validateParams(idParamSchema),
-  (req, res) => new AlertController().getAlert(req, res)
-);
-
-// GET /api/v1/alerts/recent - 最新アラート取得
+// GET /api/v1/alerts/recent - 最新アラート取得（具体的なルートを先に定義）
 router.get('/alerts/recent',
   validateQuery(Joi.object({
     limit: Joi.number().integer().min(1).max(100).default(10)
@@ -233,11 +226,13 @@ router.get('/alerts/recent',
   }
 );
 
-// POST /api/v1/alerts - アラート作成（テスト用）
-router.post('/alerts',
-  validateBody(testAlertSchema),
-  (req, res) => new AlertController().createTestAlert(req, res)
+// GET /api/v1/alerts/:id - アラート詳細取得
+router.get('/alerts/:id',
+  validateParams(idParamSchema),
+  (req, res) => new AlertController().getAlert(req, res)
 );
+
+// アラート作成エンドポイントは削除（テスト専用機能をプロダクションコードから除去）
 
 // PUT /api/v1/alerts/:id/read - アラート既読マーク
 router.put('/alerts/:id/read',

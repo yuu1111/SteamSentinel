@@ -18,6 +18,10 @@ export class GameController extends BaseController {
     
     try {
       const enabled = req.query.enabled as string;
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = (page - 1) * limit;
+      
       let enabledOnly = false;
       
       if (enabled === 'true') {
@@ -29,17 +33,16 @@ export class GameController extends BaseController {
       }
       
       // N+1問題を解決：latest_pricesテーブルを使用
-      const games = GameModel.getAllWithLatestPrices(enabledOnly);
+      const allGames = GameModel.getAllWithLatestPrices(enabledOnly);
+      const total = allGames.length;
+      const games = allGames.slice(offset, offset + limit);
       
-      ApiResponseHelper.success(
-        res, 
-        games, 
-        `${games.length}件のゲームを取得しました`,
-        200,
-        { 
-          performance: perf.getPerformanceMeta(),
-          pagination: { total: games.length, limit: games.length, offset: 0, hasMore: false }
-        }
+      ApiResponseHelper.paginated(
+        res,
+        games,
+        total,
+        { limit, offset, sort: 'id', order: 'ASC' },
+        `${games.length}件のゲームを取得しました`
       );
     } catch (error) {
       logger.error('Failed to get games:', error);

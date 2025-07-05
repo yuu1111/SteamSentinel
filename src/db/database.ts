@@ -112,15 +112,17 @@ class DatabaseManager {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         steam_app_id INTEGER NOT NULL,
         game_id INTEGER,
-        alert_type TEXT NOT NULL CHECK(alert_type IN ('new_low', 'sale_start', 'threshold_met', 'free_game', 'game_released')),
+        alert_type TEXT NOT NULL CHECK(alert_type IN ('new_low', 'sale_start', 'threshold_met', 'free_game', 'game_released', 'test')),
         message TEXT,
         trigger_price REAL,
         previous_low REAL,
         discount_percent INTEGER,
         price_data TEXT,
         game_name TEXT,
+        is_read BOOLEAN DEFAULT 0,
         notified_discord BOOLEAN DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         release_date TEXT,
         FOREIGN KEY (steam_app_id) REFERENCES games(steam_app_id),
         FOREIGN KEY (game_id) REFERENCES games(id)
@@ -267,6 +269,23 @@ class DatabaseManager {
       )
     `);
 
+    // latest_pricesキャッシュテーブル（パフォーマンス最適化用）
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS latest_prices (
+        steam_app_id INTEGER PRIMARY KEY,
+        current_price REAL NOT NULL,
+        original_price REAL NOT NULL,
+        discount_percent INTEGER NOT NULL,
+        historical_low REAL NOT NULL,
+        all_time_low_date TEXT,
+        is_on_sale BOOLEAN NOT NULL,
+        source TEXT NOT NULL,
+        recorded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        release_date TEXT,
+        FOREIGN KEY (steam_app_id) REFERENCES games(steam_app_id) ON DELETE CASCADE
+      )
+    `);
+
     // インデックスの作成
     db.exec(`
       CREATE INDEX IF NOT EXISTS idx_price_history_app_id ON price_history(steam_app_id);
@@ -380,6 +399,12 @@ class DatabaseManager {
       AFTER UPDATE ON steam_free_games
       BEGIN
         UPDATE steam_free_games SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+      END;
+
+      CREATE TRIGGER IF NOT EXISTS update_alerts_timestamp 
+      AFTER UPDATE ON alerts
+      BEGIN
+        UPDATE alerts SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
       END;
     `);
 

@@ -8,10 +8,16 @@ export class ITADSettingsController {
   async getAllSettings(_req: Request, res: Response): Promise<void> {
     try {
       const settings = itadSettingsModel.getAllSettings();
-      res.json(settings);
+      res.json({
+        success: true,
+        data: settings
+      });
     } catch (error) {
       logger.error('Failed to get ITAD settings:', error);
-      res.status(500).json({ error: 'Failed to get ITAD settings' });
+      res.status(500).json({ 
+        success: false,
+        error: 'Failed to get ITAD settings' 
+      });
     }
   }
 
@@ -41,10 +47,16 @@ export class ITADSettingsController {
         itadSettingsModel.updateSetting(setting.name, setting.value.toString());
       }
       
-      res.json({ message: 'Settings updated successfully' });
+      res.json({ 
+        success: true,
+        message: 'Settings updated successfully' 
+      });
     } catch (error) {
       logger.error('Failed to update multiple ITAD settings:', error);
-      res.status(500).json({ error: 'Failed to update settings' });
+      res.status(500).json({ 
+        success: false,
+        error: 'Failed to update settings' 
+      });
     }
   }
 
