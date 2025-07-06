@@ -89,8 +89,14 @@ export class SchedulerService {
     const task = cron.schedule('0 3 * * *', async () => {
       try {
         logger.info('Running scheduled database cleanup');
-        database.cleanupOldData();
-        logger.info('Database cleanup completed');
+        const results = database.cleanupOldData(config.dataRetentionDays || 30);
+        logger.info('Database cleanup completed', {
+          priceHistory: `${results.priceHistory} records`,
+          alerts: `${results.alerts} records`,
+          epicGames: `${results.epicGames} records`,
+          logs: `${results.logs} records`,
+          total: `${results.priceHistory + results.alerts + results.epicGames + results.logs} records deleted`
+        });
       } catch (error) {
         logger.error('Database cleanup failed:', error);
       }

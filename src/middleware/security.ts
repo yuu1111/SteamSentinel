@@ -27,6 +27,31 @@ export const apiLimiter = process.env.NODE_ENV === 'production'
   ? createRateLimiter(15 * 60 * 1000, 50)   // 本番: 15分間に50リクエスト  
   : (_req: any, _res: any, next: any) => next(); // 開発: 無効化
 
+// 認証エンドポイント用のレート制限（ブルートフォース対策）
+export const authLimiter = process.env.NODE_ENV === 'production'
+  ? createRateLimiter(15 * 60 * 1000, 5)    // 本番: 15分間に5リクエスト
+  : (_req: any, _res: any, next: any) => next(); // 開発: 無効化
+
+// 重い処理用のレート制限（エクスポート、バッチ処理など）
+export const heavyOperationLimiter = process.env.NODE_ENV === 'production'
+  ? createRateLimiter(60 * 60 * 1000, 10)   // 本番: 1時間に10リクエスト
+  : (_req: any, _res: any, next: any) => next(); // 開発: 無効化
+
+// 読み取り専用エンドポイント用の緩いレート制限
+export const readOnlyLimiter = process.env.NODE_ENV === 'production'
+  ? createRateLimiter(15 * 60 * 1000, 200)  // 本番: 15分間に200リクエスト
+  : (_req: any, _res: any, next: any) => next(); // 開発: 無効化
+
+// Discord/通知関連のレート制限
+export const notificationLimiter = process.env.NODE_ENV === 'production'
+  ? createRateLimiter(60 * 60 * 1000, 20)   // 本番: 1時間に20リクエスト
+  : (_req: any, _res: any, next: any) => next(); // 開発: 無効化
+
+// 管理者操作用のレート制限
+export const adminLimiter = process.env.NODE_ENV === 'production'
+  ? createRateLimiter(15 * 60 * 1000, 30)   // 本番: 15分間に30リクエスト
+  : (_req: any, _res: any, next: any) => next(); // 開発: 無効化
+
 // セキュリティヘッダーの設定
 export const securityHeaders = helmet({
   contentSecurityPolicy: {

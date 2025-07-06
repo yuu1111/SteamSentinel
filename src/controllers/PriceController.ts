@@ -5,6 +5,7 @@ import { ApiResponseHelper, BaseController, PerformanceHelper } from '../utils/a
 import { AuthRequest } from '../middleware/auth';
 import logger from '../utils/logger';
 import database from '../db/database';
+import cacheService, { CacheKeys } from '../services/CacheService';
 
 export class PriceController extends BaseController {
     // GET /api/v1/prices/history/:appId - 価格履歴取得
@@ -54,13 +55,25 @@ export class PriceController extends BaseController {
         }
     }
 
-    // GET /api/v1/prices/latest/:appId - 最新価格取得
+    // GET /api/v1/prices/latest/:appId - 最新価格取得（キャッシュ付き）
     async getLatestPrice(req: Request, res: Response): Promise<void> {
+        const perf = new PerformanceHelper();
+        
         try {
             const steamAppId = parseInt(req.params.appId);
 
             if (isNaN(steamAppId)) {
                 return ApiResponseHelper.badRequest(res, '無効なSteam App IDです');
+            }
+
+            // キャッシュチェック
+            const cacheKey = CacheKeys.latestPrice(steamAppId);
+            const cached = cacheService.get(cacheKey);
+            if (cached) {
+                perf.setCacheHit(true);
+                return ApiResponseHelper.success(res, cached, '最新価格を取得しました（キャッシュ）', 200, {
+                    performance: perf.getPerformanceMeta()
+                });
             }
 
             const db = database.getConnection();
@@ -75,7 +88,12 @@ export class PriceController extends BaseController {
                 return ApiResponseHelper.notFound(res, '価格情報');
             }
 
-            ApiResponseHelper.success(res, latestPrice);
+            // キャッシュに保存（TTL: 60秒）
+            cacheService.set(cacheKey, latestPrice, 60);
+
+            ApiResponseHelper.success(res, latestPrice, '最新価格を取得しました', 200, {
+                performance: perf.getPerformanceMeta()
+            });
 
         } catch (error) {
             logger.error('Failed to get latest price:', error);
@@ -83,11 +101,20 @@ export class PriceController extends BaseController {
         }
     }
 
-    // GET /api/v1/prices/statistics - 価格統計取得
+    // GET /api/v1/prices/statistics - 価格統計取得（キャッシュ付き）
     async getPriceStatistics(req: Request, res: Response): Promise<void> {
         const perf = new PerformanceHelper();
         
         try {
+            // キャッシュチェック
+            const cacheKey = CacheKeys.priceStatistics();
+            const cached = cacheService.get(cacheKey);
+            if (cached) {
+                perf.setCacheHit(true);
+                return ApiResponseHelper.success(res, cached, '価格統計を取得しました（キャッシュ）', 200, {
+                    performance: perf.getPerformanceMeta()
+                });
+            }
             const db = database.getConnection();
             
             // 基本統計を取得
@@ -135,11 +162,16 @@ export class PriceController extends BaseController {
                 LIMIT 10
             `).all();
 
-            ApiResponseHelper.success(res, {
+            const result = {
                 overview: stats,
                 topDiscounts,
                 recentHistoricalLows: recentLows
-            }, '価格統計を取得しました', 200, {
+            };
+            
+            // キャッシュに保存（TTL: 5分）
+            cacheService.set(cacheKey, result, 300);
+            
+            ApiResponseHelper.success(res, result, '価格統計を取得しました', 200, {
                 performance: perf.getPerformanceMeta()
             });
 

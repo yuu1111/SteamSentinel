@@ -8,17 +8,20 @@ import {
     refreshTokenSchema 
 } from '../validation/schemas';
 import { authenticateToken, optionalAuth } from '../middleware/auth';
+import { authLimiter } from '../middleware/security';
 
 const router = Router();
 const authController = new AuthController();
 
-// 公開エンドポイント
+// 公開エンドポイント（認証レート制限付き）
 router.post('/register', 
+    authLimiter,
     validateBody(registerSchema), 
     (req, res) => authController.register(req, res)
 );
 
 router.post('/login', 
+    authLimiter,
     validateBody(loginSchema), 
     (req, res) => authController.login(req, res)
 );

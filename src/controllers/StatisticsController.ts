@@ -11,29 +11,44 @@ export class StatisticsController extends BaseController {
         try {
             const db = database.getConnection();
             
-            // 基本統計
+            // 事前計算統計を取得（最新データ）
+            const precomputedStats = db.prepare(`
+                SELECT * FROM price_statistics 
+                ORDER BY calculated_at DESC 
+                LIMIT 1
+            `).get() as any;
+
+            // 基本統計（リアルタイム）
             const basicStats = db.prepare(`
                 SELECT 
-                    (SELECT COUNT(*) FROM games) as total_games,
-                    (SELECT COUNT(*) FROM games WHERE enabled = 1) as monitored_games,
                     (SELECT COUNT(*) FROM games WHERE is_purchased = 1) as purchased_games,
-                    (SELECT COUNT(DISTINCT steam_app_id) FROM latest_prices WHERE is_on_sale = 1) as games_on_sale,
                     (SELECT COUNT(*) FROM alerts WHERE created_at >= date('now', '-7 days')) as recent_alerts,
                     (SELECT COUNT(*) FROM alerts WHERE is_read = 0) as unread_alerts
             `).get() as any;
 
-            // 価格統計
-            const priceStats = db.prepare(`
-                SELECT 
-                    ROUND(AVG(CASE WHEN is_on_sale = 1 THEN discount_percent END), 2) as avg_discount,
-                    ROUND(SUM(CASE WHEN is_on_sale = 1 THEN (original_price - current_price) END), 2) as total_savings,
-                    MIN(current_price) as lowest_current_price,
-                    MAX(discount_percent) as highest_discount,
-                    COUNT(CASE WHEN is_on_sale = 1 THEN 1 END) as sales_count
-                FROM latest_prices lp
-                JOIN games g ON g.steam_app_id = lp.steam_app_id
-                WHERE g.enabled = 1
-            `).get() as any;
+            // 統合統計データを構築
+            const overview = {
+                // 事前計算データ（パフォーマンス最適化）
+                total_games: precomputedStats?.total_games || 0,
+                monitored_games: precomputedStats?.monitored_games || 0,
+                games_on_sale: precomputedStats?.games_on_sale || 0,
+                average_discount: precomputedStats?.average_discount || 0,
+                total_savings: precomputedStats?.total_savings || 0,
+                highest_discount_percent: precomputedStats?.highest_discount_percent || 0,
+                lowest_current_price: precomputedStats?.lowest_current_price || 0,
+                highest_current_price: precomputedStats?.highest_current_price || 0,
+                new_lows_today: precomputedStats?.new_lows_today || 0,
+                sale_starts_today: precomputedStats?.sale_starts_today || 0,
+                
+                // リアルタイムデータ
+                purchased_games: basicStats.purchased_games || 0,
+                recent_alerts: basicStats.recent_alerts || 0,
+                unread_alerts: basicStats.unread_alerts || 0,
+                
+                // 計算フィールド
+                savings_potential: precomputedStats?.total_savings || 0,
+                statistics_freshness: precomputedStats?.calculated_at || null
+            };
 
             // 最近のトレンド（7日間）
             const trendsData = db.prepare(`
@@ -76,17 +91,17 @@ export class StatisticsController extends BaseController {
             `).all();
 
             ApiResponseHelper.success(res, {
-                overview: {
-                    ...basicStats,
-                    ...priceStats,
-                    ...budgetStats,
-                    savings_potential: priceStats.total_savings || 0
-                },
+                overview,
                 trends: trendsData,
                 alertBreakdown: alertTypeStats,
+                budget: budgetStats,
+                extended_statistics: precomputedStats?.statistics_json ? 
+                    JSON.parse(precomputedStats.statistics_json) : null,
                 meta: {
                     last_updated: new Date().toISOString(),
-                    data_range: '7_days'
+                    data_range: '7_days',
+                    using_precomputed_data: !!precomputedStats,
+                    precomputed_at: precomputedStats?.calculated_at || null
                 }
             }, 'ダッシュボード統計を取得しました', 200, {
                 performance: perf.getPerformanceMeta()

@@ -148,26 +148,21 @@ class DatabaseManager {
       )
     `);
 
-    // アラート履歴テーブル
+    // アラート履歴テーブル（正規化版）
     db.exec(`
       CREATE TABLE IF NOT EXISTS alerts (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         steam_app_id INTEGER NOT NULL,
-        game_id INTEGER,
         alert_type TEXT NOT NULL CHECK(alert_type IN ('new_low', 'sale_start', 'threshold_met', 'free_game', 'game_released', 'test')),
-        message TEXT,
-        trigger_price REAL,
-        previous_low REAL,
+        triggered_price REAL,
+        threshold_value REAL,
         discount_percent INTEGER,
-        price_data TEXT,
-        game_name TEXT,
-        is_read BOOLEAN DEFAULT 0,
-        notified_discord BOOLEAN DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        release_date TEXT,
-        FOREIGN KEY (steam_app_id) REFERENCES games(steam_app_id),
-        FOREIGN KEY (game_id) REFERENCES games(id)
+        notified_discord BOOLEAN NOT NULL DEFAULT 0,
+        is_read BOOLEAN NOT NULL DEFAULT 0,
+        metadata TEXT, -- JSON形式で拡張可能なメタデータ
+        FOREIGN KEY (steam_app_id) REFERENCES games(steam_app_id) ON DELETE CASCADE
       )
     `);
 
@@ -241,31 +236,9 @@ class DatabaseManager {
       )
     `);
 
-    // レビュー統合データテーブル
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS game_reviews (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        steam_app_id INTEGER NOT NULL,
-        game_name TEXT NOT NULL,
-        steam_score INTEGER,
-        steam_review_count INTEGER,
-        steam_description TEXT,
-        metacritic_score INTEGER,
-        metacritic_description TEXT,
-        metacritic_url TEXT,
-        igdb_score INTEGER,
-        igdb_review_count INTEGER,
-        igdb_description TEXT,
-        igdb_url TEXT,
-        aggregate_score INTEGER,
-        last_updated DATETIME DEFAULT CURRENT_TIMESTAMP,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (steam_app_id) REFERENCES games(steam_app_id),
-        UNIQUE(steam_app_id)
-      )
-    `);
+    // game_reviewsテーブルは削除 - review_scoresテーブルのみを使用して統合スコアを計算
 
-    // レビューソース別詳細テーブル
+    // レビューソース別詳細テーブル（拡張版）
     db.exec(`
       CREATE TABLE IF NOT EXISTS review_scores (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -278,6 +251,8 @@ class DatabaseManager {
         url TEXT,
         tier TEXT,
         percent_recommended REAL,
+        weight REAL DEFAULT 1.0,
+        confidence_level TEXT DEFAULT 'medium' CHECK(confidence_level IN ('low', 'medium', 'high')),
         last_updated DATETIME DEFAULT CURRENT_TIMESTAMP,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (steam_app_id) REFERENCES games(steam_app_id),
@@ -328,6 +303,27 @@ class DatabaseManager {
       )
     `);
 
+    // 価格統計事前計算テーブル（パフォーマンス最適化用）
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS price_statistics (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        calculated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        total_games INTEGER NOT NULL,
+        monitored_games INTEGER NOT NULL,
+        games_on_sale INTEGER NOT NULL,
+        average_discount REAL DEFAULT 0,
+        total_savings REAL DEFAULT 0,
+        highest_discount_percent INTEGER DEFAULT 0,
+        highest_discount_game_id INTEGER,
+        lowest_current_price REAL,
+        highest_current_price REAL,
+        new_lows_today INTEGER DEFAULT 0,
+        sale_starts_today INTEGER DEFAULT 0,
+        statistics_json TEXT, -- JSON形式で拡張統計データを格納
+        FOREIGN KEY (highest_discount_game_id) REFERENCES games(steam_app_id)
+      )
+    `);
+
     // インデックスの作成
     db.exec(`
       CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
@@ -357,6 +353,8 @@ class DatabaseManager {
       CREATE INDEX IF NOT EXISTS idx_epic_games_claimed ON epic_free_games(is_claimed);
       CREATE INDEX IF NOT EXISTS idx_steam_free_games_app_id ON steam_free_games(app_id);
       CREATE INDEX IF NOT EXISTS idx_steam_free_games_claimed ON steam_free_games(is_claimed);
+      CREATE INDEX IF NOT EXISTS idx_price_statistics_calculated_at ON price_statistics(calculated_at);
+      CREATE INDEX IF NOT EXISTS idx_price_statistics_total_games ON price_statistics(total_games, games_on_sale);
     `);
 
 
@@ -396,6 +394,17 @@ class DatabaseManager {
     // latest_prices自動更新トリガー
     this.createLatestPricesTriggers(db);
 
+    // 統合レビュースコア計算ビューの作成
+    this.createIntegratedReviewView(db);
+
+    // 価格統計自動更新トリガーの作成
+    this.createPriceStatisticsTriggers(db);
+
+    // 旧game_reviewsテーブルのクリーンアップ
+    this.cleanupLegacyReviewData(db);
+
+    // アラートテーブルの正規化マイグレーション
+    this.migrateAlertsTable(db);
     
     // 初期設定とシードデータ
     this.seedDatabase(db);
@@ -485,6 +494,267 @@ class DatabaseManager {
       logger.debug('Latest prices triggers created successfully');
     } catch (error) {
       logger.error('Failed to create latest prices triggers:', error);
+    }
+  }
+
+  // 統合レビュースコア計算ビューの作成
+  private createIntegratedReviewView(db: Database.Database): void {
+    try {
+      // 既存のビューを削除（存在する場合）
+      db.exec('DROP VIEW IF EXISTS integrated_review_scores');
+      
+      // 統合レビュースコア計算ビューを作成
+      db.exec(`
+        CREATE VIEW integrated_review_scores AS
+        SELECT 
+          steam_app_id,
+          ROUND(SUM(score * weight) / SUM(weight), 2) as integrated_score,
+          COUNT(*) as source_count,
+          CASE 
+            WHEN COUNT(*) >= 3 THEN 'high'
+            WHEN COUNT(*) = 2 THEN 'medium'
+            ELSE 'low'
+          END as confidence,
+          MAX(last_updated) as last_updated,
+          GROUP_CONCAT(source, ', ') as sources,
+          AVG(score) as average_score,
+          MIN(score) as lowest_score,
+          MAX(score) as highest_score,
+          SUM(review_count) as total_review_count,
+          GROUP_CONCAT(
+            source || ':' || score || '/' || max_score || 
+            CASE WHEN review_count IS NOT NULL THEN '(' || review_count || ')' ELSE '' END,
+            '; '
+          ) as score_breakdown
+        FROM review_scores 
+        WHERE score IS NOT NULL 
+        GROUP BY steam_app_id
+      `);
+      
+      logger.debug('Integrated review scores view created successfully');
+    } catch (error) {
+      logger.error('Failed to create integrated review scores view:', error);
+    }
+  }
+
+  // 旧game_reviewsテーブルのクリーンアップ
+  private cleanupLegacyReviewData(db: Database.Database): void {
+    try {
+      // game_reviewsテーブルが存在するかチェック
+      const tableExists = db.prepare(`
+        SELECT name FROM sqlite_master 
+        WHERE type='table' AND name='game_reviews'
+      `).get();
+
+      if (tableExists) {
+        logger.info('Migrating data from game_reviews to review_scores...');
+        
+        // game_reviewsからreview_scoresに既存データを移行（重複回避）
+        const migrateStmt = db.prepare(`
+          INSERT OR IGNORE INTO review_scores (
+            steam_app_id, source, score, max_score, review_count, 
+            description, url, weight, created_at, last_updated
+          )
+          SELECT 
+            steam_app_id, 
+            'steam' as source, 
+            steam_score as score, 
+            100 as max_score,
+            steam_review_count as review_count,
+            steam_description as description,
+            NULL as url,
+            1.0 as weight,
+            created_at,
+            last_updated
+          FROM game_reviews 
+          WHERE steam_score IS NOT NULL
+          
+          UNION ALL
+          
+          SELECT 
+            steam_app_id, 
+            'metacritic' as source, 
+            metacritic_score as score, 
+            100 as max_score,
+            NULL as review_count,
+            metacritic_description as description,
+            metacritic_url as url,
+            1.0 as weight,
+            created_at,
+            last_updated
+          FROM game_reviews 
+          WHERE metacritic_score IS NOT NULL
+          
+          UNION ALL
+          
+          SELECT 
+            steam_app_id, 
+            'igdb' as source, 
+            igdb_score as score, 
+            100 as max_score,
+            igdb_review_count as review_count,
+            igdb_description as description,
+            igdb_url as url,
+            1.0 as weight,
+            created_at,
+            last_updated
+          FROM game_reviews 
+          WHERE igdb_score IS NOT NULL
+        `);
+        
+        const migrationResult = migrateStmt.run();
+        logger.info(`Migrated ${migrationResult.changes} review records from game_reviews to review_scores`);
+        
+        // game_reviewsテーブルを削除
+        db.exec('DROP TABLE game_reviews');
+        logger.info('Legacy game_reviews table removed successfully');
+      } else {
+        logger.debug('game_reviews table not found, skipping migration');
+      }
+    } catch (error) {
+      logger.error('Failed to cleanup legacy review data:', error);
+    }
+  }
+
+  // 価格統計自動更新トリガーの作成
+  private createPriceStatisticsTriggers(db: Database.Database): void {
+    try {
+      // price_history挿入時の統計更新トリガー（100件ごと）
+      db.exec(`
+        CREATE TRIGGER IF NOT EXISTS update_statistics_on_price_change
+        AFTER INSERT ON price_history
+        WHEN (SELECT COUNT(*) FROM price_history) % 100 = 0
+        BEGIN
+          INSERT INTO price_statistics (
+            total_games, monitored_games, games_on_sale, average_discount, 
+            total_savings, highest_discount_percent, highest_discount_game_id,
+            lowest_current_price, highest_current_price, new_lows_today, 
+            sale_starts_today, statistics_json
+          )
+          SELECT 
+            (SELECT COUNT(*) FROM games) as total_games,
+            (SELECT COUNT(*) FROM games WHERE enabled = 1) as monitored_games,
+            (SELECT COUNT(*) FROM latest_prices WHERE is_on_sale = 1) as games_on_sale,
+            (SELECT ROUND(AVG(discount_percent), 2) FROM latest_prices WHERE is_on_sale = 1) as average_discount,
+            (SELECT ROUND(SUM(original_price - current_price), 2) FROM latest_prices WHERE is_on_sale = 1) as total_savings,
+            (SELECT MAX(discount_percent) FROM latest_prices WHERE is_on_sale = 1) as highest_discount_percent,
+            (SELECT steam_app_id FROM latest_prices WHERE is_on_sale = 1 ORDER BY discount_percent DESC LIMIT 1) as highest_discount_game_id,
+            (SELECT MIN(current_price) FROM latest_prices WHERE current_price > 0) as lowest_current_price,
+            (SELECT MAX(current_price) FROM latest_prices) as highest_current_price,
+            (SELECT COUNT(*) FROM alerts WHERE alert_type = 'new_low' AND date(created_at) = date('now')) as new_lows_today,
+            (SELECT COUNT(*) FROM alerts WHERE alert_type = 'sale_start' AND date(created_at) = date('now')) as sale_starts_today,
+            json_object(
+              'calculation_method', 'automatic_trigger',
+              'data_points', (SELECT COUNT(*) FROM latest_prices),
+              'last_price_update', (SELECT MAX(recorded_at) FROM latest_prices),
+              'discount_ranges', json_object(
+                '0-25', (SELECT COUNT(*) FROM latest_prices WHERE discount_percent BETWEEN 0 AND 25 AND is_on_sale = 1),
+                '26-50', (SELECT COUNT(*) FROM latest_prices WHERE discount_percent BETWEEN 26 AND 50 AND is_on_sale = 1),
+                '51-75', (SELECT COUNT(*) FROM latest_prices WHERE discount_percent BETWEEN 51 AND 75 AND is_on_sale = 1),
+                '76-100', (SELECT COUNT(*) FROM latest_prices WHERE discount_percent BETWEEN 76 AND 100 AND is_on_sale = 1)
+              )
+            ) as statistics_json;
+        END;
+      `);
+
+      // 古い統計データの自動削除トリガー（30日より古いデータを削除）
+      db.exec(`
+        CREATE TRIGGER IF NOT EXISTS cleanup_old_statistics
+        AFTER INSERT ON price_statistics
+        WHEN NEW.id % 50 = 0  -- 50件ごとにクリーンアップ実行
+        BEGIN
+          DELETE FROM price_statistics 
+          WHERE calculated_at < datetime('now', '-30 days')
+          AND id NOT IN (
+            SELECT id FROM price_statistics 
+            ORDER BY calculated_at DESC 
+            LIMIT 10  -- 最新10件は保持
+          );
+        END;
+      `);
+
+      logger.debug('Price statistics triggers created successfully');
+    } catch (error) {
+      logger.error('Failed to create price statistics triggers:', error);
+    }
+  }
+
+  // アラートテーブルの正規化マイグレーション
+  private migrateAlertsTable(db: Database.Database): void {
+    try {
+      // 現在のalertsテーブル構造を確認
+      const tableInfo = db.prepare(`
+        PRAGMA table_info(alerts)
+      `).all() as any[];
+
+      const hasLegacyFields = tableInfo.some(col => 
+        ['message', 'price_data', 'game_name', 'game_id', 'previous_low', 'release_date'].includes(col.name)
+      );
+
+      if (hasLegacyFields) {
+        logger.info('Migrating alerts table to normalized structure...');
+        
+        // 新しい正規化テーブルを作成
+        db.exec(`
+          CREATE TABLE IF NOT EXISTS alerts_new (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            steam_app_id INTEGER NOT NULL,
+            alert_type TEXT NOT NULL CHECK(alert_type IN ('new_low', 'sale_start', 'threshold_met', 'free_game', 'game_released', 'test')),
+            triggered_price REAL,
+            threshold_value REAL,
+            discount_percent INTEGER,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            notified_discord BOOLEAN NOT NULL DEFAULT 0,
+            is_read BOOLEAN NOT NULL DEFAULT 0,
+            metadata TEXT,
+            FOREIGN KEY (steam_app_id) REFERENCES games(steam_app_id) ON DELETE CASCADE
+          )
+        `);
+
+        // 既存データを新テーブルにマイグレーション
+        const migrateStmt = db.prepare(`
+          INSERT INTO alerts_new (
+            steam_app_id, alert_type, triggered_price, threshold_value, 
+            discount_percent, created_at, updated_at, notified_discord, is_read, metadata
+          )
+          SELECT 
+            steam_app_id,
+            alert_type,
+            COALESCE(trigger_price, triggered_price) as triggered_price,
+            NULL as threshold_value,
+            discount_percent,
+            created_at,
+            updated_at,
+            COALESCE(notified_discord, 0) as notified_discord,
+            COALESCE(is_read, 0) as is_read,
+            CASE 
+              WHEN message IS NOT NULL OR price_data IS NOT NULL OR game_name IS NOT NULL 
+              THEN json_object(
+                'legacy_message', message,
+                'legacy_price_data', price_data,
+                'legacy_game_name', game_name,
+                'legacy_previous_low', previous_low,
+                'legacy_release_date', release_date
+              )
+              ELSE NULL
+            END as metadata
+          FROM alerts
+        `);
+        
+        const migrationResult = migrateStmt.run();
+        logger.info(`Migrated ${migrationResult.changes} alert records to normalized structure`);
+        
+        // 古いテーブルを削除し、新しいテーブルをリネーム
+        db.exec('DROP TABLE alerts');
+        db.exec('ALTER TABLE alerts_new RENAME TO alerts');
+        
+        logger.info('Alerts table normalization completed successfully');
+      } else {
+        logger.debug('Alerts table already normalized, skipping migration');
+      }
+    } catch (error) {
+      logger.error('Failed to migrate alerts table:', error);
     }
   }
 
@@ -615,22 +885,89 @@ class DatabaseManager {
     return now >= nextFetch;
   }
 
-  cleanupOldData(): number {
+  // データクリーンアップ（拡張版）
+  cleanupOldData(daysToKeep: number = 30): { 
+    priceHistory: number, 
+    alerts: number, 
+    epicGames: number,
+    logs: number 
+  } {
     try {
       const db = this.getConnection();
       const cutoffDate = new Date();
-      cutoffDate.setDate(cutoffDate.getDate() - 30); // 30日前
+      cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
       
-      const result = db.prepare(`
-        DELETE FROM price_history 
-        WHERE recorded_at < ? AND steam_app_id NOT IN (SELECT steam_app_id FROM games)
-      `).run(cutoffDate.toISOString());
+      // トランザクションで複数のクリーンアップを実行
+      const cleanup = db.transaction(() => {
+        // 1. 古い価格履歴を削除（最新100件は保持）
+        const priceHistoryResult = db.prepare(`
+          DELETE FROM price_history 
+          WHERE recorded_at < ? 
+          AND id NOT IN (
+            SELECT id FROM price_history 
+            WHERE steam_app_id = price_history.steam_app_id 
+            ORDER BY recorded_at DESC 
+            LIMIT 100
+          )
+        `).run(cutoffDate.toISOString());
+        
+        // 2. 古いアラートを削除（既読のみ）
+        const alertsResult = db.prepare(`
+          DELETE FROM alerts 
+          WHERE created_at < ? 
+          AND is_read = 1
+        `).run(cutoffDate.toISOString());
+        
+        // 3. 期限切れのEpic無料ゲームを削除
+        const epicGamesResult = db.prepare(`
+          DELETE FROM epic_free_games 
+          WHERE end_date < date('now', '-90 days') 
+          AND is_claimed = 0
+        `).run();
+        
+        // 4. 古いログデータを削除（もしログテーブルがあれば）
+        let logsDeleted = 0;
+        const logTableExists = db.prepare(`
+          SELECT name FROM sqlite_master 
+          WHERE type='table' AND name='logs'
+        `).get();
+        
+        if (logTableExists) {
+          const logsResult = db.prepare(`
+            DELETE FROM logs 
+            WHERE created_at < ?
+          `).run(cutoffDate.toISOString());
+          logsDeleted = logsResult.changes;
+        }
+        
+        return {
+          priceHistory: priceHistoryResult.changes,
+          alerts: alertsResult.changes,
+          epicGames: epicGamesResult.changes,
+          logs: logsDeleted
+        };
+      });
       
-      logger.info(`Cleaned up ${result.changes} old price history records`);
-      return result.changes;
+      const results = cleanup();
+      
+      logger.info(`Data cleanup completed:`, {
+        priceHistory: results.priceHistory,
+        alerts: results.alerts,
+        epicGames: results.epicGames,
+        logs: results.logs,
+        totalDeleted: results.priceHistory + results.alerts + results.epicGames + results.logs
+      });
+      
+      // VACUUM実行（データベースサイズ最適化）
+      if (results.priceHistory + results.alerts > 1000) {
+        logger.info('Running VACUUM to optimize database size...');
+        db.exec('VACUUM');
+      }
+      
+      return results;
     } catch (error) {
       logger.error('Failed to cleanup old data:', error);
-      return 0;
+      return { priceHistory: 0, alerts: 0, epicGames: 0, logs: 0 };
     }
   }
 }

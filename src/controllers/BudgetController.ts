@@ -1,40 +1,47 @@
 import { Request, Response } from 'express';
+import { ApiResponseHelper, BaseController } from '../utils/apiResponse';
 import logger from '../utils/logger';
 import budgetModel from '../models/BudgetModel';
 
-export class BudgetController {
+export class BudgetController extends BaseController {
   
   // 予算一覧取得
-  async getAllBudgets(_req: Request, res: Response): Promise<void> {
+  async getAllBudgets(req: Request, res: Response): Promise<void> {
     try {
-      const budgets = budgetModel.getAllBudgets();
-      res.json({
-        success: true,
-        data: budgets
-      });
+      const pagination = this.getPaginationParams(req.query);
+      const budgets = budgetModel.getAllBudgets(pagination);
+      const total = budgetModel.getBudgetsCount();
+      
+      ApiResponseHelper.paginated(
+        res,
+        budgets,
+        total,
+        pagination,
+        `${budgets.length}件の予算を取得しました`
+      );
     } catch (error) {
       logger.error('Failed to get all budgets:', error);
-      res.status(500).json({ 
-        success: false,
-        error: 'Failed to get budgets' 
-      });
+      ApiResponseHelper.error(res, '予算一覧の取得に失敗しました', 500, error);
     }
   }
 
   // アクティブな予算のみ取得
-  async getActiveBudgets(_req: Request, res: Response): Promise<void> {
+  async getActiveBudgets(req: Request, res: Response): Promise<void> {
     try {
-      const budgets = budgetModel.getActiveBudgets();
-      res.json({
-        success: true,
-        data: budgets
-      });
+      const pagination = this.getPaginationParams(req.query);
+      const budgets = budgetModel.getActiveBudgets(pagination);
+      const total = budgetModel.getActiveBudgetsCount();
+      
+      ApiResponseHelper.paginated(
+        res,
+        budgets,
+        total,
+        pagination,
+        `${budgets.length}件のアクティブな予算を取得しました`
+      );
     } catch (error) {
       logger.error('Failed to get active budgets:', error);
-      res.status(500).json({ 
-        success: false,
-        error: 'Failed to get active budgets' 
-      });
+      ApiResponseHelper.error(res, 'アクティブな予算の取得に失敗しました', 500, error);
     }
   }
 
@@ -43,20 +50,20 @@ export class BudgetController {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
-        res.status(400).json({ error: 'Invalid budget ID' });
+        ApiResponseHelper.badRequest(res, '無効な予算IDです');
         return;
       }
 
       const budget = budgetModel.getBudgetById(id);
       if (!budget) {
-        res.status(404).json({ error: 'Budget not found' });
+        ApiResponseHelper.notFound(res, '予算');
         return;
       }
 
-      res.json(budget);
+      ApiResponseHelper.success(res, budget, '予算詳細を取得しました');
     } catch (error) {
       logger.error('Failed to get budget by id:', error);
-      res.status(500).json({ error: 'Failed to get budget' });
+      ApiResponseHelper.error(res, '予算詳細の取得に失敗しました', 500, error);
     }
   }
 
@@ -67,34 +74,34 @@ export class BudgetController {
 
       // バリデーション
       if (!name || !period_type || !budget_amount || !start_date) {
-        res.status(400).json({ error: 'Missing required fields: name, period_type, budget_amount, start_date' });
+        ApiResponseHelper.badRequest(res, '必須フィールドが不足しています: name, period_type, budget_amount, start_date');
         return;
       }
 
       if (!['monthly', 'yearly', 'custom'].includes(period_type)) {
-        res.status(400).json({ error: 'Invalid period_type. Must be monthly, yearly, or custom' });
+        ApiResponseHelper.badRequest(res, '無効なperiod_typeです。monthly、yearly、customのいずれかを指定してください');
         return;
       }
 
       if (budget_amount <= 0) {
-        res.status(400).json({ error: 'Budget amount must be greater than 0' });
+        ApiResponseHelper.badRequest(res, '予算額は0より大きい値である必要があります');
         return;
       }
 
       // 日付フォーマット検証
       if (!this.isValidDate(start_date)) {
-        res.status(400).json({ error: 'Invalid start_date format. Use YYYY-MM-DD' });
+        ApiResponseHelper.badRequest(res, '無効な開始日形式です。YYYY-MM-DD形式を使用してください');
         return;
       }
 
       if (end_date && !this.isValidDate(end_date)) {
-        res.status(400).json({ error: 'Invalid end_date format. Use YYYY-MM-DD' });
+        ApiResponseHelper.badRequest(res, '無効な終了日形式です。YYYY-MM-DD形式を使用してください');
         return;
       }
 
       // 期間チェック
       if (end_date && new Date(start_date) >= new Date(end_date)) {
-        res.status(400).json({ error: 'End date must be after start date' });
+        ApiResponseHelper.badRequest(res, '終了日は開始日より後である必要があります');
         return;
       }
 
@@ -111,10 +118,10 @@ export class BudgetController {
       const budgetId = budgetModel.createBudget(budgetData);
       const newBudget = budgetModel.getBudgetById(budgetId);
 
-      res.status(201).json(newBudget);
+      ApiResponseHelper.success(res, newBudget, '予算が正常に作成されました', 201);
     } catch (error) {
       logger.error('Failed to create budget:', error);
-      res.status(500).json({ error: 'Failed to create budget' });
+      ApiResponseHelper.error(res, '予算の作成に失敗しました', 500, error);
     }
   }
 
@@ -123,13 +130,13 @@ export class BudgetController {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
-        res.status(400).json({ error: 'Invalid budget ID' });
+        ApiResponseHelper.badRequest(res, '無効な予算IDです');
         return;
       }
 
       const existingBudget = budgetModel.getBudgetById(id);
       if (!existingBudget) {
-        res.status(404).json({ error: 'Budget not found' });
+        ApiResponseHelper.notFound(res, '予算');
         return;
       }
 
@@ -139,28 +146,28 @@ export class BudgetController {
       if (name !== undefined) updates.name = name;
       if (period_type !== undefined) {
         if (!['monthly', 'yearly', 'custom'].includes(period_type)) {
-          res.status(400).json({ error: 'Invalid period_type. Must be monthly, yearly, or custom' });
+          ApiResponseHelper.badRequest(res, '無効なperiod_typeです。monthly、yearly、customのいずれかを指定してください');
           return;
         }
         updates.period_type = period_type;
       }
       if (budget_amount !== undefined) {
         if (budget_amount <= 0) {
-          res.status(400).json({ error: 'Budget amount must be greater than 0' });
+          ApiResponseHelper.badRequest(res, '予算額は0より大きい値である必要があります');
           return;
         }
         updates.budget_amount = parseFloat(budget_amount);
       }
       if (start_date !== undefined) {
         if (!this.isValidDate(start_date)) {
-          res.status(400).json({ error: 'Invalid start_date format. Use YYYY-MM-DD' });
+          ApiResponseHelper.badRequest(res, '無効な開始日形式です。YYYY-MM-DD形式を使用してください');
           return;
         }
         updates.start_date = start_date;
       }
       if (end_date !== undefined) {
         if (end_date && !this.isValidDate(end_date)) {
-          res.status(400).json({ error: 'Invalid end_date format. Use YYYY-MM-DD' });
+          ApiResponseHelper.badRequest(res, '無効な終了日形式です。YYYY-MM-DD形式を使用してください');
           return;
         }
         updates.end_date = end_date;
@@ -174,15 +181,15 @@ export class BudgetController {
 
       const success = budgetModel.updateBudget(id, updates);
       if (!success) {
-        res.status(404).json({ error: 'Budget not found or no changes made' });
+        ApiResponseHelper.notFound(res, '予算が見つからないか、変更がありません');
         return;
       }
 
       const updatedBudget = budgetModel.getBudgetById(id);
-      res.json(updatedBudget);
+      ApiResponseHelper.success(res, updatedBudget, '予算が正常に更新されました');
     } catch (error) {
       logger.error('Failed to update budget:', error);
-      res.status(500).json({ error: 'Failed to update budget' });
+      ApiResponseHelper.error(res, '予算の更新に失敗しました', 500, error);
     }
   }
 
@@ -191,20 +198,20 @@ export class BudgetController {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
-        res.status(400).json({ error: 'Invalid budget ID' });
+        ApiResponseHelper.badRequest(res, '無効な予算IDです');
         return;
       }
 
       const success = budgetModel.deleteBudget(id);
       if (!success) {
-        res.status(404).json({ error: 'Budget not found' });
+        ApiResponseHelper.notFound(res, '予算');
         return;
       }
 
-      res.json({ message: 'Budget deleted successfully' });
+      ApiResponseHelper.success(res, null, '予算が正常に削除されました');
     } catch (error) {
       logger.error('Failed to delete budget:', error);
-      res.status(500).json({ error: 'Failed to delete budget' });
+      ApiResponseHelper.error(res, '予算の削除に失敗しました', 500, error);
     }
   }
 
@@ -216,7 +223,7 @@ export class BudgetController {
       let summaries;
       if (start_date && end_date) {
         if (!this.isValidDate(start_date as string) || !this.isValidDate(end_date as string)) {
-          res.status(400).json({ error: 'Invalid date format. Use YYYY-MM-DD' });
+          ApiResponseHelper.badRequest(res, '無効な日付形式です。YYYY-MM-DD形式を使用してください');
           return;
         }
         summaries = budgetModel.getBudgetSummaryForPeriod(start_date as string, end_date as string);
@@ -224,10 +231,10 @@ export class BudgetController {
         summaries = budgetModel.getBudgetSummaries();
       }
 
-      res.json(summaries);
+      ApiResponseHelper.success(res, summaries, '予算サマリーを取得しました');
     } catch (error) {
       logger.error('Failed to get budget summaries:', error);
-      res.status(500).json({ error: 'Failed to get budget summaries' });
+      ApiResponseHelper.error(res, '予算サマリーの取得に失敗しました', 500, error);
     }
   }
 
@@ -236,30 +243,30 @@ export class BudgetController {
     try {
       const budgetId = parseInt(req.params.id);
       if (isNaN(budgetId)) {
-        res.status(400).json({ error: 'Invalid budget ID' });
+        ApiResponseHelper.badRequest(res, '無効な予算IDです');
         return;
       }
 
       const budget = budgetModel.getBudgetById(budgetId);
       if (!budget) {
-        res.status(404).json({ error: 'Budget not found' });
+        ApiResponseHelper.notFound(res, '予算');
         return;
       }
 
       const { steam_app_id, game_name, amount, purchase_date, category } = req.body;
 
       if (!amount || !purchase_date) {
-        res.status(400).json({ error: 'Missing required fields: amount, purchase_date' });
+        ApiResponseHelper.badRequest(res, '必須フィールドが不足しています: amount, purchase_date');
         return;
       }
 
       if (amount <= 0) {
-        res.status(400).json({ error: 'Amount must be greater than 0' });
+        ApiResponseHelper.badRequest(res, '金額は0より大きい値である必要があります');
         return;
       }
 
       if (!this.isValidDate(purchase_date)) {
-        res.status(400).json({ error: 'Invalid purchase_date format. Use YYYY-MM-DD' });
+        ApiResponseHelper.badRequest(res, '無効な購入日形式です。YYYY-MM-DD形式を使用してください');
         return;
       }
 
@@ -273,10 +280,10 @@ export class BudgetController {
       };
 
       const expenseId = budgetModel.addExpense(expenseData);
-      res.status(201).json({ id: expenseId, message: 'Expense added successfully' });
+      ApiResponseHelper.success(res, { id: expenseId }, '支出が正常に追加されました', 201);
     } catch (error) {
       logger.error('Failed to add expense:', error);
-      res.status(500).json({ error: 'Failed to add expense' });
+      ApiResponseHelper.error(res, '支出の追加に失敗しました', 500, error);
     }
   }
 
@@ -285,15 +292,24 @@ export class BudgetController {
     try {
       const budgetId = parseInt(req.params.id);
       if (isNaN(budgetId)) {
-        res.status(400).json({ error: 'Invalid budget ID' });
+        ApiResponseHelper.badRequest(res, '無効な予算IDです');
         return;
       }
 
-      const expenses = budgetModel.getBudgetExpenses(budgetId);
-      res.json(expenses);
+      const pagination = this.getPaginationParams(req.query);
+      const expenses = budgetModel.getBudgetExpenses(budgetId, pagination);
+      const total = budgetModel.getBudgetExpensesCount(budgetId);
+      
+      ApiResponseHelper.paginated(
+        res,
+        expenses,
+        total,
+        pagination,
+        `${expenses.length}件の予算支出記録を取得しました`
+      );
     } catch (error) {
       logger.error('Failed to get budget expenses:', error);
-      res.status(500).json({ error: 'Failed to get budget expenses' });
+      ApiResponseHelper.error(res, '予算支出記録の取得に失敗しました', 500, error);
     }
   }
 
@@ -302,20 +318,20 @@ export class BudgetController {
     try {
       const expenseId = parseInt(req.params.expenseId);
       if (isNaN(expenseId)) {
-        res.status(400).json({ error: 'Invalid expense ID' });
+        ApiResponseHelper.badRequest(res, '無効な支出IDです');
         return;
       }
 
       const success = budgetModel.deleteExpense(expenseId);
       if (!success) {
-        res.status(404).json({ error: 'Expense not found' });
+        ApiResponseHelper.notFound(res, '支出');
         return;
       }
 
-      res.json({ message: 'Expense deleted successfully' });
+      ApiResponseHelper.success(res, null, '支出が正常に削除されました');
     } catch (error) {
       logger.error('Failed to delete expense:', error);
-      res.status(500).json({ error: 'Failed to delete expense' });
+      ApiResponseHelper.error(res, '支出の削除に失敗しました', 500, error);
     }
   }
 
@@ -325,27 +341,27 @@ export class BudgetController {
       const { name, amount, year, month } = req.body;
 
       if (!name || !amount || !year || !month) {
-        res.status(400).json({ error: 'Missing required fields: name, amount, year, month' });
+        ApiResponseHelper.badRequest(res, '必須フィールドが不足しています: name, amount, year, month');
         return;
       }
 
       if (amount <= 0) {
-        res.status(400).json({ error: 'Amount must be greater than 0' });
+        ApiResponseHelper.badRequest(res, '金額は0より大きい値である必要があります');
         return;
       }
 
       if (month < 1 || month > 12) {
-        res.status(400).json({ error: 'Month must be between 1 and 12' });
+        ApiResponseHelper.badRequest(res, '月は1から12の間である必要があります');
         return;
       }
 
       const budgetId = budgetModel.createMonthlyBudget(name, parseFloat(amount), parseInt(year), parseInt(month));
       const newBudget = budgetModel.getBudgetById(budgetId);
 
-      res.status(201).json(newBudget);
+      ApiResponseHelper.success(res, newBudget, '月間予算が正常に作成されました', 201);
     } catch (error) {
       logger.error('Failed to create monthly budget:', error);
-      res.status(500).json({ error: 'Failed to create monthly budget' });
+      ApiResponseHelper.error(res, '月間予算の作成に失敗しました', 500, error);
     }
   }
 
@@ -355,22 +371,22 @@ export class BudgetController {
       const { name, amount, year } = req.body;
 
       if (!name || !amount || !year) {
-        res.status(400).json({ error: 'Missing required fields: name, amount, year' });
+        ApiResponseHelper.badRequest(res, '必須フィールドが不足しています: name, amount, year');
         return;
       }
 
       if (amount <= 0) {
-        res.status(400).json({ error: 'Amount must be greater than 0' });
+        ApiResponseHelper.badRequest(res, '金額は0より大きい値である必要があります');
         return;
       }
 
       const budgetId = budgetModel.createYearlyBudget(name, parseFloat(amount), parseInt(year));
       const newBudget = budgetModel.getBudgetById(budgetId);
 
-      res.status(201).json(newBudget);
+      ApiResponseHelper.success(res, newBudget, '年間予算が正常に作成されました', 201);
     } catch (error) {
       logger.error('Failed to create yearly budget:', error);
-      res.status(500).json({ error: 'Failed to create yearly budget' });
+      ApiResponseHelper.error(res, '年間予算の作成に失敗しました', 500, error);
     }
   }
 

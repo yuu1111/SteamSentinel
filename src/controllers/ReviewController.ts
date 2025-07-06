@@ -27,11 +27,16 @@ export class ReviewController extends BaseController {
 
             const db = database.getConnection();
             
-            // review_scores から統合レビューデータを取得
+            // 統合レビュースコアビューから統合データを取得
+            const integratedReview = db.prepare(`
+                SELECT * FROM integrated_review_scores WHERE steam_app_id = ?
+            `).get(steamAppId) as any;
+
+            // review_scores から詳細データを取得
             const reviewScores = db.prepare(`
                 SELECT 
                     source, score, max_score, review_count, description, 
-                    url, tier, percent_recommended, last_updated
+                    url, tier, percent_recommended, weight, confidence_level, last_updated
                 FROM review_scores 
                 WHERE steam_app_id = ?
                 ORDER BY 
@@ -43,50 +48,46 @@ export class ReviewController extends BaseController {
                     END
             `).all(steamAppId);
 
-            // 統合スコアを計算
-            let integratedScore = null;
-            let confidence = 'low';
+            // 統合スコア情報
+            const integratedScore = integratedReview?.integrated_score || null;
+            const confidence = integratedReview?.confidence || 'low';
             
-            if (reviewScores.length > 0) {
-                const validScores = reviewScores.filter((r: any) => r.score !== null);
-                if (validScores.length > 0) {
-                    // 重み付き平均を計算（Steam: 0.4, Metacritic: 0.4, IGDB: 0.2）
-                    const weights = { steam: 0.4, metacritic: 0.4, igdb: 0.2 };
-                    let totalScore = 0;
-                    let totalWeight = 0;
-                    
-                    validScores.forEach((review: any) => {
-                        const weight = weights[review.source as keyof typeof weights] || 0.1;
-                        const normalizedScore = (review.score / review.max_score) * 100;
-                        totalScore += normalizedScore * weight;
-                        totalWeight += weight;
-                    });
-                    
-                    integratedScore = Math.round(totalScore / totalWeight);
-                    confidence = validScores.length >= 3 ? 'high' : validScores.length === 2 ? 'medium' : 'low';
-                }
-            }
-
-            const responseData: any = {
-                game: {
-                    steam_app_id: steamAppId,
-                    name: game.name
-                },
-                integratedScore,
-                confidence,
-                sourceCount: reviewScores.length,
-                lastUpdated: reviewScores.length > 0 ? 
-                    Math.max(...reviewScores.map((r: any) => new Date(r.last_updated || 0).getTime())) : null
+            // レスポンスデータを構築
+            const responseData = {
+                steam_app_id: steamAppId,
+                game_name: game.name,
+                integrated_score: integratedScore,
+                confidence: confidence,
+                source_count: integratedReview?.source_count || 0,
+                total_review_count: integratedReview?.total_review_count || 0,
+                score_breakdown: integratedReview?.score_breakdown || '',
+                sources: reviewScores.map((score: any) => ({
+                    source: score.source,
+                    score: score.score,
+                    max_score: score.max_score,
+                    review_count: score.review_count,
+                    description: score.description,
+                    url: score.url,
+                    tier: score.tier,
+                    percent_recommended: score.percent_recommended,
+                    weight: score.weight,
+                    confidence_level: score.confidence_level,
+                    last_updated: score.last_updated,
+                    ...(includeDetails && {
+                        normalized_score: Math.round((score.score / score.max_score) * 100),
+                        source_reliability: this.getSourceReliability(score.source)
+                    })
+                })),
+                last_updated: integratedReview?.last_updated || null
             };
 
-            if (includeDetails) {
-                responseData.reviews = reviewScores;
-            } else {
-                responseData.sources = reviewScores.map((r: any) => r.source);
-            }
-
+            // レスポンスを送信
             ApiResponseHelper.success(res, responseData, 'レビュー情報を取得しました', 200, {
-                performance: perf.getPerformanceMeta()
+                performance: perf.getPerformanceMeta(),
+                cache_info: {
+                    using_integrated_view: !!integratedReview,
+                    data_sources: reviewScores.map((r: any) => r.source)
+                }
             });
 
         } catch (error) {
@@ -351,5 +352,15 @@ export class ReviewController extends BaseController {
             logger.error('Failed to delete game reviews:', error);
             ApiResponseHelper.error(res, 'レビュー情報の削除に失敗しました', 500, error);
         }
+    }
+
+    // ソースの信頼性評価
+    private getSourceReliability(source: string): string {
+        const reliabilityMap: { [key: string]: string } = {
+            'steam': 'high',
+            'metacritic': 'high',
+            'igdb': 'medium'
+        };
+        return reliabilityMap[source] || 'low';
     }
 }

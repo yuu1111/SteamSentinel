@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import logger from '../utils/logger';
 import database from '../db/database';
+import { PaginationOptions } from '../utils/apiResponse';
 
 export interface ITADSetting {
   id: number;
@@ -26,11 +27,20 @@ export class ITADSettingsModel {
   }
 
   // 全設定取得
-  getAllSettings(): ITADSetting[] {
+  getAllSettings(pagination?: PaginationOptions): ITADSetting[] {
     try {
       const db = this.getDb();
-      const stmt = db.prepare('SELECT * FROM itad_settings ORDER BY category, name');
-      return stmt.all() as ITADSetting[];
+      if (pagination) {
+        const stmt = db.prepare(`
+          SELECT * FROM itad_settings 
+          ORDER BY ${pagination.sort} ${pagination.order} 
+          LIMIT ? OFFSET ?
+        `);
+        return stmt.all(pagination.limit, pagination.offset) as ITADSetting[];
+      } else {
+        const stmt = db.prepare('SELECT * FROM itad_settings ORDER BY category, name');
+        return stmt.all() as ITADSetting[];
+      }
     } catch (error) {
       logger.error('Failed to get ITAD settings:', error);
       throw error;
@@ -181,11 +191,21 @@ export class ITADSettingsModel {
   }
 
   // カテゴリ別設定取得
-  getSettingsByCategory(category: string): ITADSetting[] {
+  getSettingsByCategory(category: string, pagination?: PaginationOptions): ITADSetting[] {
     try {
       const db = this.getDb();
-      const stmt = db.prepare('SELECT * FROM itad_settings WHERE category = ? ORDER BY name');
-      return stmt.all(category) as ITADSetting[];
+      if (pagination) {
+        const stmt = db.prepare(`
+          SELECT * FROM itad_settings 
+          WHERE category = ? 
+          ORDER BY ${pagination.sort} ${pagination.order} 
+          LIMIT ? OFFSET ?
+        `);
+        return stmt.all(category, pagination.limit, pagination.offset) as ITADSetting[];
+      } else {
+        const stmt = db.prepare('SELECT * FROM itad_settings WHERE category = ? ORDER BY name');
+        return stmt.all(category) as ITADSetting[];
+      }
     } catch (error) {
       logger.error(`Failed to get ITAD settings for category ${category}:`, error);
       throw error;
@@ -204,6 +224,32 @@ export class ITADSettingsModel {
     };
     
     return this.updateSettings(defaultSettings);
+  }
+
+  // 設定総数取得
+  getSettingsCount(): number {
+    try {
+      const db = this.getDb();
+      const stmt = db.prepare('SELECT COUNT(*) as count FROM itad_settings');
+      const result = stmt.get() as { count: number };
+      return result.count;
+    } catch (error) {
+      logger.error('Failed to get ITAD settings count:', error);
+      throw error;
+    }
+  }
+
+  // カテゴリ別設定総数取得
+  getSettingsByCategoryCount(category: string): number {
+    try {
+      const db = this.getDb();
+      const stmt = db.prepare('SELECT COUNT(*) as count FROM itad_settings WHERE category = ?');
+      const result = stmt.get(category) as { count: number };
+      return result.count;
+    } catch (error) {
+      logger.error(`Failed to get ITAD settings count for category ${category}:`, error);
+      throw error;
+    }
   }
 }
 

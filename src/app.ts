@@ -4,6 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import { config } from './config';
 import { securityHeaders, generalLimiter, errorHandler, jsonSizeLimit } from './middleware/security';
+import { extractVersion, getVersionInfo } from './middleware/versioning';
 import restfulApiRoutes from './routes/restful-api';
 
 const app = express();
@@ -25,7 +26,14 @@ app.use(express.urlencoded({ extended: true, limit: jsonSizeLimit }));
 // 静的ファイル配信
 app.use(express.static(config.publicPath));
 
-// APIルート
+// APIバージョニングミドルウェア
+app.use('/api', extractVersion);
+
+// バージョン情報エンドポイント
+app.get('/api/version', getVersionInfo);
+app.get('/api/v1/version', getVersionInfo);
+
+// APIルート（バージョン別）
 app.use('/api/v1', restfulApiRoutes);
 // Legacy API support for backward compatibility
 app.use('/api', restfulApiRoutes);

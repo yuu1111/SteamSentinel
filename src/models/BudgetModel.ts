@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import logger from '../utils/logger';
 import database from '../db/database';
+import { PaginationOptions } from '../utils/apiResponse';
 
 export interface Budget {
   id: number;
@@ -45,14 +46,23 @@ export class BudgetModel {
   }
 
   // 予算一覧取得
-  getAllBudgets(): Budget[] {
+  getAllBudgets(pagination?: PaginationOptions): Budget[] {
     try {
       const db = this.getDb();
-      const stmt = db.prepare(`
-        SELECT * FROM budgets 
-        ORDER BY created_at DESC
-      `);
-      return stmt.all() as Budget[];
+      if (pagination) {
+        const stmt = db.prepare(`
+          SELECT * FROM budgets 
+          ORDER BY ${pagination.sort} ${pagination.order}
+          LIMIT ? OFFSET ?
+        `);
+        return stmt.all(pagination.limit, pagination.offset) as Budget[];
+      } else {
+        const stmt = db.prepare(`
+          SELECT * FROM budgets 
+          ORDER BY created_at DESC
+        `);
+        return stmt.all() as Budget[];
+      }
     } catch (error) {
       logger.error('Failed to get all budgets:', error);
       throw error;
@@ -60,15 +70,25 @@ export class BudgetModel {
   }
 
   // アクティブな予算のみ取得
-  getActiveBudgets(): Budget[] {
+  getActiveBudgets(pagination?: PaginationOptions): Budget[] {
     try {
       const db = this.getDb();
-      const stmt = db.prepare(`
-        SELECT * FROM budgets 
-        WHERE is_active = 1
-        ORDER BY created_at DESC
-      `);
-      return stmt.all() as Budget[];
+      if (pagination) {
+        const stmt = db.prepare(`
+          SELECT * FROM budgets 
+          WHERE is_active = 1
+          ORDER BY ${pagination.sort} ${pagination.order}
+          LIMIT ? OFFSET ?
+        `);
+        return stmt.all(pagination.limit, pagination.offset) as Budget[];
+      } else {
+        const stmt = db.prepare(`
+          SELECT * FROM budgets 
+          WHERE is_active = 1
+          ORDER BY created_at DESC
+        `);
+        return stmt.all() as Budget[];
+      }
     } catch (error) {
       logger.error('Failed to get active budgets:', error);
       throw error;
@@ -217,15 +237,25 @@ export class BudgetModel {
   }
 
   // 予算支出記録取得
-  getBudgetExpenses(budgetId: number): BudgetExpense[] {
+  getBudgetExpenses(budgetId: number, pagination?: PaginationOptions): BudgetExpense[] {
     try {
       const db = this.getDb();
-      const stmt = db.prepare(`
-        SELECT * FROM budget_expenses 
-        WHERE budget_id = ? 
-        ORDER BY purchase_date DESC
-      `);
-      return stmt.all(budgetId) as BudgetExpense[];
+      if (pagination) {
+        const stmt = db.prepare(`
+          SELECT * FROM budget_expenses 
+          WHERE budget_id = ? 
+          ORDER BY ${pagination.sort} ${pagination.order}
+          LIMIT ? OFFSET ?
+        `);
+        return stmt.all(budgetId, pagination.limit, pagination.offset) as BudgetExpense[];
+      } else {
+        const stmt = db.prepare(`
+          SELECT * FROM budget_expenses 
+          WHERE budget_id = ? 
+          ORDER BY purchase_date DESC
+        `);
+        return stmt.all(budgetId) as BudgetExpense[];
+      }
     } catch (error) {
       logger.error('Failed to get budget expenses:', error);
       throw error;
@@ -340,6 +370,45 @@ export class BudgetModel {
       end_date: endDate,
       is_active: true
     });
+  }
+
+  // 予算総数取得
+  getBudgetsCount(): number {
+    try {
+      const db = this.getDb();
+      const stmt = db.prepare('SELECT COUNT(*) as count FROM budgets');
+      const result = stmt.get() as { count: number };
+      return result.count;
+    } catch (error) {
+      logger.error('Failed to get budgets count:', error);
+      throw error;
+    }
+  }
+
+  // アクティブな予算総数取得
+  getActiveBudgetsCount(): number {
+    try {
+      const db = this.getDb();
+      const stmt = db.prepare('SELECT COUNT(*) as count FROM budgets WHERE is_active = 1');
+      const result = stmt.get() as { count: number };
+      return result.count;
+    } catch (error) {
+      logger.error('Failed to get active budgets count:', error);
+      throw error;
+    }
+  }
+
+  // 予算支出記録総数取得
+  getBudgetExpensesCount(budgetId: number): number {
+    try {
+      const db = this.getDb();
+      const stmt = db.prepare('SELECT COUNT(*) as count FROM budget_expenses WHERE budget_id = ?');
+      const result = stmt.get(budgetId) as { count: number };
+      return result.count;
+    } catch (error) {
+      logger.error('Failed to get budget expenses count:', error);
+      throw error;
+    }
   }
 }
 

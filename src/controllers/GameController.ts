@@ -67,10 +67,7 @@ export class GameController extends BaseController {
       const game = GameModel.getById(gameId);
       
       if (!game) {
-        return res.status(404).json({
-          success: false,
-          error: 'Game not found'
-        });
+        return ApiResponseHelper.notFound(res, 'ゲーム');
       }
 
       // 最新価格情報を取得
@@ -82,21 +79,15 @@ export class GameController extends BaseController {
       // アラート履歴を取得
       const alerts = AlertModel.getByGameId(game.steam_app_id, 10);
 
-      return res.json({
-        success: true,
-        data: {
-          game,
-          latestPrice,
-          priceHistory,
-          alerts
-        }
-      });
+      return ApiResponseHelper.success(res, {
+        game,
+        latestPrice,
+        priceHistory,
+        alerts
+      }, 'ゲーム詳細を取得しました');
     } catch (error) {
       logger.error('Failed to get game details:', error);
-      return res.status(500).json({
-        success: false,
-        error: 'Failed to retrieve game details'
-      });
+      return ApiResponseHelper.error(res, 'ゲーム詳細の取得に失敗しました', 500, error);
     }
   }
 
@@ -107,10 +98,7 @@ export class GameController extends BaseController {
       const game = GameModel.getBySteamAppId(steamAppId);
       
       if (!game) {
-        return res.status(404).json({
-          success: false,
-          error: 'Game not found'
-        });
+        return ApiResponseHelper.notFound(res, 'ゲーム');
       }
 
       // 最新価格情報を取得
@@ -122,21 +110,15 @@ export class GameController extends BaseController {
       // アラート履歴を取得
       const alerts = AlertModel.getByGameId(game.steam_app_id, 10);
 
-      return res.json({
-        success: true,
-        data: {
-          game,
-          latestPrice,
-          priceHistory,
-          alerts
-        }
-      });
+      return ApiResponseHelper.success(res, {
+        game,
+        latestPrice,
+        priceHistory,
+        alerts
+      }, 'ゲーム詳細を取得しました');
     } catch (error) {
       logger.error('Failed to get game details by Steam App ID:', error);
-      return res.status(500).json({
-        success: false,
-        error: 'Failed to retrieve game details'
-      });
+      return ApiResponseHelper.error(res, 'ゲーム詳細の取得に失敗しました', 500, error);
     }
   }
 
@@ -155,19 +137,13 @@ export class GameController extends BaseController {
 
       // 入力検証
       if (!steam_app_id) {
-        return res.status(400).json({
-          success: false,
-          error: 'Steam App ID is required'
-        });
+        return ApiResponseHelper.badRequest(res, 'Steam App IDが必要です');
       }
 
       // 重複チェック
       const existingGame = GameModel.getBySteamAppId(steam_app_id);
       if (existingGame) {
-        return res.status(409).json({
-          success: false,
-          error: 'Game already exists'
-        });
+        return ApiResponseHelper.error(res, 'ゲームは既に存在します', 409);
       }
 
       // ゲーム名が空の場合、Steam APIから取得
@@ -184,17 +160,11 @@ export class GameController extends BaseController {
             logger.info(`Got game name from Steam API: ${finalGameName} (${steam_app_id})`);
           } else {
             logger.error(`Steam API failed for ${steam_app_id}:`, steamDetails);
-            return res.status(400).json({
-              success: false,
-              error: 'Could not retrieve game name from Steam API and no name was provided'
-            });
+            return ApiResponseHelper.badRequest(res, 'Steam APIからゲーム名を取得できず、名前が指定されていません');
           }
         } catch (error) {
           logger.error(`Failed to fetch game name from Steam API for ${steam_app_id}:`, error);
-          return res.status(400).json({
-            success: false,
-            error: 'Could not retrieve game name from Steam API and no name was provided'
-          });
+          return ApiResponseHelper.badRequest(res, 'Steam APIからゲーム名を取得できず、名前が指定されていません');
         }
       }
 
@@ -229,17 +199,10 @@ export class GameController extends BaseController {
         logger.warn(`Initial price data fetch failed for ${finalGameName} (${steam_app_id}):`, priceError);
       }
 
-      return res.status(201).json({
-        success: true,
-        data: game,
-        message: `${finalGameName} を追加しました。価格データを取得中です...`
-      });
+      return ApiResponseHelper.success(res, game, `${finalGameName} を追加しました。価格データを取得中です...`, 201);
     } catch (error) {
       logger.error('Failed to add game:', error);
-      return res.status(500).json({
-        success: false,
-        error: 'Failed to add game'
-      });
+      return ApiResponseHelper.error(res, 'ゲームの追加に失敗しました', 500, error);
     }
   }
 
@@ -252,23 +215,14 @@ export class GameController extends BaseController {
       const updatedGame = GameModel.update(gameId, updates);
       
       if (!updatedGame) {
-        return res.status(404).json({
-          success: false,
-          error: 'Game not found'
-        });
+        return ApiResponseHelper.notFound(res, 'ゲーム');
       }
 
       logger.info(`Game updated: ${updatedGame.name} (${updatedGame.steam_app_id})`);
-      return res.json({
-        success: true,
-        data: updatedGame
-      });
+      return ApiResponseHelper.success(res, updatedGame, 'ゲーム情報を更新しました');
     } catch (error) {
       logger.error('Failed to update game:', error);
-      return res.status(500).json({
-        success: false,
-        error: 'Failed to update game'
-      });
+      return ApiResponseHelper.error(res, 'ゲームの更新に失敗しました', 500, error);
     }
   }
 
@@ -279,23 +233,14 @@ export class GameController extends BaseController {
       const success = GameModel.delete(gameId);
       
       if (!success) {
-        return res.status(404).json({
-          success: false,
-          error: 'Game not found'
-        });
+        return ApiResponseHelper.notFound(res, 'ゲーム');
       }
 
       logger.info(`Game deleted: ID ${gameId}`);
-      return res.json({
-        success: true,
-        message: 'Game deleted successfully'
-      });
+      return ApiResponseHelper.success(res, null, 'ゲームを削除しました');
     } catch (error) {
       logger.error('Failed to delete game:', error);
-      return res.status(500).json({
-        success: false,
-        error: 'Failed to delete game'
-      });
+      return ApiResponseHelper.error(res, 'ゲームの削除に失敗しました', 500, error);
     }
   }
 
@@ -307,29 +252,20 @@ export class GameController extends BaseController {
       
       const game = GameModel.getBySteamAppId(steamAppId);
       if (!game) {
-        return res.status(404).json({
-          success: false,
-          error: 'Game not found'
-        });
+        return ApiResponseHelper.notFound(res, 'ゲーム');
       }
 
       const chartData = PriceHistoryModel.getChartData(steamAppId, days);
       const priceHistory = PriceHistoryModel.getByGameId(steamAppId, 100);
 
-      return res.json({
-        success: true,
-        data: {
-          game,
-          chartData,
-          priceHistory
-        }
-      });
+      return ApiResponseHelper.success(res, {
+        game,
+        chartData,
+        priceHistory
+      }, '価格履歴を取得しました');
     } catch (error) {
       logger.error('Failed to get price history:', error);
-      return res.status(500).json({
-        success: false,
-        error: 'Failed to retrieve price history'
-      });
+      return ApiResponseHelper.error(res, '価格履歴の取得に失敗しました', 500, error);
     }
   }
 
@@ -561,6 +497,15 @@ export class GameController extends BaseController {
       let updated = 0;
       const errors: string[] = [];
 
+      // N+1問題を解決: 既存ゲームを一括取得
+      const importGameIds = games
+        .filter(g => g.steam_app_id && g.name)
+        .map(g => g.steam_app_id);
+      const existingGamesMap = new Map(
+        GameModel.getByMultipleSteamAppIds(importGameIds)
+          .map(game => [game.steam_app_id, game])
+      );
+
       for (const gameData of games) {
         try {
           // バリデーション
@@ -569,8 +514,8 @@ export class GameController extends BaseController {
             continue;
           }
 
-          // 既存ゲームチェック
-          const existingGame = GameModel.getBySteamAppId(gameData.steam_app_id);
+          // 既存ゲームチェック（O(1)ルックアップ）
+          const existingGame = existingGamesMap.get(gameData.steam_app_id);
           
           if (existingGame) {
             if (importMode === 'skip') {
@@ -776,10 +721,7 @@ export class GameController extends BaseController {
       
       const game = GameModel.getBySteamAppId(steamAppId);
       if (!game) {
-        return res.status(404).json({
-          success: false,
-          error: 'Game not found'
-        });
+        return ApiResponseHelper.notFound(res, 'ゲーム');
       }
 
       const reviews = await reviewIntegrationService.getGameReviews(steamAppId, game.name);
@@ -810,10 +752,12 @@ export class GameController extends BaseController {
         });
       }
 
-      const games = gameIds.map(id => {
-        const game = GameModel.getBySteamAppId(id);
-        return game ? { steamAppId: id, name: game.name } : null;
-      }).filter(Boolean) as Array<{ steamAppId: number; name: string }>;
+      // N+1問題を解決: 一括取得を使用
+      const gamesFromDb = GameModel.getByMultipleSteamAppIds(gameIds);
+      const games = gamesFromDb.map(game => ({
+        steamAppId: game.steam_app_id,
+        name: game.name
+      }));
 
       const reviewsMap = await reviewIntegrationService.getMultipleGameReviews(games);
       
@@ -843,10 +787,7 @@ export class GameController extends BaseController {
       
       const game = GameModel.getBySteamAppId(steamAppId);
       if (!game) {
-        return res.status(404).json({
-          success: false,
-          error: 'Game not found'
-        });
+        return ApiResponseHelper.notFound(res, 'ゲーム');
       }
 
       const gameInfo = await gameInfoService.getGameInfo(steamAppId, game.name);
@@ -876,10 +817,12 @@ export class GameController extends BaseController {
         });
       }
 
-      const games = gameIds.map(id => {
-        const game = GameModel.getBySteamAppId(id);
-        return game ? { steamAppId: id, name: game.name } : null;
-      }).filter(Boolean) as Array<{ steamAppId: number; name: string }>;
+      // N+1問題を解決: 一括取得を使用
+      const gamesFromDb = GameModel.getByMultipleSteamAppIds(gameIds);
+      const games = gamesFromDb.map(game => ({
+        steamAppId: game.steam_app_id,
+        name: game.name
+      }));
 
       const infoMap = await gameInfoService.getMultipleGameInfo(games);
       
@@ -919,10 +862,7 @@ export class GameController extends BaseController {
       const updatedGame = GameModel.update(gameId, { manual_historical_low });
       
       if (!updatedGame) {
-        return res.status(404).json({
-          success: false,
-          error: 'Game not found'
-        });
+        return ApiResponseHelper.notFound(res, 'ゲーム');
       }
 
       logger.info(`Manual historical low set for game: ${updatedGame.name} (${updatedGame.steam_app_id}) - ¥${manual_historical_low || 'cleared'}`);
@@ -961,10 +901,7 @@ export class GameController extends BaseController {
       });
       
       if (!updatedGame) {
-        return res.status(404).json({
-          success: false,
-          error: 'Game not found'
-        });
+        return ApiResponseHelper.notFound(res, 'ゲーム');
       }
 
       // 予算が指定されている場合は支出を記録
@@ -1021,10 +958,7 @@ export class GameController extends BaseController {
       });
       
       if (!updatedGame) {
-        return res.status(404).json({
-          success: false,
-          error: 'Game not found'
-        });
+        return ApiResponseHelper.notFound(res, 'ゲーム');
       }
 
       logger.info(`Game unmarked as purchased: ${updatedGame.name} (${updatedGame.steam_app_id})`);
@@ -1186,10 +1120,7 @@ export class GameController extends BaseController {
       
       const game = GameModel.getBySteamAppId(steamAppId);
       if (!game) {
-        return res.status(404).json({
-          success: false,
-          error: 'Game not found'
-        });
+        return ApiResponseHelper.notFound(res, 'ゲーム');
       }
 
       logger.info(`Getting detailed game info for: ${game.name} (${steamAppId})`);

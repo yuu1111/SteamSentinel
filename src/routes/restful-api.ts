@@ -16,13 +16,19 @@ import {
   steamAppIdParamSchema,
   dateRangeSchema
 } from '../validation/schemas';
-import { apiLimiter } from '../middleware/security';
+import { 
+  apiLimiter, 
+  readOnlyLimiter, 
+  heavyOperationLimiter, 
+  adminLimiter,
+  notificationLimiter 
+} from '../middleware/security';
 import { authenticateToken, authorizeRole, optionalAuth } from '../middleware/auth';
 import authRoutes from './auth';
 
 const router = Router();
 
-// APIレート制限を適用
+// デフォルトのAPIレート制限を適用
 router.use(apiLimiter);
 
 // 認証ルートを追加（認証不要）
@@ -30,8 +36,9 @@ router.use('/auth', authRoutes);
 
 // ===== GAMES RESOURCE =====
 
-// GET /api/v1/games - ゲーム一覧取得
+// GET /api/v1/games - ゲーム一覧取得（読み取り専用レート制限）
 router.get('/games', 
+  readOnlyLimiter,
   validateQuery(paginationSchema.keys({
     enabled: Joi.string().valid('true', 'false', 'all').optional(),
     search: Joi.string().max(100).optional(),
@@ -61,8 +68,9 @@ router.put('/games/:id',
   (req, res) => GameController.updateGame(req, res)
 );
 
-// DELETE /api/v1/games/:id - ゲーム削除（管理者のみ）
+// DELETE /api/v1/games/:id - ゲーム削除（管理者のみ・管理者用レート制限）
 router.delete('/games/:id',
+  adminLimiter,
   authenticateToken,
   authorizeRole(['admin']),
   validateParams(idParamSchema),
@@ -140,8 +148,12 @@ router.get('/games/high-discount',
   (req, res) => GameController.getHighDiscountGames(req, res)
 );
 
-// POST /api/v1/games/high-discount/detect - 高割引検知実行
-router.post('/games/high-discount/detect',
+// POST /api/v1/analysis/high-discounts - 高割引分析実行（RESTful化）
+router.post('/analysis/high-discounts',
+  validateBody(Joi.object({
+    threshold: Joi.number().min(10).max(90).default(50),
+    force_refresh: Joi.boolean().default(false)
+  })),
   (req, res) => GameController.runHighDiscountDetection(req, res)
 );
 
@@ -154,8 +166,8 @@ router.get('/games/:appId/reviews',
   (req, res) => new ReviewController().getGameReviews(req, res)
 );
 
-// POST /api/v1/games/reviews/batch - 複数ゲームレビュー取得（移行先: ReviewController）
-router.post('/games/reviews/batch',
+// POST /api/v1/batch/games/reviews - 複数ゲームレビュー取得（RESTful化）
+router.post('/batch/games/reviews',
   validateBody(Joi.object({
     steamAppIds: Joi.array().items(Joi.number().integer().positive()).max(10).required()
   })),
@@ -168,8 +180,8 @@ router.get('/games/:appId/info',
   (req, res) => GameController.getGameInfo(req, res)
 );
 
-// POST /api/v1/games/info/batch - 複数ゲーム情報取得
-router.post('/games/info/batch',
+// POST /api/v1/batch/games/info - 複数ゲーム情報取得（RESTful化）
+router.post('/batch/games/info',
   validateBody(Joi.object({
     steam_app_ids: Joi.array().items(Joi.number().integer().positive()).max(10).required()
   })),
@@ -350,8 +362,8 @@ router.post('/reviews/:appId/refresh',
   (req, res) => new ReviewController().refreshGameReviews(req, res)
 );
 
-// POST /api/v1/reviews/batch - 複数ゲームレビュー取得
-router.post('/reviews/batch',
+// POST /api/v1/batch/reviews - 複数ゲームレビュー取得（RESTful化）
+router.post('/batch/reviews',
   validateBody(Joi.object({
     steamAppIds: Joi.array().items(Joi.number().integer().positive()).max(10).required()
   })),
@@ -426,8 +438,8 @@ router.get('/monitoring/progress',
   (req, res) => MonitoringController.getProgress(req, res)
 );
 
-// POST /api/v1/monitoring/run - 手動モニタリング実行
-router.post('/monitoring/run',
+// POST /api/v1/monitoring/jobs - 手動モニタリング実行（RESTful化）
+router.post('/monitoring/jobs',
   validateBody(Joi.object({
     game_id: Joi.number().integer().positive().optional(),
     force: Joi.boolean().default(false)
@@ -435,8 +447,8 @@ router.post('/monitoring/run',
   (req, res) => MonitoringController.runManualMonitoring(req, res)
 );
 
-// POST /api/v1/monitoring/run/:appId - 特定ゲームのモニタリング実行
-router.post('/monitoring/run/:appId',
+// POST /api/v1/monitoring/jobs/:appId - 特定ゲームのモニタリング実行（RESTful化）
+router.post('/monitoring/jobs/:appId',
   validateParams(steamAppIdParamSchema.keys({ appId: Joi.number().integer().positive().required() })),
   (req, res) => MonitoringController.runManualGameMonitoring(req, res)
 );
@@ -466,6 +478,40 @@ router.get('/monitoring/logs',
 // GET /api/v1/monitoring/system - システム情報
 router.get('/monitoring/system',
   (req, res) => MonitoringController.getSystemInfo(req, res)
+);
+
+// POST /api/v1/monitoring/database/cleanup - データベースクリーンアップ実行（認証必須）
+router.post('/monitoring/database/cleanup',
+  authenticateToken,
+  authorizeRole(['admin']),
+  validateBody(Joi.object({
+    daysToKeep: Joi.number().integer().min(7).max(365).default(30)
+  })),
+  (req, res) => MonitoringController.runDatabaseCleanup(req, res)
+);
+
+// GET /api/v1/monitoring/database/stats - データベース統計取得
+router.get('/monitoring/database/stats',
+  optionalAuth,
+  (req, res) => MonitoringController.getDatabaseStats(req, res)
+);
+
+// GET /api/v1/monitoring/cache/stats - キャッシュ統計取得
+router.get('/monitoring/cache/stats',
+  readOnlyLimiter,
+  optionalAuth,
+  (req, res) => MonitoringController.getCacheStats(req, res)
+);
+
+// POST /api/v1/monitoring/cache/clear - キャッシュクリア（管理者のみ）
+router.post('/monitoring/cache/clear',
+  adminLimiter,
+  authenticateToken,
+  authorizeRole(['admin']),
+  validateBody(Joi.object({
+    pattern: Joi.string().optional()
+  })),
+  (req, res) => MonitoringController.clearCache(req, res)
 );
 
 // ===== BATCH OPERATIONS =====
