@@ -6,6 +6,7 @@ import { MonitoringController } from '../controllers/MonitoringController';
 import { PriceController } from '../controllers/PriceController';
 import { ReviewController } from '../controllers/ReviewController';
 import { StatisticsController } from '../controllers/StatisticsController';
+import { JsonMaintenanceController } from '../controllers/JsonMaintenanceController';
 import { validateBody, validateQuery, validateParams } from '../middleware/validation';
 import { 
   gameSchema, 
@@ -978,6 +979,64 @@ router.get('/itad/settings/category/:category',
 // ===== HEALTH CHECK =====
 
 // GET /api/v1/health - ヘルスチェック
+// ===== JSON MAINTENANCE ENDPOINTS =====
+
+const jsonMaintenanceController = new JsonMaintenanceController();
+
+// GET /api/v1/maintenance/json/analyze - JSON フィールド分析（管理者専用）
+router.get('/maintenance/json/analyze',
+  adminLimiter,
+  authenticateToken,
+  authorizeRole(['admin']),
+  (req, res) => jsonMaintenanceController.analyzeJsonFields(req, res)
+);
+
+// POST /api/v1/maintenance/json/cleanup - 無効JSONデータクリーンアップ（管理者専用）
+router.post('/maintenance/json/cleanup',
+  adminLimiter,
+  authenticateToken,
+  authorizeRole(['admin']),
+  (req, res) => jsonMaintenanceController.cleanupInvalidJson(req, res)
+);
+
+// POST /api/v1/maintenance/json/validate - JSONデータ検証
+router.post('/maintenance/json/validate',
+  validateBody(Joi.object({
+    type: Joi.string().valid('alert_metadata', 'statistics_json', 'general').required(),
+    data: Joi.alternatives().try(Joi.string(), Joi.object(), Joi.array()).required()
+  })),
+  (req, res) => jsonMaintenanceController.validateJsonData(req, res)
+);
+
+// POST /api/v1/maintenance/json/size-check - JSONサイズチェック
+router.post('/maintenance/json/size-check',
+  validateBody(Joi.object({
+    data: Joi.alternatives().try(Joi.string(), Joi.object(), Joi.array()).required(),
+    max_size_kb: Joi.number().min(1).max(1024).optional()
+  })),
+  (req, res) => jsonMaintenanceController.checkJsonSize(req, res)
+);
+
+// POST /api/v1/maintenance/json/optimize - JSONデータ最適化
+router.post('/maintenance/json/optimize',
+  validateBody(Joi.object({
+    data: Joi.alternatives().try(Joi.string(), Joi.object(), Joi.array()).required()
+  })),
+  (req, res) => jsonMaintenanceController.optimizeJsonData(req, res)
+);
+
+// GET /api/v1/maintenance/json/search-legacy - レガシーメタデータ検索
+router.get('/maintenance/json/search-legacy',
+  validateQuery(Joi.object({
+    message: Joi.string().max(100).optional(),
+    game_name: Joi.string().max(100).optional(),
+    limit: Joi.number().integer().min(1).max(100).default(50)
+  })),
+  (req, res) => jsonMaintenanceController.searchLegacyMetadata(req, res)
+);
+
+// ===== HEALTH CHECK =====
+
 router.get('/health', (req, res) => {
   res.json({
     success: true,

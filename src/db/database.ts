@@ -357,6 +357,8 @@ class DatabaseManager {
       CREATE INDEX IF NOT EXISTS idx_price_statistics_total_games ON price_statistics(total_games, games_on_sale);
     `);
 
+    // JSON フィールドの最適化
+    this.optimizeJsonFields(db);
 
     // トリガーの作成
     db.exec(`
@@ -410,6 +412,181 @@ class DatabaseManager {
     this.seedDatabase(db);
     
     logger.info('Database initialized successfully');
+  }
+
+  // JSON データの診断・メンテナンス
+  analyzeJsonFields(): {
+    alerts_metadata: any;
+    price_statistics_json: any;
+    invalid_records: any[];
+  } {
+    const db = this.getConnection();
+    
+    try {
+      // アラートメタデータの分析
+      const alertsAnalysis = db.prepare(`
+        SELECT 
+          COUNT(*) as total_records,
+          COUNT(metadata) as records_with_metadata,
+          AVG(LENGTH(metadata)) as avg_metadata_size,
+          MAX(LENGTH(metadata)) as max_metadata_size,
+          SUM(LENGTH(metadata)) as total_metadata_size
+        FROM alerts
+        WHERE metadata IS NOT NULL
+      `).get();
+
+      // 価格統計JSONの分析
+      const statisticsAnalysis = db.prepare(`
+        SELECT 
+          COUNT(*) as total_records,
+          COUNT(statistics_json) as records_with_json,
+          AVG(LENGTH(statistics_json)) as avg_json_size,
+          MAX(LENGTH(statistics_json)) as max_json_size,
+          SUM(LENGTH(statistics_json)) as total_json_size
+        FROM price_statistics
+        WHERE statistics_json IS NOT NULL
+      `).get();
+
+      // 無効なJSONレコードの検出
+      const invalidRecords = [];
+      
+      const invalidAlerts = db.prepare(`
+        SELECT 'alerts' as table_name, id, 'metadata' as field, metadata as content
+        FROM alerts 
+        WHERE metadata IS NOT NULL AND NOT json_valid(metadata)
+        LIMIT 10
+      `).all();
+
+      const invalidStatistics = db.prepare(`
+        SELECT 'price_statistics' as table_name, id, 'statistics_json' as field, statistics_json as content
+        FROM price_statistics 
+        WHERE statistics_json IS NOT NULL AND NOT json_valid(statistics_json)
+        LIMIT 10
+      `).all();
+
+      invalidRecords.push(...invalidAlerts, ...invalidStatistics);
+
+      return {
+        alerts_metadata: alertsAnalysis,
+        price_statistics_json: statisticsAnalysis,
+        invalid_records: invalidRecords
+      };
+    } catch (error) {
+      logger.error('Failed to analyze JSON fields:', error);
+      throw error;
+    }
+  }
+
+  // 無効なJSONデータのクリーンアップ
+  cleanupInvalidJsonData(): { cleaned_alerts: number; cleaned_statistics: number } {
+    const db = this.getConnection();
+    
+    try {
+      // 無効なアラートメタデータのクリーンアップ
+      const cleanAlertsStmt = db.prepare(`
+        UPDATE alerts 
+        SET metadata = NULL 
+        WHERE metadata IS NOT NULL 
+          AND (
+            metadata = '' 
+            OR metadata = '{}' 
+            OR metadata = '[]'
+            OR NOT json_valid(metadata)
+          )
+      `);
+      
+      const alertsResult = cleanAlertsStmt.run();
+
+      // 無効な統計JSONのクリーンアップ
+      const cleanStatisticsStmt = db.prepare(`
+        UPDATE price_statistics 
+        SET statistics_json = NULL 
+        WHERE statistics_json IS NOT NULL 
+          AND (
+            statistics_json = '' 
+            OR statistics_json = '{}' 
+            OR statistics_json = '[]'
+            OR NOT json_valid(statistics_json)
+          )
+      `);
+      
+      const statisticsResult = cleanStatisticsStmt.run();
+
+      logger.info(`JSON cleanup completed: ${alertsResult.changes} alerts, ${statisticsResult.changes} statistics`);
+
+      return {
+        cleaned_alerts: alertsResult.changes,
+        cleaned_statistics: statisticsResult.changes
+      };
+    } catch (error) {
+      logger.error('Failed to cleanup invalid JSON data:', error);
+      throw error;
+    }
+  }
+
+  // JSON フィールドの最適化
+  private optimizeJsonFields(db: Database.Database): void {
+    try {
+      logger.debug('Optimizing JSON field storage and indexing...');
+
+      // JSON 検証とバリデーション関数を作成
+      db.exec(`
+        -- JSON バリデーション用の関数的インデックス
+        CREATE INDEX IF NOT EXISTS idx_alerts_metadata_legacy_message 
+        ON alerts(json_extract(metadata, '$.legacy_message')) 
+        WHERE metadata IS NOT NULL AND json_valid(metadata);
+
+        CREATE INDEX IF NOT EXISTS idx_alerts_metadata_legacy_game_name 
+        ON alerts(json_extract(metadata, '$.legacy_game_name')) 
+        WHERE metadata IS NOT NULL AND json_valid(metadata);
+
+        -- 価格統計のJSONデータ用インデックス
+        CREATE INDEX IF NOT EXISTS idx_price_statistics_discount_ranges 
+        ON price_statistics(json_extract(statistics_json, '$.discount_ranges')) 
+        WHERE statistics_json IS NOT NULL AND json_valid(statistics_json);
+
+        CREATE INDEX IF NOT EXISTS idx_price_statistics_calculation_method 
+        ON price_statistics(json_extract(statistics_json, '$.calculation_method')) 
+        WHERE statistics_json IS NOT NULL AND json_valid(statistics_json);
+      `);
+
+      // JSON データの整合性チェック用トリガー
+      db.exec(`
+        CREATE TRIGGER IF NOT EXISTS validate_alerts_metadata_json
+        BEFORE INSERT ON alerts
+        WHEN NEW.metadata IS NOT NULL
+        BEGIN
+          SELECT CASE
+            WHEN NOT json_valid(NEW.metadata) THEN
+              RAISE(ABORT, 'Invalid JSON in alerts.metadata field')
+          END;
+        END;
+
+        CREATE TRIGGER IF NOT EXISTS validate_alerts_metadata_json_update
+        BEFORE UPDATE ON alerts
+        WHEN NEW.metadata IS NOT NULL AND NEW.metadata != OLD.metadata
+        BEGIN
+          SELECT CASE
+            WHEN NOT json_valid(NEW.metadata) THEN
+              RAISE(ABORT, 'Invalid JSON in alerts.metadata field')
+          END;
+        END;
+
+        CREATE TRIGGER IF NOT EXISTS validate_price_statistics_json
+        BEFORE INSERT ON price_statistics
+        WHEN NEW.statistics_json IS NOT NULL
+        BEGIN
+          SELECT CASE
+            WHEN NOT json_valid(NEW.statistics_json) THEN
+              RAISE(ABORT, 'Invalid JSON in price_statistics.statistics_json field')
+          END;
+        END;
+      `);
+
+      logger.debug('JSON field optimization completed successfully');
+    } catch (error) {
+      logger.error('Failed to optimize JSON fields:', error);
+    }
   }
 
   // latest_prices自動更新トリガーの作成
