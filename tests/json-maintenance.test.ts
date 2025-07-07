@@ -33,7 +33,7 @@ describe('JSON Maintenance System Tests', () => {
         password: adminUser.password
       });
 
-    adminToken = adminLoginRes.body.data.access_token;
+    adminToken = adminLoginRes.body.data.accessToken;
 
     // テスト用ゲームとデータ作成
     const testSteamAppId = Date.now();

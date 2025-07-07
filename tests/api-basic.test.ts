@@ -35,12 +35,12 @@ describe('SteamSentinel RESTful API - Basic Tests', () => {
         password: testUser.password
       });
 
-    if (!loginRes.body.data || !loginRes.body.data.access_token) {
+    if (!loginRes.body.data || !loginRes.body.data.accessToken) {
       console.error('Login failed:', loginRes.status, loginRes.body);
       throw new Error('Authentication setup failed');
     }
 
-    authToken = loginRes.body.data.access_token;
+    authToken = loginRes.body.data.accessToken;
   });
 
   afterAll(async () => {
