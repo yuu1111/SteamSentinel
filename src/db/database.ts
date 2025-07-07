@@ -320,8 +320,7 @@ class DatabaseManager {
         highest_current_price REAL,
         new_lows_today INTEGER DEFAULT 0,
         sale_starts_today INTEGER DEFAULT 0,
-        statistics_json TEXT, -- JSON形式で拡張統計データを格納
-        FOREIGN KEY (highest_discount_game_id) REFERENCES games(steam_app_id)
+        statistics_json TEXT -- JSON形式で拡張統計データを格納
       )
     `);
 
@@ -340,7 +339,7 @@ class DatabaseManager {
       CREATE INDEX IF NOT EXISTS idx_price_history_app_id_date ON price_history(steam_app_id, recorded_at DESC);
       CREATE INDEX IF NOT EXISTS idx_alerts_app_id ON alerts(steam_app_id);
       CREATE INDEX IF NOT EXISTS idx_alerts_created_at ON alerts(created_at);
-      CREATE INDEX IF NOT EXISTS idx_alerts_game_id ON alerts(game_id);
+      CREATE INDEX IF NOT EXISTS idx_alerts_steam_app_id ON alerts(steam_app_id);
       CREATE INDEX IF NOT EXISTS idx_alerts_alert_type ON alerts(alert_type);
       CREATE INDEX IF NOT EXISTS idx_alerts_notified_discord ON alerts(notified_discord);
       CREATE INDEX IF NOT EXISTS idx_alerts_active ON alerts(alert_type, notified_discord, created_at);
@@ -403,11 +402,6 @@ class DatabaseManager {
     // 価格統計自動更新トリガーの作成
     this.createPriceStatisticsTriggers(db);
 
-    // 旧game_reviewsテーブルのクリーンアップ
-    this.cleanupLegacyReviewData(db);
-
-    // アラートテーブルの正規化マイグレーション
-    this.migrateAlertsTable(db);
     
     // 初期設定とシードデータ
     this.seedDatabase(db);
@@ -532,15 +526,6 @@ class DatabaseManager {
 
       // JSON 検証とバリデーション関数を作成
       db.exec(`
-        -- JSON バリデーション用の関数的インデックス
-        CREATE INDEX IF NOT EXISTS idx_alerts_metadata_legacy_message 
-        ON alerts(json_extract(metadata, '$.legacy_message')) 
-        WHERE metadata IS NOT NULL AND json_valid(metadata);
-
-        CREATE INDEX IF NOT EXISTS idx_alerts_metadata_legacy_game_name 
-        ON alerts(json_extract(metadata, '$.legacy_game_name')) 
-        WHERE metadata IS NOT NULL AND json_valid(metadata);
-
         -- 価格統計のJSONデータ用インデックス
         CREATE INDEX IF NOT EXISTS idx_price_statistics_discount_ranges 
         ON price_statistics(json_extract(statistics_json, '$.discount_ranges')) 
@@ -715,84 +700,6 @@ class DatabaseManager {
     }
   }
 
-  // 旧game_reviewsテーブルのクリーンアップ
-  private cleanupLegacyReviewData(db: Database.Database): void {
-    try {
-      // game_reviewsテーブルが存在するかチェック
-      const tableExists = db.prepare(`
-        SELECT name FROM sqlite_master 
-        WHERE type='table' AND name='game_reviews'
-      `).get();
-
-      if (tableExists) {
-        logger.info('Migrating data from game_reviews to review_scores...');
-        
-        // game_reviewsからreview_scoresに既存データを移行（重複回避）
-        const migrateStmt = db.prepare(`
-          INSERT OR IGNORE INTO review_scores (
-            steam_app_id, source, score, max_score, review_count, 
-            description, url, weight, created_at, last_updated
-          )
-          SELECT 
-            steam_app_id, 
-            'steam' as source, 
-            steam_score as score, 
-            100 as max_score,
-            steam_review_count as review_count,
-            steam_description as description,
-            NULL as url,
-            1.0 as weight,
-            created_at,
-            last_updated
-          FROM game_reviews 
-          WHERE steam_score IS NOT NULL
-          
-          UNION ALL
-          
-          SELECT 
-            steam_app_id, 
-            'metacritic' as source, 
-            metacritic_score as score, 
-            100 as max_score,
-            NULL as review_count,
-            metacritic_description as description,
-            metacritic_url as url,
-            1.0 as weight,
-            created_at,
-            last_updated
-          FROM game_reviews 
-          WHERE metacritic_score IS NOT NULL
-          
-          UNION ALL
-          
-          SELECT 
-            steam_app_id, 
-            'igdb' as source, 
-            igdb_score as score, 
-            100 as max_score,
-            igdb_review_count as review_count,
-            igdb_description as description,
-            igdb_url as url,
-            1.0 as weight,
-            created_at,
-            last_updated
-          FROM game_reviews 
-          WHERE igdb_score IS NOT NULL
-        `);
-        
-        const migrationResult = migrateStmt.run();
-        logger.info(`Migrated ${migrationResult.changes} review records from game_reviews to review_scores`);
-        
-        // game_reviewsテーブルを削除
-        db.exec('DROP TABLE game_reviews');
-        logger.info('Legacy game_reviews table removed successfully');
-      } else {
-        logger.debug('game_reviews table not found, skipping migration');
-      }
-    } catch (error) {
-      logger.error('Failed to cleanup legacy review data:', error);
-    }
-  }
 
   // 価格統計自動更新トリガーの作成
   private createPriceStatisticsTriggers(db: Database.Database): void {
@@ -857,84 +764,6 @@ class DatabaseManager {
     }
   }
 
-  // アラートテーブルの正規化マイグレーション
-  private migrateAlertsTable(db: Database.Database): void {
-    try {
-      // 現在のalertsテーブル構造を確認
-      const tableInfo = db.prepare(`
-        PRAGMA table_info(alerts)
-      `).all() as any[];
-
-      const hasLegacyFields = tableInfo.some(col => 
-        ['message', 'price_data', 'game_name', 'game_id', 'previous_low', 'release_date'].includes(col.name)
-      );
-
-      if (hasLegacyFields) {
-        logger.info('Migrating alerts table to normalized structure...');
-        
-        // 新しい正規化テーブルを作成
-        db.exec(`
-          CREATE TABLE IF NOT EXISTS alerts_new (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            steam_app_id INTEGER NOT NULL,
-            alert_type TEXT NOT NULL CHECK(alert_type IN ('new_low', 'sale_start', 'threshold_met', 'free_game', 'game_released', 'test')),
-            triggered_price REAL,
-            threshold_value REAL,
-            discount_percent INTEGER,
-            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            notified_discord BOOLEAN NOT NULL DEFAULT 0,
-            is_read BOOLEAN NOT NULL DEFAULT 0,
-            metadata TEXT,
-            FOREIGN KEY (steam_app_id) REFERENCES games(steam_app_id) ON DELETE CASCADE
-          )
-        `);
-
-        // 既存データを新テーブルにマイグレーション
-        const migrateStmt = db.prepare(`
-          INSERT INTO alerts_new (
-            steam_app_id, alert_type, triggered_price, threshold_value, 
-            discount_percent, created_at, updated_at, notified_discord, is_read, metadata
-          )
-          SELECT 
-            steam_app_id,
-            alert_type,
-            COALESCE(trigger_price, triggered_price) as triggered_price,
-            NULL as threshold_value,
-            discount_percent,
-            created_at,
-            updated_at,
-            COALESCE(notified_discord, 0) as notified_discord,
-            COALESCE(is_read, 0) as is_read,
-            CASE 
-              WHEN message IS NOT NULL OR price_data IS NOT NULL OR game_name IS NOT NULL 
-              THEN json_object(
-                'legacy_message', message,
-                'legacy_price_data', price_data,
-                'legacy_game_name', game_name,
-                'legacy_previous_low', previous_low,
-                'legacy_release_date', release_date
-              )
-              ELSE NULL
-            END as metadata
-          FROM alerts
-        `);
-        
-        const migrationResult = migrateStmt.run();
-        logger.info(`Migrated ${migrationResult.changes} alert records to normalized structure`);
-        
-        // 古いテーブルを削除し、新しいテーブルをリネーム
-        db.exec('DROP TABLE alerts');
-        db.exec('ALTER TABLE alerts_new RENAME TO alerts');
-        
-        logger.info('Alerts table normalization completed successfully');
-      } else {
-        logger.debug('Alerts table already normalized, skipping migration');
-      }
-    } catch (error) {
-      logger.error('Failed to migrate alerts table:', error);
-    }
-  }
 
 
   // データベースシード（初期データ）
