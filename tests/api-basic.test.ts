@@ -5,11 +5,42 @@ import database from '../src/db/database';
 describe('SteamSentinel RESTful API - Basic Tests', () => {
   // ユニークなIDを生成するヘルパー
   const generateUniqueId = () => Date.now() + Math.floor(Math.random() * 1000);
+  let authToken: string;
   
   beforeAll(async () => {
     // テスト用データベース初期化
     database.connect();
     database.initialize();
+    
+    // テスト用ユーザー作成と認証
+    const testUser = {
+      username: 'apitestuser',
+      email: 'api.test@example.com',
+      password: 'TestPassword123!',
+      role: 'admin'
+    };
+
+    const registerRes = await request(app)
+      .post('/api/v1/auth/register')
+      .send(testUser);
+
+    if (registerRes.status !== 201) {
+      console.error('Registration failed:', registerRes.status, registerRes.body);
+    }
+
+    const loginRes = await request(app)
+      .post('/api/v1/auth/login')
+      .send({
+        username: testUser.username,
+        password: testUser.password
+      });
+
+    if (!loginRes.body.data || !loginRes.body.data.access_token) {
+      console.error('Login failed:', loginRes.status, loginRes.body);
+      throw new Error('Authentication setup failed');
+    }
+
+    authToken = loginRes.body.data.access_token;
   });
 
   afterAll(async () => {
@@ -97,6 +128,7 @@ describe('SteamSentinel RESTful API - Basic Tests', () => {
 
       const response = await request(app)
         .post('/api/v1/games')
+        .set('Authorization', `Bearer ${authToken}`)
         .send(gameData)
         .expect(201);
 
@@ -140,6 +172,7 @@ describe('SteamSentinel RESTful API - Basic Tests', () => {
 
       const response = await request(app)
         .put(`/api/v1/games/${testGameId}`)
+        .set('Authorization', `Bearer ${authToken}`)
         .send(updateData)
         .expect(200);
 
@@ -214,6 +247,7 @@ describe('SteamSentinel RESTful API - Basic Tests', () => {
     it('PUT /api/v1/alerts/:id/read - should mark alert as read', async () => {
       const response = await request(app)
         .put(`/api/v1/alerts/${testAlertId}/read`)
+        .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -222,6 +256,7 @@ describe('SteamSentinel RESTful API - Basic Tests', () => {
     it('DELETE /api/v1/alerts/:id - should delete alert', async () => {
       const response = await request(app)
         .delete(`/api/v1/alerts/${testAlertId}`)
+        .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -316,6 +351,7 @@ describe('SteamSentinel RESTful API - Basic Tests', () => {
 
       const response = await request(app)
         .post('/api/v1/games')
+        .set('Authorization', `Bearer ${authToken}`)
         .send(invalidData)
         .expect(400);
 

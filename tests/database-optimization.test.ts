@@ -175,7 +175,7 @@ describe('Database Optimization Tests', () => {
       // latest_pricesテーブルにデータが存在することを確認
       const latestPrices = db.prepare(`
         SELECT COUNT(*) as count FROM latest_prices
-      `).get();
+      `).get() as any;
 
       expect(latestPrices.count).toBeGreaterThan(0);
     });
@@ -194,7 +194,7 @@ describe('Database Optimization Tests', () => {
       // latest_pricesが更新されていることを確認
       const latestPrice = db.prepare(`
         SELECT current_price FROM latest_prices WHERE steam_app_id = ?
-      `).get(testAppId);
+      `).get(testAppId) as any;
 
       expect(latestPrice.current_price).toBe(newPrice);
     });
@@ -206,7 +206,7 @@ describe('Database Optimization Tests', () => {
       // 現在の最安値を取得
       const currentLow = db.prepare(`
         SELECT historical_low FROM latest_prices WHERE steam_app_id = ?
-      `).get(testAppId);
+      `).get(testAppId) as any;
 
       // より安い価格を追加
       const lowerPrice = currentLow.historical_low - 100;
@@ -218,7 +218,7 @@ describe('Database Optimization Tests', () => {
       // 最安値が更新されていることを確認
       const updatedLow = db.prepare(`
         SELECT historical_low, all_time_low_date FROM latest_prices WHERE steam_app_id = ?
-      `).get(testAppId);
+      `).get(testAppId) as any;
 
       expect(updatedLow.historical_low).toBe(lowerPrice);
       expect(updatedLow.all_time_low_date).toBeTruthy();
@@ -276,12 +276,12 @@ describe('Database Optimization Tests', () => {
       const invalidAlerts = db.prepare(`
         SELECT COUNT(*) as count FROM alerts 
         WHERE metadata IS NOT NULL AND NOT json_valid(metadata)
-      `).get();
+      `).get() as any;
 
       const invalidStats = db.prepare(`
         SELECT COUNT(*) as count FROM price_statistics 
         WHERE statistics_json IS NOT NULL AND NOT json_valid(statistics_json)
-      `).get();
+      `).get() as any;
 
       expect(invalidAlerts.count).toBe(0);
       expect(invalidStats.count).toBe(0);
@@ -336,7 +336,7 @@ describe('Database Optimization Tests', () => {
       const remainingInvalid = db.prepare(`
         SELECT COUNT(*) as count FROM alerts 
         WHERE metadata IS NOT NULL AND NOT json_valid(metadata)
-      `).get();
+      `).get() as any;
 
       expect(remainingInvalid.count).toBe(0);
     });
@@ -348,7 +348,7 @@ describe('Database Optimization Tests', () => {
       const sizes: Record<string, number> = {};
 
       tables.forEach(table => {
-        const result = db.prepare(`SELECT COUNT(*) as count FROM ${table}`).get();
+        const result = db.prepare(`SELECT COUNT(*) as count FROM ${table}`).get() as any;
         sizes[table] = result.count;
       });
 
@@ -487,7 +487,7 @@ describe('Database Optimization Tests', () => {
 
       // データが正常に挿入されていることを確認
       const game = db.prepare('SELECT * FROM games WHERE steam_app_id = ?').get(newGameId);
-      const price = db.prepare('SELECT * FROM latest_prices WHERE steam_app_id = ?').get(newGameId);
+      const price = db.prepare('SELECT * FROM latest_prices WHERE steam_app_id = ?').get(newGameId) as any;
 
       expect(game).toBeTruthy();
       expect(price).toBeTruthy();
@@ -541,7 +541,7 @@ describe('Database Optimization Tests', () => {
         return new Promise<number>(resolve => {
           const result = db.prepare(`
             SELECT COUNT(*) as count FROM games WHERE enabled = 1
-          `).get();
+          `).get() as any;
           resolve(result.count);
         });
       });
