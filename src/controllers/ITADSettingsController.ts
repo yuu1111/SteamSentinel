@@ -6,13 +6,13 @@ import itadSettingsModel from '../models/ITADSettingsModel';
 export class ITADSettingsController extends BaseController {
 
   // 全設定取得（WebUI用 - レスポンス形式をシンプルに）
-  async getAllSettings(req: Request, res: Response): Promise<void> {
+  async getAllSettings(req: Request, res: Response): Promise<Response> {
     try {
       const pagination = this.getPaginationParams(req.query);
       const settings = itadSettingsModel.getAllSettings(pagination);
       const total = itadSettingsModel.getSettingsCount();
       
-      ApiResponseHelper.paginated(
+      return ApiResponseHelper.paginated(
         res,
         settings,
         total,
@@ -21,170 +21,158 @@ export class ITADSettingsController extends BaseController {
       );
     } catch (error) {
       logger.error('Failed to get ITAD settings:', error);
-      ApiResponseHelper.error(res, 'ITAD設定の取得に失敗しました', 500, error);
+      return ApiResponseHelper.error(res, 'ITAD設定の取得に失敗しました', 500, error);
     }
   }
 
   // 複数設定の一括更新（WebUI用）
-  async updateMultipleSettings(req: Request, res: Response): Promise<void> {
+  async updateMultipleSettings(req: Request, res: Response): Promise<Response> {
     try {
       const { settings } = req.body;
       
       if (!Array.isArray(settings)) {
-        ApiResponseHelper.badRequest(res, '設定は配列である必要があります');
-        return;
+        return ApiResponseHelper.badRequest(res, '設定は配列である必要があります');
       }
 
       for (const setting of settings) {
         if (!setting.name || setting.value === undefined) {
-          ApiResponseHelper.badRequest(res, '各設定には名前と値が必要です');
-          return;
+          return ApiResponseHelper.badRequest(res, '各設定には名前と値が必要です');
         }
         
         // バリデーション
         const validationError = this.validateSetting(setting.name, setting.value);
         if (validationError) {
-          ApiResponseHelper.badRequest(res, validationError);
-          return;
+          return ApiResponseHelper.badRequest(res, validationError);
         }
         
         itadSettingsModel.updateSetting(setting.name, setting.value.toString());
       }
       
-      ApiResponseHelper.success(res, null, '設定が正常に更新されました');
+      return ApiResponseHelper.success(res, null, '設定が正常に更新されました');
     } catch (error) {
       logger.error('Failed to update multiple ITAD settings:', error);
-      ApiResponseHelper.error(res, '設定の更新に失敗しました', 500, error);
+      return ApiResponseHelper.error(res, '設定の更新に失敗しました', 500, error);
     }
   }
 
   // フィルター設定取得
-  async getFilterConfig(_req: Request, res: Response): Promise<void> {
+  async getFilterConfig(_req: Request, res: Response): Promise<Response> {
     try {
       const config = itadSettingsModel.getFilterConfig();
-      ApiResponseHelper.success(res, config, 'ITADフィルター設定を取得しました');
+      return ApiResponseHelper.success(res, config, 'ITADフィルター設定を取得しました');
     } catch (error) {
       logger.error('Failed to get ITAD filter config:', error);
-      ApiResponseHelper.error(res, 'ITADフィルター設定の取得に失敗しました', 500, error);
+      return ApiResponseHelper.error(res, 'ITADフィルター設定の取得に失敗しました', 500, error);
     }
   }
 
   // 特定設定取得
-  async getSetting(req: Request, res: Response): Promise<void> {
+  async getSetting(req: Request, res: Response): Promise<Response> {
     try {
       const { name } = req.params;
       
       if (!name) {
-        ApiResponseHelper.badRequest(res, '設定名は必須です');
-        return;
+        return ApiResponseHelper.badRequest(res, '設定名は必須です');
       }
 
       const setting = itadSettingsModel.getSetting(name);
       
       if (!setting) {
-        ApiResponseHelper.notFound(res, '設定');
-        return;
+        return ApiResponseHelper.notFound(res, '設定');
       }
 
-      ApiResponseHelper.success(res, setting, 'ITAD設定を取得しました');
+      return ApiResponseHelper.success(res, setting, 'ITAD設定を取得しました');
     } catch (error) {
       logger.error('Failed to get ITAD setting:', error);
-      ApiResponseHelper.error(res, 'ITAD設定の取得に失敗しました', 500, error);
+      return ApiResponseHelper.error(res, 'ITAD設定の取得に失敗しました', 500, error);
     }
   }
 
   // 設定更新
-  async updateSetting(req: Request, res: Response): Promise<void> {
+  async updateSetting(req: Request, res: Response): Promise<Response> {
     try {
       const { name } = req.params;
       const { value } = req.body;
       
       if (!name || value === undefined) {
-        ApiResponseHelper.badRequest(res, '設定名と値は必須です');
-        return;
+        return ApiResponseHelper.badRequest(res, '設定名と値は必須です');
       }
 
       // バリデーション
       const validationError = this.validateSetting(name, value);
       if (validationError) {
-        ApiResponseHelper.badRequest(res, validationError);
-        return;
+        return ApiResponseHelper.badRequest(res, validationError);
       }
 
       const success = itadSettingsModel.updateSetting(name, value.toString());
       
       if (!success) {
-        ApiResponseHelper.notFound(res, '設定');
-        return;
+        return ApiResponseHelper.notFound(res, '設定');
       }
 
       const updatedSetting = itadSettingsModel.getSetting(name);
-      ApiResponseHelper.success(res, updatedSetting, `設定 ${name} が正常に更新されました`);
+      return ApiResponseHelper.success(res, updatedSetting, `設定 ${name} が正常に更新されました`);
     } catch (error) {
       logger.error('Failed to update ITAD setting:', error);
-      ApiResponseHelper.error(res, 'ITAD設定の更新に失敗しました', 500, error);
+      return ApiResponseHelper.error(res, 'ITAD設定の更新に失敗しました', 500, error);
     }
   }
 
   // フィルター設定一括更新
-  async updateFilterConfig(req: Request, res: Response): Promise<void> {
+  async updateFilterConfig(req: Request, res: Response): Promise<Response> {
     try {
       const config = req.body;
       
       // バリデーション
       const validationError = this.validateFilterConfig(config);
       if (validationError) {
-        ApiResponseHelper.badRequest(res, validationError);
-        return;
+        return ApiResponseHelper.badRequest(res, validationError);
       }
 
       const success = itadSettingsModel.updateFilterConfig(config);
       
       if (!success) {
-        ApiResponseHelper.error(res, 'フィルター設定の更新に失敗しました', 500);
-        return;
+        return ApiResponseHelper.error(res, 'フィルター設定の更新に失敗しました', 500);
       }
 
       const updatedConfig = itadSettingsModel.getFilterConfig();
-      ApiResponseHelper.success(res, updatedConfig, 'フィルター設定が正常に更新されました');
+      return ApiResponseHelper.success(res, updatedConfig, 'フィルター設定が正常に更新されました');
     } catch (error) {
       logger.error('Failed to update ITAD filter config:', error);
-      ApiResponseHelper.error(res, 'ITADフィルター設定の更新に失敗しました', 500, error);
+      return ApiResponseHelper.error(res, 'ITADフィルター設定の更新に失敗しました', 500, error);
     }
   }
 
   // 設定リセット（WebUI用）
-  async resetToDefaults(_req: Request, res: Response): Promise<void> {
+  async resetToDefaults(_req: Request, res: Response): Promise<Response> {
     try {
       const success = itadSettingsModel.resetToDefaults();
       
       if (!success) {
-        ApiResponseHelper.error(res, '設定のリセットに失敗しました', 500);
-        return;
+        return ApiResponseHelper.error(res, '設定のリセットに失敗しました', 500);
       }
 
-      ApiResponseHelper.success(res, null, '設定がデフォルトに正常にリセットされました');
+      return ApiResponseHelper.success(res, null, '設定がデフォルトに正常にリセットされました');
     } catch (error) {
       logger.error('Failed to reset ITAD settings:', error);
-      ApiResponseHelper.error(res, 'ITAD設定のリセットに失敗しました', 500, error);
+      return ApiResponseHelper.error(res, 'ITAD設定のリセットに失敗しました', 500, error);
     }
   }
 
   // カテゴリ別設定取得
-  async getSettingsByCategory(req: Request, res: Response): Promise<void> {
+  async getSettingsByCategory(req: Request, res: Response): Promise<Response> {
     try {
       const { category } = req.params;
       
       if (!category) {
-        ApiResponseHelper.badRequest(res, 'カテゴリは必須です');
-        return;
+        return ApiResponseHelper.badRequest(res, 'カテゴリは必須です');
       }
 
       const pagination = this.getPaginationParams(req.query);
       const settings = itadSettingsModel.getSettingsByCategory(category, pagination);
       const total = itadSettingsModel.getSettingsByCategoryCount(category);
       
-      ApiResponseHelper.paginated(
+      return ApiResponseHelper.paginated(
         res,
         settings,
         total,
@@ -193,7 +181,7 @@ export class ITADSettingsController extends BaseController {
       );
     } catch (error) {
       logger.error('Failed to get ITAD settings by category:', error);
-      ApiResponseHelper.error(res, 'カテゴリ別ITAD設定の取得に失敗しました', 500, error);
+      return ApiResponseHelper.error(res, 'カテゴリ別ITAD設定の取得に失敗しました', 500, error);
     }
   }
 

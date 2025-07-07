@@ -418,7 +418,7 @@ describe('CacheService Tests', () => {
       const cacheKey = 'api:games:list';
       cacheService.set(cacheKey, apiResponse, 300); // 5分間キャッシュ
 
-      const cached = cacheService.get(cacheKey);
+      const cached = cacheService.get(cacheKey) as any;
       expect(cached).toEqual(apiResponse);
       expect(cached.data.games).toHaveLength(2);
     });
@@ -435,7 +435,7 @@ describe('CacheService Tests', () => {
       const sessionKey = `session:${userSession.userId}`;
       cacheService.set(sessionKey, userSession, 3600); // 1時間
 
-      const cachedSession = cacheService.get(sessionKey);
+      const cachedSession = cacheService.get(sessionKey) as any;
       expect(cachedSession).toEqual(userSession);
       expect(cachedSession.permissions).toContain('read');
     });

@@ -16,7 +16,7 @@ export interface VersionedRequest extends Request {
  * APIバージョンを解析してリクエストに追加
  * Accept-Versionヘッダー、URLパス、クエリパラメータの順で確認
  */
-export const extractVersion = (req: VersionedRequest, res: Response, next: NextFunction): void => {
+export const extractVersion = (req: VersionedRequest, res: Response, next: NextFunction): Response | void => {
   try {
     let version: string | undefined;
 
@@ -76,7 +76,7 @@ export const extractVersion = (req: VersionedRequest, res: Response, next: NextF
  * 特定のバージョンが必要なエンドポイント用のミドルウェア
  */
 export const requireVersion = (minVersion: string) => {
-  return (req: VersionedRequest, res: Response, next: NextFunction) => {
+  return (req: VersionedRequest, res: Response, next: NextFunction): Response | void => {
     const currentVersion = req.apiVersion || DEFAULT_VERSION;
     const currentVersionNum = parseInt(currentVersion.replace('v', ''));
     const minVersionNum = parseInt(minVersion.replace('v', ''));
@@ -134,7 +134,7 @@ export const deprecatedEndpoint = (deprecatedIn: string, removedIn?: string, alt
  * バージョン別ルーティング
  */
 export const versionRouter = (versions: { [key: string]: (req: Request, res: Response) => void }) => {
-  return (req: VersionedRequest, res: Response) => {
+  return (req: VersionedRequest, res: Response): Response | void => {
     const version = req.apiVersion || DEFAULT_VERSION;
     const handler = versions[version] || versions.default;
 
@@ -153,8 +153,8 @@ export const versionRouter = (versions: { [key: string]: (req: Request, res: Res
 /**
  * バージョン情報エンドポイント用のハンドラー
  */
-export const getVersionInfo = (_req: Request, res: Response): void => {
-  ApiResponseHelper.success(res, {
+export const getVersionInfo = (_req: Request, res: Response): Response => {
+  return ApiResponseHelper.success(res, {
     current: LATEST_VERSION,
     supported: SUPPORTED_VERSIONS,
     deprecated: [],

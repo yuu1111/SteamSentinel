@@ -9,7 +9,7 @@ import cacheService, { CacheKeys } from '../services/CacheService';
 
 export class PriceController extends BaseController {
     // GET /api/v1/prices/history/:appId - 価格履歴取得
-    async getPriceHistory(req: Request, res: Response): Promise<void> {
+    async getPriceHistory(req: Request, res: Response): Promise<Response> {
         const perf = new PerformanceHelper();
         
         try {
@@ -35,7 +35,7 @@ export class PriceController extends BaseController {
             fromDate.setDate(fromDate.getDate() - days);
             const priceHistory = PriceHistoryModel.getByGameId(steamAppId, limit, fromDate);
             
-            ApiResponseHelper.success(res, {
+            return ApiResponseHelper.success(res, {
                 game: {
                     steam_app_id: game.steam_app_id,
                     name: game.name
@@ -51,12 +51,12 @@ export class PriceController extends BaseController {
 
         } catch (error) {
             logger.error('Failed to get price history:', error);
-            ApiResponseHelper.error(res, '価格履歴の取得に失敗しました', 500, error);
+            return ApiResponseHelper.error(res, '価格履歴の取得に失敗しました', 500, error);
         }
     }
 
     // GET /api/v1/prices/latest/:appId - 最新価格取得（キャッシュ付き）
-    async getLatestPrice(req: Request, res: Response): Promise<void> {
+    async getLatestPrice(req: Request, res: Response): Promise<Response> {
         const perf = new PerformanceHelper();
         
         try {
@@ -91,18 +91,18 @@ export class PriceController extends BaseController {
             // キャッシュに保存（TTL: 60秒）
             cacheService.set(cacheKey, latestPrice, 60);
 
-            ApiResponseHelper.success(res, latestPrice, '最新価格を取得しました', 200, {
+            return ApiResponseHelper.success(res, latestPrice, '最新価格を取得しました', 200, {
                 performance: perf.getPerformanceMeta()
             });
 
         } catch (error) {
             logger.error('Failed to get latest price:', error);
-            ApiResponseHelper.error(res, '最新価格の取得に失敗しました', 500, error);
+            return ApiResponseHelper.error(res, '最新価格の取得に失敗しました', 500, error);
         }
     }
 
     // GET /api/v1/prices/statistics - 価格統計取得（キャッシュ付き）
-    async getPriceStatistics(req: Request, res: Response): Promise<void> {
+    async getPriceStatistics(req: Request, res: Response): Promise<Response> {
         const perf = new PerformanceHelper();
         
         try {
@@ -171,18 +171,18 @@ export class PriceController extends BaseController {
             // キャッシュに保存（TTL: 5分）
             cacheService.set(cacheKey, result, 300);
             
-            ApiResponseHelper.success(res, result, '価格統計を取得しました', 200, {
+            return ApiResponseHelper.success(res, result, '価格統計を取得しました', 200, {
                 performance: perf.getPerformanceMeta()
             });
 
         } catch (error) {
             logger.error('Failed to get price statistics:', error);
-            ApiResponseHelper.error(res, '価格統計の取得に失敗しました', 500, error);
+            return ApiResponseHelper.error(res, '価格統計の取得に失敗しました', 500, error);
         }
     }
 
     // POST /api/v1/prices/track - 価格追跡開始（認証必須）
-    async startTracking(req: AuthRequest, res: Response): Promise<void> {
+    async startTracking(req: AuthRequest, res: Response): Promise<Response> {
         try {
             if (!req.user) {
                 return ApiResponseHelper.unauthorized(res);
@@ -238,7 +238,7 @@ export class PriceController extends BaseController {
 
             const successCount = results.filter(r => r.success).length;
             
-            ApiResponseHelper.success(res, {
+            return ApiResponseHelper.success(res, {
                 results,
                 summary: {
                     total: steamAppIds.length,
@@ -249,12 +249,12 @@ export class PriceController extends BaseController {
 
         } catch (error) {
             logger.error('Failed to start price tracking:', error);
-            ApiResponseHelper.error(res, '価格追跡の開始に失敗しました', 500, error);
+            return ApiResponseHelper.error(res, '価格追跡の開始に失敗しました', 500, error);
         }
     }
 
     // DELETE /api/v1/prices/track/:appId - 価格追跡停止（認証必須）
-    async stopTracking(req: AuthRequest, res: Response): Promise<void> {
+    async stopTracking(req: AuthRequest, res: Response): Promise<Response> {
         try {
             if (!req.user) {
                 return ApiResponseHelper.unauthorized(res);
@@ -277,18 +277,18 @@ export class PriceController extends BaseController {
                 return ApiResponseHelper.notFound(res, 'ゲーム');
             }
 
-            ApiResponseHelper.success(res, {
+            return ApiResponseHelper.success(res, {
                 steam_app_id: steamAppId
             }, '価格追跡を停止しました');
 
         } catch (error) {
             logger.error('Failed to stop price tracking:', error);
-            ApiResponseHelper.error(res, '価格追跡の停止に失敗しました', 500, error);
+            return ApiResponseHelper.error(res, '価格追跡の停止に失敗しました', 500, error);
         }
     }
 
     // GET /api/v1/prices/alerts/potential - アラート候補取得
-    async getPotentialAlerts(req: Request, res: Response): Promise<void> {
+    async getPotentialAlerts(req: Request, res: Response): Promise<Response> {
         const perf = new PerformanceHelper();
         
         try {
@@ -337,7 +337,7 @@ export class PriceController extends BaseController {
                 LIMIT 50
             `).all(thresholdPercent, thresholdPercent);
 
-            ApiResponseHelper.success(res, {
+            return ApiResponseHelper.success(res, {
                 potentialAlerts,
                 meta: {
                     threshold: thresholdPercent,
@@ -349,7 +349,7 @@ export class PriceController extends BaseController {
 
         } catch (error) {
             logger.error('Failed to get potential alerts:', error);
-            ApiResponseHelper.error(res, 'アラート候補の取得に失敗しました', 500, error);
+            return ApiResponseHelper.error(res, 'アラート候補の取得に失敗しました', 500, error);
         }
     }
 }

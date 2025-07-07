@@ -343,7 +343,7 @@ describe('ReviewController Tests', () => {
       const db = database.getConnection();
       const review = db.prepare(
         'SELECT id FROM review_scores WHERE steam_app_id = ? LIMIT 1'
-      ).get(testGameIds[0]);
+      ).get(testGameIds[0]) as any;
 
       const updateData = {
         weight: 1.5
@@ -361,7 +361,7 @@ describe('ReviewController Tests', () => {
       // 更新されたことを確認
       const updatedReview = db.prepare(
         'SELECT weight FROM review_scores WHERE id = ?'
-      ).get(review.id);
+      ).get(review.id) as any;
       expect(updatedReview.weight).toBe(1.5);
     });
 
@@ -380,7 +380,7 @@ describe('ReviewController Tests', () => {
       const db = database.getConnection();
       const review = db.prepare(
         'SELECT id FROM review_scores WHERE steam_app_id = ? LIMIT 1'
-      ).get(testGameIds[0]);
+      ).get(testGameIds[0]) as any;
 
       const invalidData = {
         weight: 5.0 // 範囲外

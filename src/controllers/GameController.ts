@@ -499,8 +499,8 @@ export class GameController extends BaseController {
 
       // N+1問題を解決: 既存ゲームを一括取得
       const importGameIds = games
-        .filter(g => g.steam_app_id && g.name)
-        .map(g => g.steam_app_id);
+        .filter((g: any) => g.steam_app_id && g.name)
+        .map((g: any) => g.steam_app_id);
       const existingGamesMap = new Map(
         GameModel.getByMultipleSteamAppIds(importGameIds)
           .map(game => [game.steam_app_id, game])

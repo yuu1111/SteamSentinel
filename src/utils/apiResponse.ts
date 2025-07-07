@@ -99,8 +99,8 @@ export class ApiResponseHelper {
         message?: string,
         statusCode: number = 200,
         meta?: APIResponse['meta']
-    ): void {
-        res.status(statusCode).json(successResponse(data, message, meta));
+    ): Response {
+        return res.status(statusCode).json(successResponse(data, message, meta));
     }
 
     static error(
@@ -108,8 +108,8 @@ export class ApiResponseHelper {
         error: string,
         statusCode: number = 500,
         details?: any
-    ): void {
-        res.status(statusCode).json(errorResponse(error, details));
+    ): Response {
+        return res.status(statusCode).json(errorResponse(error, details));
     }
 
     static paginated<T>(
@@ -119,24 +119,24 @@ export class ApiResponseHelper {
         pagination: Required<PaginationOptions>,
         message?: string,
         statusCode: number = 200
-    ): void {
-        res.status(statusCode).json(paginatedResponse(data, total, pagination, message));
+    ): Response {
+        return res.status(statusCode).json(paginatedResponse(data, total, pagination, message));
     }
 
-    static notFound(res: Response, resource: string = 'リソース'): void {
-        this.error(res, `${resource}が見つかりません`, 404);
+    static notFound(res: Response, resource: string = 'リソース'): Response {
+        return this.error(res, `${resource}が見つかりません`, 404);
     }
 
-    static badRequest(res: Response, message: string = '不正なリクエストです'): void {
-        this.error(res, message, 400);
+    static badRequest(res: Response, message: string = '不正なリクエストです'): Response {
+        return this.error(res, message, 400);
     }
 
-    static unauthorized(res: Response, message: string = '認証が必要です'): void {
-        this.error(res, message, 401);
+    static unauthorized(res: Response, message: string = '認証が必要です'): Response {
+        return this.error(res, message, 401);
     }
 
-    static forbidden(res: Response, message: string = 'この操作を行う権限がありません'): void {
-        this.error(res, message, 403);
+    static forbidden(res: Response, message: string = 'この操作を行う権限がありません'): Response {
+        return this.error(res, message, 403);
     }
 
     static validationError(res: Response, errors: Array<{field: string, message: string}>): void {

@@ -6,7 +6,7 @@ import logger from '../utils/logger';
 
 export class AlertController extends BaseController {
     // GET /api/alerts
-    async getAlerts(req: Request, res: Response): Promise<void> {
+    async getAlerts(req: Request, res: Response): Promise<Response> {
         const perf = new PerformanceHelper();
         
         try {
@@ -30,7 +30,7 @@ export class AlertController extends BaseController {
             // ゲーム名を追加取得（JOIN最適化のため別途取得）
             const enrichedAlerts = await this.enrichAlertsWithGameNames(alerts);
 
-            ApiResponseHelper.paginated(
+            return ApiResponseHelper.paginated(
                 res,
                 enrichedAlerts,
                 total,
@@ -39,12 +39,12 @@ export class AlertController extends BaseController {
             );
         } catch (error) {
             logger.error('Failed to fetch alerts:', error);
-            ApiResponseHelper.error(res, 'アラートの取得に失敗しました', 500, error);
+            return ApiResponseHelper.error(res, 'アラートの取得に失敗しました', 500, error);
         }
     }
 
     // GET /api/alerts/:id
-    async getAlert(req: Request, res: Response): Promise<void> {
+    async getAlert(req: Request, res: Response): Promise<Response> {
         try {
             const alertId = parseInt(req.params.id);
             
@@ -65,15 +65,15 @@ export class AlertController extends BaseController {
                 game_name: game?.name || 'Unknown Game'
             };
 
-            ApiResponseHelper.success(res, enrichedAlert);
+            return ApiResponseHelper.success(res, enrichedAlert);
         } catch (error) {
             logger.error('Failed to fetch alert:', error);
-            ApiResponseHelper.error(res, 'アラートの取得に失敗しました', 500, error);
+            return ApiResponseHelper.error(res, 'アラートの取得に失敗しました', 500, error);
         }
     }
 
     // PUT /api/alerts/:id/read
-    async markAsRead(req: Request, res: Response): Promise<void> {
+    async markAsRead(req: Request, res: Response): Promise<Response> {
         try {
             const alertId = parseInt(req.params.id);
             
@@ -87,15 +87,15 @@ export class AlertController extends BaseController {
                 return ApiResponseHelper.notFound(res, 'アラート');
             }
 
-            ApiResponseHelper.success(res, { id: alertId }, 'アラートを既読にしました');
+            return ApiResponseHelper.success(res, { id: alertId }, 'アラートを既読にしました');
         } catch (error) {
             logger.error('Failed to mark alert as read:', error);
-            ApiResponseHelper.error(res, 'アラートの更新に失敗しました', 500, error);
+            return ApiResponseHelper.error(res, 'アラートの更新に失敗しました', 500, error);
         }
     }
 
     // PUT /api/alerts/read-all
-    async markAllAsRead(req: Request, res: Response): Promise<void> {
+    async markAllAsRead(req: Request, res: Response): Promise<Response> {
         try {
             const { alertType, steamAppId } = req.body;
             
@@ -107,19 +107,19 @@ export class AlertController extends BaseController {
 
             const updatedCount = await AlertModel.markMultipleAsRead(filters);
 
-            ApiResponseHelper.success(
+            return ApiResponseHelper.success(
                 res, 
                 { updatedCount }, 
                 `${updatedCount}件のアラートを既読にしました`
             );
         } catch (error) {
             logger.error('Failed to mark alerts as read:', error);
-            ApiResponseHelper.error(res, 'アラートの一括更新に失敗しました', 500, error);
+            return ApiResponseHelper.error(res, 'アラートの一括更新に失敗しました', 500, error);
         }
     }
 
     // DELETE /api/alerts/:id
-    async deleteAlert(req: Request, res: Response): Promise<void> {
+    async deleteAlert(req: Request, res: Response): Promise<Response> {
         try {
             const alertId = parseInt(req.params.id);
             
@@ -133,15 +133,15 @@ export class AlertController extends BaseController {
                 return ApiResponseHelper.notFound(res, 'アラート');
             }
 
-            ApiResponseHelper.success(res, { id: alertId }, 'アラートを削除しました');
+            return ApiResponseHelper.success(res, { id: alertId }, 'アラートを削除しました');
         } catch (error) {
             logger.error('Failed to delete alert:', error);
-            ApiResponseHelper.error(res, 'アラートの削除に失敗しました', 500, error);
+            return ApiResponseHelper.error(res, 'アラートの削除に失敗しました', 500, error);
         }
     }
 
     // DELETE /api/alerts/cleanup
-    async cleanup(req: Request, res: Response): Promise<void> {
+    async cleanup(req: Request, res: Response): Promise<Response> {
         try {
             const { olderThan = 30, readOnly = false } = req.query;
             const days = parseInt(olderThan as string);
@@ -156,21 +156,21 @@ export class AlertController extends BaseController {
                 ? `${deletedCount}件の既読アラートを削除しました`
                 : `${deletedCount}件のアラートを削除しました`;
 
-            ApiResponseHelper.success(res, { deletedCount, days }, message);
+            return ApiResponseHelper.success(res, { deletedCount, days }, message);
         } catch (error) {
             logger.error('Failed to cleanup alerts:', error);
-            ApiResponseHelper.error(res, 'アラートのクリーンアップに失敗しました', 500, error);
+            return ApiResponseHelper.error(res, 'アラートのクリーンアップに失敗しました', 500, error);
         }
     }
 
     // GET /api/alerts/statistics
-    async getStatistics(req: Request, res: Response): Promise<void> {
+    async getStatistics(req: Request, res: Response): Promise<Response> {
         const perf = new PerformanceHelper();
         
         try {
             const stats = await AlertModel.getStatistics();
             
-            ApiResponseHelper.success(
+            return ApiResponseHelper.success(
                 res, 
                 stats, 
                 'アラート統計を取得しました',
@@ -179,7 +179,7 @@ export class AlertController extends BaseController {
             );
         } catch (error) {
             logger.error('Failed to fetch alert statistics:', error);
-            ApiResponseHelper.error(res, 'アラート統計の取得に失敗しました', 500, error);
+            return ApiResponseHelper.error(res, 'アラート統計の取得に失敗しました', 500, error);
         }
     }
 

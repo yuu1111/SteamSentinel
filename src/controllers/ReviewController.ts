@@ -8,7 +8,7 @@ import database from '../db/database';
 
 export class ReviewController extends BaseController {
     // GET /api/v1/reviews/:appId - ゲームレビュー統合取得
-    async getGameReviews(req: Request, res: Response): Promise<void> {
+    async getGameReviews(req: Request, res: Response): Promise<Response> {
         const perf = new PerformanceHelper();
         
         try {
@@ -82,22 +82,18 @@ export class ReviewController extends BaseController {
             };
 
             // レスポンスを送信
-            ApiResponseHelper.success(res, responseData, 'レビュー情報を取得しました', 200, {
-                performance: perf.getPerformanceMeta(),
-                cache_info: {
-                    using_integrated_view: !!integratedReview,
-                    data_sources: reviewScores.map((r: any) => r.source)
-                }
+            return ApiResponseHelper.success(res, responseData, 'レビュー情報を取得しました', 200, {
+                performance: perf.getPerformanceMeta()
             });
 
         } catch (error) {
             logger.error('Failed to get game reviews:', error);
-            ApiResponseHelper.error(res, 'レビュー情報の取得に失敗しました', 500, error);
+            return ApiResponseHelper.error(res, 'レビュー情報の取得に失敗しました', 500, error);
         }
     }
 
     // POST /api/v1/reviews/:appId/refresh - レビュー情報更新（認証必須）
-    async refreshGameReviews(req: AuthRequest, res: Response): Promise<void> {
+    async refreshGameReviews(req: AuthRequest, res: Response): Promise<Response> {
         try {
             if (!req.user) {
                 return ApiResponseHelper.unauthorized(res);
@@ -138,7 +134,7 @@ export class ReviewController extends BaseController {
             try {
                 const updatedReviews = await reviewIntegrationService.getGameReviews(steamAppId, game.name);
                 
-                ApiResponseHelper.success(res, {
+                return ApiResponseHelper.success(res, {
                     steam_app_id: steamAppId,
                     game_name: game.name,
                     updated: true,
@@ -147,17 +143,17 @@ export class ReviewController extends BaseController {
 
             } catch (reviewError) {
                 logger.warn(`Failed to update reviews for game ${steamAppId}:`, reviewError);
-                ApiResponseHelper.error(res, 'レビュー情報の更新に失敗しました', 500, reviewError);
+                return ApiResponseHelper.error(res, 'レビュー情報の更新に失敗しました', 500, reviewError);
             }
 
         } catch (error) {
             logger.error('Failed to refresh game reviews:', error);
-            ApiResponseHelper.error(res, 'レビュー情報の更新に失敗しました', 500, error);
+            return ApiResponseHelper.error(res, 'レビュー情報の更新に失敗しました', 500, error);
         }
     }
 
     // POST /api/v1/reviews/batch - 複数ゲームレビュー取得
-    async getMultipleGameReviews(req: Request, res: Response): Promise<void> {
+    async getMultipleGameReviews(req: Request, res: Response): Promise<Response> {
         const perf = new PerformanceHelper();
         
         try {
@@ -231,7 +227,7 @@ export class ReviewController extends BaseController {
 
             const successCount = results.filter(r => r.success).length;
 
-            ApiResponseHelper.success(res, {
+            return ApiResponseHelper.success(res, {
                 results,
                 summary: {
                     total: steamAppIds.length,
@@ -244,12 +240,12 @@ export class ReviewController extends BaseController {
 
         } catch (error) {
             logger.error('Failed to get multiple game reviews:', error);
-            ApiResponseHelper.error(res, '複数ゲームレビューの取得に失敗しました', 500, error);
+            return ApiResponseHelper.error(res, '複数ゲームレビューの取得に失敗しました', 500, error);
         }
     }
 
     // GET /api/v1/reviews/statistics - レビュー統計取得
-    async getReviewStatistics(req: Request, res: Response): Promise<void> {
+    async getReviewStatistics(req: Request, res: Response): Promise<Response> {
         const perf = new PerformanceHelper();
         
         try {
@@ -303,7 +299,7 @@ export class ReviewController extends BaseController {
                 LIMIT 10
             `).all();
 
-            ApiResponseHelper.success(res, {
+            return ApiResponseHelper.success(res, {
                 overview: {
                     gamesWithReviews: (stats[0] as any)?.games_with_reviews || 0,
                     totalReviewSources: stats.reduce((sum, s: any) => sum + s.count, 0)
@@ -317,12 +313,12 @@ export class ReviewController extends BaseController {
 
         } catch (error) {
             logger.error('Failed to get review statistics:', error);
-            ApiResponseHelper.error(res, 'レビュー統計の取得に失敗しました', 500, error);
+            return ApiResponseHelper.error(res, 'レビュー統計の取得に失敗しました', 500, error);
         }
     }
 
     // DELETE /api/v1/reviews/:appId - レビュー情報削除（管理者のみ）
-    async deleteGameReviews(req: AuthRequest, res: Response): Promise<void> {
+    async deleteGameReviews(req: AuthRequest, res: Response): Promise<Response> {
         try {
             if (!req.user || req.user.role !== 'admin') {
                 return ApiResponseHelper.forbidden(res, 'この操作には管理者権限が必要です');
@@ -343,14 +339,14 @@ export class ReviewController extends BaseController {
                 return ApiResponseHelper.notFound(res, 'レビュー情報');
             }
 
-            ApiResponseHelper.success(res, {
+            return ApiResponseHelper.success(res, {
                 steam_app_id: steamAppId,
                 deleted_count: result.changes
             }, 'レビュー情報を削除しました');
 
         } catch (error) {
             logger.error('Failed to delete game reviews:', error);
-            ApiResponseHelper.error(res, 'レビュー情報の削除に失敗しました', 500, error);
+            return ApiResponseHelper.error(res, 'レビュー情報の削除に失敗しました', 500, error);
         }
     }
 

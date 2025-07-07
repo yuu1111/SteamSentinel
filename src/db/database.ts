@@ -214,6 +214,7 @@ class DatabaseManager {
         value TEXT NOT NULL,
         description TEXT,
         category TEXT DEFAULT 'filter',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);

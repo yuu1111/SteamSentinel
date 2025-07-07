@@ -13,7 +13,7 @@ import logger from '../utils/logger';
 
 export class AuthController extends BaseController {
     // POST /api/v1/auth/register
-    async register(req: Request, res: Response): Promise<void> {
+    async register(req: Request, res: Response): Promise<Response> {
         try {
             const { username, email, password } = req.body;
             
@@ -37,7 +37,7 @@ export class AuthController extends BaseController {
                     VALUES (?, 'read'), (?, 'create_game')
                 `).run(userId, userId);
                 
-                ApiResponseHelper.success(res, {
+                return ApiResponseHelper.success(res, {
                     id: userId,
                     username,
                     email,
@@ -47,19 +47,19 @@ export class AuthController extends BaseController {
             } catch (error: any) {
                 if (error.message.includes('UNIQUE constraint failed')) {
                     const field = error.message.includes('username') ? 'ユーザー名' : 'メールアドレス';
-                    ApiResponseHelper.badRequest(res, `この${field}は既に使用されています`);
+                    return ApiResponseHelper.badRequest(res, `この${field}は既に使用されています`);
                 } else {
                     throw error;
                 }
             }
         } catch (error) {
             logger.error('Failed to register user:', error);
-            ApiResponseHelper.error(res, 'ユーザー登録に失敗しました', 500, error);
+            return ApiResponseHelper.error(res, 'ユーザー登録に失敗しました', 500, error);
         }
     }
 
     // POST /api/v1/auth/login
-    async login(req: Request, res: Response): Promise<void> {
+    async login(req: Request, res: Response): Promise<Response> {
         try {
             const { username, password } = req.body;
             
@@ -97,7 +97,7 @@ export class AuthController extends BaseController {
             });
             const refreshToken = generateRefreshToken(user.id);
             
-            ApiResponseHelper.success(res, {
+            return ApiResponseHelper.success(res, {
                 accessToken,
                 refreshToken,
                 user: {
@@ -110,12 +110,12 @@ export class AuthController extends BaseController {
             
         } catch (error) {
             logger.error('Failed to login:', error);
-            ApiResponseHelper.error(res, 'ログインに失敗しました', 500, error);
+            return ApiResponseHelper.error(res, 'ログインに失敗しました', 500, error);
         }
     }
 
     // POST /api/v1/auth/refresh
-    async refreshToken(req: Request, res: Response): Promise<void> {
+    async refreshToken(req: Request, res: Response): Promise<Response> {
         try {
             const { refreshToken } = req.body;
             
@@ -148,19 +148,19 @@ export class AuthController extends BaseController {
             });
             const newRefreshToken = generateRefreshToken(user.id);
             
-            ApiResponseHelper.success(res, {
+            return ApiResponseHelper.success(res, {
                 accessToken,
                 refreshToken: newRefreshToken
             }, 'トークンを更新しました');
             
         } catch (error) {
             logger.error('Failed to refresh token:', error);
-            ApiResponseHelper.error(res, 'トークン更新に失敗しました', 500, error);
+            return ApiResponseHelper.error(res, 'トークン更新に失敗しました', 500, error);
         }
     }
 
     // POST /api/v1/auth/logout
-    async logout(req: AuthRequest, res: Response): Promise<void> {
+    async logout(req: AuthRequest, res: Response): Promise<Response> {
         try {
             const { refreshToken } = req.body;
             
@@ -168,16 +168,16 @@ export class AuthController extends BaseController {
                 revokeRefreshToken(refreshToken);
             }
             
-            ApiResponseHelper.success(res, null, 'ログアウトしました');
+            return ApiResponseHelper.success(res, null, 'ログアウトしました');
             
         } catch (error) {
             logger.error('Failed to logout:', error);
-            ApiResponseHelper.error(res, 'ログアウトに失敗しました', 500, error);
+            return ApiResponseHelper.error(res, 'ログアウトに失敗しました', 500, error);
         }
     }
 
     // GET /api/v1/auth/me
-    async getProfile(req: AuthRequest, res: Response): Promise<void> {
+    async getProfile(req: AuthRequest, res: Response): Promise<Response> {
         try {
             if (!req.user) {
                 return ApiResponseHelper.unauthorized(res);
@@ -194,19 +194,19 @@ export class AuthController extends BaseController {
                 return ApiResponseHelper.notFound(res, 'ユーザー');
             }
             
-            ApiResponseHelper.success(res, {
+            return ApiResponseHelper.success(res, {
                 ...user,
                 permissions: req.user.permissions
             });
             
         } catch (error) {
             logger.error('Failed to get profile:', error);
-            ApiResponseHelper.error(res, 'プロフィール取得に失敗しました', 500, error);
+            return ApiResponseHelper.error(res, 'プロフィール取得に失敗しました', 500, error);
         }
     }
 
     // PUT /api/v1/auth/password
-    async changePassword(req: AuthRequest, res: Response): Promise<void> {
+    async changePassword(req: AuthRequest, res: Response): Promise<Response> {
         try {
             if (!req.user) {
                 return ApiResponseHelper.unauthorized(res);
@@ -235,11 +235,11 @@ export class AuthController extends BaseController {
                 WHERE id = ?
             `).run(newPasswordHash, req.user.id);
             
-            ApiResponseHelper.success(res, null, 'パスワードを変更しました');
+            return ApiResponseHelper.success(res, null, 'パスワードを変更しました');
             
         } catch (error) {
             logger.error('Failed to change password:', error);
-            ApiResponseHelper.error(res, 'パスワード変更に失敗しました', 500, error);
+            return ApiResponseHelper.error(res, 'パスワード変更に失敗しました', 500, error);
         }
     }
 }

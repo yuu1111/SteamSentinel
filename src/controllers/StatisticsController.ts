@@ -5,7 +5,7 @@ import database from '../db/database';
 
 export class StatisticsController extends BaseController {
     // GET /api/v1/statistics/dashboard - ダッシュボード統計
-    async getDashboardStatistics(req: Request, res: Response): Promise<void> {
+    async getDashboardStatistics(req: Request, res: Response): Promise<Response> {
         const perf = new PerformanceHelper();
         
         try {
@@ -90,7 +90,7 @@ export class StatisticsController extends BaseController {
                 ORDER BY count DESC
             `).all();
 
-            ApiResponseHelper.success(res, {
+            return ApiResponseHelper.success(res, {
                 overview,
                 trends: trendsData,
                 alertBreakdown: alertTypeStats,
@@ -109,12 +109,12 @@ export class StatisticsController extends BaseController {
 
         } catch (error) {
             logger.error('Failed to get dashboard statistics:', error);
-            ApiResponseHelper.error(res, 'ダッシュボード統計の取得に失敗しました', 500, error);
+            return ApiResponseHelper.error(res, 'ダッシュボード統計の取得に失敗しました', 500, error);
         }
     }
 
     // GET /api/v1/statistics/games - ゲーム統計
-    async getGameStatistics(req: Request, res: Response): Promise<void> {
+    async getGameStatistics(req: Request, res: Response): Promise<Response> {
         const perf = new PerformanceHelper();
         
         try {
@@ -192,7 +192,7 @@ export class StatisticsController extends BaseController {
                 LIMIT 10
             `).all();
 
-            ApiResponseHelper.success(res, {
+            return ApiResponseHelper.success(res, {
                 period: {
                     label: period,
                     days: periodDays
@@ -212,12 +212,12 @@ export class StatisticsController extends BaseController {
 
         } catch (error) {
             logger.error('Failed to get game statistics:', error);
-            ApiResponseHelper.error(res, 'ゲーム統計の取得に失敗しました', 500, error);
+            return ApiResponseHelper.error(res, 'ゲーム統計の取得に失敗しました', 500, error);
         }
     }
 
     // GET /api/v1/statistics/alerts - アラート統計
-    async getAlertStatistics(req: Request, res: Response): Promise<void> {
+    async getAlertStatistics(req: Request, res: Response): Promise<Response> {
         const perf = new PerformanceHelper();
         
         try {
@@ -282,7 +282,7 @@ export class StatisticsController extends BaseController {
                 ORDER BY avg_response_minutes
             `).all();
 
-            ApiResponseHelper.success(res, {
+            return ApiResponseHelper.success(res, {
                 period: {
                     label: period,
                     days: periodDays
@@ -306,12 +306,12 @@ export class StatisticsController extends BaseController {
 
         } catch (error) {
             logger.error('Failed to get alert statistics:', error);
-            ApiResponseHelper.error(res, 'アラート統計の取得に失敗しました', 500, error);
+            return ApiResponseHelper.error(res, 'アラート統計の取得に失敗しました', 500, error);
         }
     }
 
     // GET /api/v1/statistics/performance - パフォーマンス統計
-    async getPerformanceStatistics(req: Request, res: Response): Promise<void> {
+    async getPerformanceStatistics(req: Request, res: Response): Promise<Response> {
         const perf = new PerformanceHelper();
         
         try {
@@ -373,7 +373,7 @@ export class StatisticsController extends BaseController {
                 FROM latest_prices
             `).all();
 
-            ApiResponseHelper.success(res, {
+            return ApiResponseHelper.success(res, {
                 database: {
                     tables: dbStats,
                     rowCounts: tableCounts,
@@ -394,12 +394,12 @@ export class StatisticsController extends BaseController {
 
         } catch (error) {
             logger.error('Failed to get performance statistics:', error);
-            ApiResponseHelper.error(res, 'パフォーマンス統計の取得に失敗しました', 500, error);
+            return ApiResponseHelper.error(res, 'パフォーマンス統計の取得に失敗しました', 500, error);
         }
     }
 
     // GET /api/v1/statistics/export - 統計データエクスポート（認証必須）
-    async exportStatistics(req: Request, res: Response): Promise<void> {
+    async exportStatistics(req: Request, res: Response): Promise<Response> {
         try {
             const format = req.query.format as string || 'json';
             const includeSensitive = req.query.include_sensitive === 'true';
@@ -423,18 +423,18 @@ export class StatisticsController extends BaseController {
             if (format === 'json') {
                 res.setHeader('Content-Type', 'application/json');
                 res.setHeader('Content-Disposition', `attachment; filename="steam-sentinel-stats-${new Date().toISOString().split('T')[0]}.json"`);
-                res.json(exportData);
+                return res.json(exportData);
             } else {
                 // CSV形式での出力（簡略版）
                 const csvData = this.convertToCSV(exportData);
                 res.setHeader('Content-Type', 'text/csv');
                 res.setHeader('Content-Disposition', `attachment; filename="steam-sentinel-stats-${new Date().toISOString().split('T')[0]}.csv"`);
-                res.send(csvData);
+                return res.send(csvData);
             }
 
         } catch (error) {
             logger.error('Failed to export statistics:', error);
-            ApiResponseHelper.error(res, '統計データのエクスポートに失敗しました', 500, error);
+            return ApiResponseHelper.error(res, '統計データのエクスポートに失敗しました', 500, error);
         }
     }
 
